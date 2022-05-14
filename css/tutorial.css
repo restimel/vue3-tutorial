@@ -1,0 +1,184 @@
+/* {{{ variables */
+
+:root {
+    /** Main color used for component */
+    --vue3-tutorial-brand-primary: #42b883;
+
+    /** Secondary color used for contrast */
+    --vue3-tutorial-brand-secondary: #2c3e50;
+
+    /** zIndex used by popup window for the tips. It should be higher than
+     * your other components
+     * The mask will use this value.
+     * The arrow will use this value + 10;
+     * The pop-up window will use this value + 20;
+     */
+    --vue3-tutorial-zindex: 1000;
+
+    /** The background color of the step window */
+    --vue3-tutorial-step-bg-color: var(--vue3-tutorial-brand-primary);
+    /** The text color of step window */
+    --vue3-tutorial-step-text-color: white;
+
+    /** The background color of the header of step window */
+    --vue3-tutorial-step-header-bg-color: var(--vue3-tutorial-brand-secondary);
+    /** The text color of the header of step window */
+    --vue3-tutorial-step-header-text-color: var(--vue3-tutorial-step-text-color);
+
+    /** The shadow style of the popup-window */
+    --vue3-tutorial-window-shadow: 2px 5px 15px black;
+
+    /** The shadow style of the highlighted element */
+    --vue3-tutorial-highlight-shadow: 0 0 10px var(--vue3-tutorial-brand-primary), inset 0 0 10px var(--vue3-tutorial-brand-primary);
+}
+
+/* }}} */
+/* {{{ animations */
+
+@keyframes v3-tutorial-verticalWave {
+    from {margin-top: -2px;}
+    to {margin-top: 2px;}
+}
+
+@keyframes v3-tutorial-horizontalWave {
+    from {margin-left: -2px;}
+    to {margin-left: 2px;}
+}
+
+/* }}} */
+/* {{{ Window */
+
+.vue3-tutorial-window {
+    position: fixed;
+    z-index: calc(var(--vue3-tutorial-zindex) + 20);
+    box-shadow: var(--vue3-tutorial-window-shadow);
+    border-radius: 3px;
+    --vue3-tutorial-priv-window-margin: 20px;
+}
+.vue3-tutorial-window.position-top {
+    transform: translate(-50%, calc(-100% - var(--vue3-tutorial-priv-window-margin)));
+}
+.vue3-tutorial-window.position-bottom {
+    transform: translate(-50%, var(--vue3-tutorial-priv-window-margin));
+}
+.vue3-tutorial-window.position-left {
+    transform: translate(calc(-100% - var(--vue3-tutorial-priv-window-margin)), -50%);
+}
+.vue3-tutorial-window.position-right {
+    transform: translate(var(--vue3-tutorial-priv-window-margin), -50%);
+}
+.vue3-tutorial-window.position-center {
+    transform: translate(-50%, -50%);
+}
+
+.vue3-tutorial-window-arrow {
+    position: fixed;
+    z-index: calc(var(--vue3-tutorial-zindex) + 10);
+    fill: var(--vue3-tutorial-brand-primary);
+    stroke: rgba(250, 250, 250, 0.5);
+}
+.vue3-tutorial-window-arrow.animation {
+    animation-timing-function: ease-in-out;
+    animation-duration: 0.75s;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
+.vue3-tutorial-window-arrow.position-top {
+    transform: translate(-50%, -100%)  rotate(-135deg);
+    animation-name: v3-tutorial-verticalWave;
+}
+.vue3-tutorial-window-arrow.position-bottom {
+    transform: translate(-50%) rotate(45deg);
+    animation-name: v3-tutorial-verticalWave;
+}
+.vue3-tutorial-window-arrow.position-left {
+    transform: translate(-100%, -50%) rotate(135deg);
+    animation-name: v3-tutorial-horizontalWave;
+}
+.vue3-tutorial-window-arrow.position-right {
+    transform: translate(0, -50%) rotate(-45deg);
+    animation-name: v3-tutorial-horizontalWave;
+}
+.vue3-tutorial-window-arrow.position-center {
+    display: none;
+}
+
+/* }}} */
+/* {{{ Step */
+
+.vue3-tutorial-step {
+    background-color: var(--vue3-tutorial-step-bg-color);
+    color: var(--vue3-tutorial-step-text-color);
+    padding: 1rem;
+    border-radius: 3px;
+}
+
+.vue3-tutorial-step__header {
+    background-color: var(--vue3-tutorial-step-header-bg-color);
+    color: var(--vue3-tutorial-step-header-text-color);
+    text-align: center;
+    padding: 0.5rem;
+    margin-top: -1rem;
+    margin-left: -1rem;
+    margin-right: -1rem;
+    border-radius: 3px;
+}
+
+.vue3-tutorial-step__header__title {
+    font-weight: 300;
+}
+
+.vue3-tutorial-step__header__status {
+    font-size: 0.7em;
+    font-style: italic;
+    opacity: 0.8;
+}
+
+.vue3-tutorial-step__content {
+    margin: 1rem 0 1rem 0;
+}
+
+.vue3-tutorial-step__btn {
+    background: transparent;
+    border: 0.05rem solid var(--vue3-tutorial-step-text-color);
+    border-radius: 0.1rem;
+    color: var(--vue3-tutorial-step-text-color);
+    cursor: pointer;
+    display: inline-block;
+    font-size: 0.8rem;
+    height: 1.8rem;
+    line-height: 1rem;
+    outline: none;
+    margin: 0 0.2rem;
+    padding: 0.35rem 0.4rem;
+    text-align: center;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.vue3-tutorial-step__btn-skip {
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+    border-radius: 32px;
+    padding: 0 3px 0 3px;
+    transform: translate(calc(50% - 5px), calc(-50% + 9px)) scale(0.4);
+    transition: transform 600ms;
+}
+.vue3-tutorial-step__btn-skip:hover {
+    transform: translate(calc(50% - 5px), calc(-50% + 9px)) scale(0.7);
+}
+
+/* }}} */
+/* {{{ External elements */
+
+.vue3-tutorial-highlight {
+    box-shadow: var(--vue3-tutorial-highlight-shadow);
+}
+
+/* }}} */

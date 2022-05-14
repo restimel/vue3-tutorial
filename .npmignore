@@ -6,6 +6,14 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
+docs/*
+src/*
+css/*
+
+TODO.md
+rollup.config.js
+tsconfig.json
+
 # this is where typescript compiles files
 lib/*
 

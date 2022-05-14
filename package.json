@@ -1,0 +1,49 @@
+{
+    "name": "vue3-tutorial",
+    "version": "0.5.0",
+    "description": "Interactive tutorial component for Vue3 which help users to understand your application",
+    "main": "dist/vue3-tutorial.common.js",
+    "module": "dist/vue3-tutorial.esm.js",
+    "types": "types/index.d.ts",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/restimel/vue3-tutorial.git"
+    },
+    "author": "Restimel",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/restimel/vue3-tutorial/issues"
+    },
+    "homepage": "https://github.com/restimel/vue3-tutorial#readme",
+    "keywords": [
+        "tutorial",
+        "guide",
+        "tour",
+        "help user",
+        "interactive guide",
+        "interactive tutorial",
+        "vue",
+        "vue.js",
+        "vueJS",
+        "vtyx",
+        "component",
+        "Vue3",
+        "Vue-next"
+    ],
+    "scripts": {
+        "build": "npm run build:ts && npm run build:bundle",
+        "build:ts": "tsc -p .",
+        "build:bundle": "rollup -c",
+        "pack": "npm run build && npm pack",
+        "test": "npm run build && tape test/**/*.spec.js"
+    },
+    "dependencies": {
+        "vtyx": "4.0.5"
+    },
+    "devDependencies": {
+        "@babel/types": "^7.16.17",
+        "rollup": "^2.73.0",
+        "rollup-plugin-postcss": "^3.1.8",
+        "typescript": "~4.6"
+    }
+}
