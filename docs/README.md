@@ -16,4 +16,4 @@ $ npm install vue3-tutorial
 
 ### documentation
 
-[Read the documentation](./docs/main.md)
+[Read the documentation](./main.md)

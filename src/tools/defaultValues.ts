@@ -67,9 +67,9 @@ export const DEFAULT_BINDING: Binding = {
 };
 
 export const DEFAULT_STEP_OPTIONS: StepOptions = {
-    classTheme: '',
     position: 'auto',
     highlight: true,
+    classForTargets: '',
     arrowAnimation: true,
     mask: true,
     maskMargin: 0,

@@ -2,7 +2,7 @@ import { Vue, h } from 'vtyx';
 import { Options, StepDescription, Tutorial } from './types.d';
 import '../css/tutorial.css';
 export interface Props {
-    tutorial: Tutorial;
+    tutorial?: Tutorial;
     options?: Options;
     open?: boolean;
 }

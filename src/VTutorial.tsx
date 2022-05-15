@@ -16,7 +16,6 @@ import {Vue, Component, Emits, Prop, Watch, h} from 'vtyx';
 import VStep from './VStep';
 import {
     BindingAction,
-    Dictionary,
     Options,
     StepDescription,
     Tutorial,
@@ -30,7 +29,7 @@ import label from './tools/labels';
 import { startListening, stopListening } from './tools/keyBinding';
 
 export interface Props {
-    tutorial: Tutorial;
+    tutorial?: Tutorial;
     options?: Options;
     open?: boolean;
 }
@@ -39,7 +38,7 @@ export interface Props {
 export default class VTutorial extends Vue<Props> {
     /* {{{ props */
 
-    @Prop()
+    @Prop({ default: () => ({steps: []}) })
     private tutorial: Tutorial;
 
     @Prop()

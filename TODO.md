@@ -38,6 +38,8 @@
         * ~~"finished"~~
         * ~~"start"~~
         * "error"
+    * Add timeout about target
+    * scrollIntoView
     * check that next is ok
     * skip current step
 * Interactions
@@ -50,7 +52,7 @@
     * ~~remove listeners~~
 * documentation
     * README
-        * example code
+        * ~~example code~~
         * gif
         * important features
         * Live example
@@ -59,8 +61,10 @@
             * create page with complex cases
             * create more complex tutorial to show the possibilities
     * how to configure
-    * CSS variables
-    * emits
+        * step
+        * options
+    * ~~CSS variables~~
+    * ~~emits~~
 * Error management
     * target not found
     * step not found
@@ -72,7 +76,7 @@
 * Compare with vue-tour
     * missing feature
     * How to migrate → documentation
-    * What is better
+    * What is better in vue3-tutorial
 
 == improvement ==
 
@@ -82,10 +86,11 @@
     * focus
         * remove focus from any element at start of step (but what if it is the wanted behavior)
         * focus on the highlighted element
+    * follow target if they move (actions or scroll)
 * Window
     * improve auto placement
         * to avoid to be over secondary targets
-        * to favorize left/right when target is at sides
+        * to prefer left/right when target is at sides
     * Allow to move the window
     * change HTML
 * Global

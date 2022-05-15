@@ -1,6 +1,6 @@
 # Vue3-tutorial
 
-> VueJS 3.X + Typescript + JSX + tutorial
+> VueJS 3.X + Typescript + JSX + interactive tutorial
 
 [![npm](https://img.shields.io/npm/v/vue3-tutorial.svg)](https://www.npmjs.com/package/vue3-tutorial)
 
@@ -16,20 +16,32 @@ It integrates well with VueJS and is reactive to option changes.
 A tutorial scenario can integrate some optional steps, to adapt perfectly
 with the current state and to provide a smooth experience.
 
-It depends on only 1 lib ([VTYX](https://github.com/Intersec/vtyx) which is to use Vue3 with strong typing) and so the package stays very light.
+It depends on only 1 lib ([VTYX](https://github.com/Intersec/vtyx) which is to use Vue3 with strong typing). And the package stays very light.
 
 ## Example
 
 ```html
-<VTutorial
-    :steps="[{}]"
+<vue3-tutorial
+    :tutorial="{
+      name: 'short example',
+      steps: [{
+        target: '.menu',
+        content: 'To get help, open the menu',
+        nextStep: 'click',
+      }, {
+        target: '.menu .help',
+        content: 'You will find all help under the menu section.'
+      }],
+    }"
     open
 />
 ```
+The start of the tutorial is controlled by the `open` attribute.
 
 ## Features
 
-* s
+* Interactive with your application (it is not only a "next" "next" "finish" guide)
+* May adapt the content depending on context
 * CSS styles can be easily changed to fit your theme.
 * Strong typing: all Typescript types are provided.
 

@@ -47,7 +47,7 @@ export default class VStep extends Vue<Props> {
     get elements(): HTMLElement[] {
         const target = this.step.target;
 
-        if (this.forceRecompute === 0 || !target) {
+        if (this.forceRecompute === 0 || !target?.length) {
             return [];
         }
 
@@ -135,16 +135,17 @@ export default class VStep extends Vue<Props> {
 
         /* add vue3-tutorial class */
         newTargets.forEach((el) => {
-            el.classList.remove(
+            el.classList.add(
                 'vue3-tutorial__target',
             );
+            if (options.classForTargets) {
+                el.classList.add(options.classForTargets);
+            }
         });
         const mainEl = newTargets[0];
         if (mainEl) {
             mainEl.classList.add('vue3-tutorial__main-target');
-            if (options.classTheme) {
-                mainEl.classList.add(options.classTheme);
-            }
+
             if (options.highlight) {
                 mainEl.classList.add('vue3-tutorial-highlight');
             }
@@ -160,8 +161,8 @@ export default class VStep extends Vue<Props> {
                 'vue3-tutorial__target',
                 'vue3-tutorial__main-target'
             );
-            if (options.classTheme) {
-                el.classList.remove(options.classTheme);
+            if (options.classForTargets) {
+                el.classList.remove(options.classForTargets);
             }
         });
     }
@@ -215,18 +216,18 @@ export default class VStep extends Vue<Props> {
                 arrowAnimation={options.arrowAnimation}
             >
                 <aside slot="content"
-                    class="vue3-tutorial-step"
+                    class="vue3-tutorial__step"
                 >
                     <header
-                        class="vue3-tutorial-step__header"
+                        class="vue3-tutorial__step__header"
                     >
                         <div
-                            class="vue3-tutorial-step__header__title"
+                            class="vue3-tutorial__step__header__title"
                         >
                             {step.title}
                         </div>
                         <div
-                            class="vue3-tutorial-step__header__status"
+                            class="vue3-tutorial__step__header__status"
                         >
                             {label('stepState', {
                                 currentStep: information.currentIndex + 1,
@@ -235,16 +236,16 @@ export default class VStep extends Vue<Props> {
                         </div>
                     </header>
                     <div
-                        class="vue3-tutorial-step__content"
+                        class="vue3-tutorial__step__content"
                     >
                         {step.content}
                     </div>
                     <nav
-                        class="vue3-tutorial-step__commands"
+                        class="vue3-tutorial__step__commands"
                     >
                         {this.displayPreviousButton && (
                         <button
-                            class="vue3-tutorial-step__btn vue3-tutorial-step__btn-previous"
+                            class="vue3-tutorial__step__btn vue3-tutorial__step__btn-previous"
                             on={{
                                 click: () => this.$emit('previous'),
                             }}
@@ -254,7 +255,7 @@ export default class VStep extends Vue<Props> {
                         )}
                         {this.displaySkipButton && (
                         <button
-                            class="vue3-tutorial-step__btn vue3-tutorial-step__btn-skip"
+                            class="vue3-tutorial__step__btn vue3-tutorial__step__btn-skip"
                             on={{
                                 click: () => this.$emit('skip'),
                             }}
@@ -265,7 +266,7 @@ export default class VStep extends Vue<Props> {
                         )}
                         {this.displayNextButton && (
                         <button
-                            class="vue3-tutorial-step__btn vue3-tutorial-step__btn-next"
+                            class="vue3-tutorial__step__btn vue3-tutorial__step__btn-next"
                             on={{
                                 click: () => this.$emit('next'),
                             }}
@@ -275,7 +276,7 @@ export default class VStep extends Vue<Props> {
                         )}
                         {this.displayFinishButton && (
                         <button
-                            class="vue3-tutorial-step__btn vue3-tutorial-step__btn-finish"
+                            class="vue3-tutorial__step__btn vue3-tutorial__step__btn-finish"
                             on={{
                                 click: () => this.$emit('finish'),
                             }}

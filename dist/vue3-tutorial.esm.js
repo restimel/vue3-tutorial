@@ -192,14 +192,14 @@ let Window = class Window extends Vue {
     render() {
         var _a, _b;
         const position = this.computePosition[2];
-        return (h("div", { class: "vue3-tutorial-window-container" },
+        return (h("div", { class: "vue3-tutorial__window-container" },
             !this.hasNoPointer && (h(SVG$1, { width: "15", height: "15", viewBox: "0 0 30 30", path: "M0,0L0,15L5,5L15,0L0,0L25,30L25,25L30,25Z", style: this.stylePosition, class: [
-                    'vue3-tutorial-window-arrow',
+                    'vue3-tutorial__window-arrow',
                     'position-' + position,
                     this.arrowAnimation ? 'animation' : '',
                 ] })),
             h("div", { style: this.stylePosition, class: [
-                    'vue3-tutorial-window',
+                    'vue3-tutorial__window',
                     'position-' + position,
                 ], ref: "modalWindow" }, (_b = (_a = this.$slots).content) === null || _b === void 0 ? void 0 : _b.call(_a))));
     }
@@ -277,9 +277,9 @@ const DEFAULT_BINDING = {
     skip: 'Escape',
 };
 const DEFAULT_STEP_OPTIONS = {
-    classTheme: '',
     position: 'auto',
     highlight: true,
+    classForTargets: '',
     arrowAnimation: true,
     mask: true,
     maskMargin: 0,
@@ -388,7 +388,7 @@ let VStep = class VStep extends Vue {
     /* {{{ computed */
     get elements() {
         const target = this.step.target;
-        if (this.forceRecompute === 0 || !target) {
+        if (this.forceRecompute === 0 || !(target === null || target === void 0 ? void 0 : target.length)) {
             return [];
         }
         const elementList = new Set();
@@ -455,14 +455,14 @@ let VStep = class VStep extends Vue {
         const options = this.fullOptions;
         /* add vue3-tutorial class */
         newTargets.forEach((el) => {
-            el.classList.remove('vue3-tutorial__target');
+            el.classList.add('vue3-tutorial__target');
+            if (options.classForTargets) {
+                el.classList.add(options.classForTargets);
+            }
         });
         const mainEl = newTargets[0];
         if (mainEl) {
             mainEl.classList.add('vue3-tutorial__main-target');
-            if (options.classTheme) {
-                mainEl.classList.add(options.classTheme);
-            }
             if (options.highlight) {
                 mainEl.classList.add('vue3-tutorial-highlight');
             }
@@ -473,8 +473,8 @@ let VStep = class VStep extends Vue {
         /* remove previous vue3-tutorial class */
         oldTargets.forEach((el) => {
             el.classList.remove('vue3-tutorial-highlight', 'vue3-tutorial__target', 'vue3-tutorial__main-target');
-            if (options.classTheme) {
-                el.classList.remove(options.classTheme);
+            if (options.classForTargets) {
+                el.classList.remove(options.classForTargets);
             }
         });
     }
@@ -508,25 +508,25 @@ let VStep = class VStep extends Vue {
         const step = this.step;
         const information = this.tutorialInformation;
         return (h(Window$1, { elementsBox: this.elementsBox, position: options.position, arrowAnimation: options.arrowAnimation },
-            h("aside", { slot: "content", class: "vue3-tutorial-step" },
-                h("header", { class: "vue3-tutorial-step__header" },
-                    h("div", { class: "vue3-tutorial-step__header__title" }, step.title),
-                    h("div", { class: "vue3-tutorial-step__header__status" }, label('stepState', {
+            h("aside", { slot: "content", class: "vue3-tutorial__step" },
+                h("header", { class: "vue3-tutorial__step__header" },
+                    h("div", { class: "vue3-tutorial__step__header__title" }, step.title),
+                    h("div", { class: "vue3-tutorial__step__header__status" }, label('stepState', {
                         currentStep: information.currentIndex + 1,
                         totalStep: information.nbTotalSteps,
                     }))),
-                h("div", { class: "vue3-tutorial-step__content" }, step.content),
-                h("nav", { class: "vue3-tutorial-step__commands" },
-                    this.displayPreviousButton && (h("button", { class: "vue3-tutorial-step__btn vue3-tutorial-step__btn-previous", on: {
+                h("div", { class: "vue3-tutorial__step__content" }, step.content),
+                h("nav", { class: "vue3-tutorial__step__commands" },
+                    this.displayPreviousButton && (h("button", { class: "vue3-tutorial__step__btn vue3-tutorial__step__btn-previous", on: {
                             click: () => this.$emit('previous'),
                         } }, label('previousButton'))),
-                    this.displaySkipButton && (h("button", { class: "vue3-tutorial-step__btn vue3-tutorial-step__btn-skip", on: {
+                    this.displaySkipButton && (h("button", { class: "vue3-tutorial__step__btn vue3-tutorial__step__btn-skip", on: {
                             click: () => this.$emit('skip'),
                         }, title: label('skipButtonTitle') }, "\u00D7")),
-                    this.displayNextButton && (h("button", { class: "vue3-tutorial-step__btn vue3-tutorial-step__btn-next", on: {
+                    this.displayNextButton && (h("button", { class: "vue3-tutorial__step__btn vue3-tutorial__step__btn-next", on: {
                             click: () => this.$emit('next'),
                         } }, label('nextButton'))),
-                    this.displayFinishButton && (h("button", { class: "vue3-tutorial-step__btn vue3-tutorial-step__btn-finish", on: {
+                    this.displayFinishButton && (h("button", { class: "vue3-tutorial__step__btn vue3-tutorial__step__btn-finish", on: {
                             click: () => this.$emit('finish'),
                         } }, label('finishButton')))))));
     }
@@ -584,7 +584,7 @@ function styleInject(css, ref) {
   }
 }
 
-var css_248z = "/* {{{ variables */\n\n:root {\n    /** Main color used for component */\n    --vue3-tutorial-brand-primary: #42b883;\n\n    /** Secondary color used for contrast */\n    --vue3-tutorial-brand-secondary: #2c3e50;\n\n    /** zIndex used by popup window for the tips. It should be higher than\n     * your other components\n     * The mask will use this value.\n     * The arrow will use this value + 10;\n     * The pop-up window will use this value + 20;\n     */\n    --vue3-tutorial-zindex: 1000;\n\n    /** The background color of the step window */\n    --vue3-tutorial-step-bg-color: var(--vue3-tutorial-brand-primary);\n    /** The text color of step window */\n    --vue3-tutorial-step-text-color: white;\n\n    /** The background color of the header of step window */\n    --vue3-tutorial-step-header-bg-color: var(--vue3-tutorial-brand-secondary);\n    /** The text color of the header of step window */\n    --vue3-tutorial-step-header-text-color: var(--vue3-tutorial-step-text-color);\n\n    /** The shadow style of the popup-window */\n    --vue3-tutorial-window-shadow: 2px 5px 15px black;\n\n    /** The shadow style of the highlighted element */\n    --vue3-tutorial-highlight-shadow: 0 0 10px var(--vue3-tutorial-brand-primary), inset 0 0 10px var(--vue3-tutorial-brand-primary);\n}\n\n/* }}} */\n/* {{{ animations */\n\n@keyframes v3-tutorial-verticalWave {\n    from {margin-top: -2px;}\n    to {margin-top: 2px;}\n}\n\n@keyframes v3-tutorial-horizontalWave {\n    from {margin-left: -2px;}\n    to {margin-left: 2px;}\n}\n\n/* }}} */\n/* {{{ Window */\n\n.vue3-tutorial-window {\n    position: fixed;\n    z-index: calc(var(--vue3-tutorial-zindex) + 20);\n    box-shadow: var(--vue3-tutorial-window-shadow);\n    border-radius: 3px;\n    --vue3-tutorial-priv-window-margin: 20px;\n}\n.vue3-tutorial-window.position-top {\n    transform: translate(-50%, calc(-100% - var(--vue3-tutorial-priv-window-margin)));\n}\n.vue3-tutorial-window.position-bottom {\n    transform: translate(-50%, var(--vue3-tutorial-priv-window-margin));\n}\n.vue3-tutorial-window.position-left {\n    transform: translate(calc(-100% - var(--vue3-tutorial-priv-window-margin)), -50%);\n}\n.vue3-tutorial-window.position-right {\n    transform: translate(var(--vue3-tutorial-priv-window-margin), -50%);\n}\n.vue3-tutorial-window.position-center {\n    transform: translate(-50%, -50%);\n}\n\n.vue3-tutorial-window-arrow {\n    position: fixed;\n    z-index: calc(var(--vue3-tutorial-zindex) + 10);\n    fill: var(--vue3-tutorial-brand-primary);\n    stroke: rgba(250, 250, 250, 0.5);\n}\n.vue3-tutorial-window-arrow.animation {\n    animation-timing-function: ease-in-out;\n    animation-duration: 0.75s;\n    animation-iteration-count: infinite;\n    animation-direction: alternate;\n}\n.vue3-tutorial-window-arrow.position-top {\n    transform: translate(-50%, -100%)  rotate(-135deg);\n    animation-name: v3-tutorial-verticalWave;\n}\n.vue3-tutorial-window-arrow.position-bottom {\n    transform: translate(-50%) rotate(45deg);\n    animation-name: v3-tutorial-verticalWave;\n}\n.vue3-tutorial-window-arrow.position-left {\n    transform: translate(-100%, -50%) rotate(135deg);\n    animation-name: v3-tutorial-horizontalWave;\n}\n.vue3-tutorial-window-arrow.position-right {\n    transform: translate(0, -50%) rotate(-45deg);\n    animation-name: v3-tutorial-horizontalWave;\n}\n.vue3-tutorial-window-arrow.position-center {\n    display: none;\n}\n\n/* }}} */\n/* {{{ Step */\n\n.vue3-tutorial-step {\n    background-color: var(--vue3-tutorial-step-bg-color);\n    color: var(--vue3-tutorial-step-text-color);\n    padding: 1rem;\n    border-radius: 3px;\n}\n\n.vue3-tutorial-step__header {\n    background-color: var(--vue3-tutorial-step-header-bg-color);\n    color: var(--vue3-tutorial-step-header-text-color);\n    text-align: center;\n    padding: 0.5rem;\n    margin-top: -1rem;\n    margin-left: -1rem;\n    margin-right: -1rem;\n    border-radius: 3px;\n}\n\n.vue3-tutorial-step__header__title {\n    font-weight: 300;\n}\n\n.vue3-tutorial-step__header__status {\n    font-size: 0.7em;\n    font-style: italic;\n    opacity: 0.8;\n}\n\n.vue3-tutorial-step__content {\n    margin: 1rem 0 1rem 0;\n}\n\n.vue3-tutorial-step__btn {\n    background: transparent;\n    border: 0.05rem solid var(--vue3-tutorial-step-text-color);\n    border-radius: 0.1rem;\n    color: var(--vue3-tutorial-step-text-color);\n    cursor: pointer;\n    display: inline-block;\n    font-size: 0.8rem;\n    height: 1.8rem;\n    line-height: 1rem;\n    outline: none;\n    margin: 0 0.2rem;\n    padding: 0.35rem 0.4rem;\n    text-align: center;\n    text-decoration: none;\n    transition: all 0.2s ease;\n    vertical-align: middle;\n    white-space: nowrap;\n}\n\n.vue3-tutorial-step__btn-skip {\n    position: absolute;\n    top: 1px;\n    right: 1px;\n    font-size: 32px;\n    width: 32px;\n    height: 32px;\n    border-radius: 32px;\n    padding: 0 3px 0 3px;\n    transform: translate(calc(50% - 5px), calc(-50% + 9px)) scale(0.4);\n    transition: transform 600ms;\n}\n.vue3-tutorial-step__btn-skip:hover {\n    transform: translate(calc(50% - 5px), calc(-50% + 9px)) scale(0.7);\n}\n\n/* }}} */\n/* {{{ External elements */\n\n.vue3-tutorial-highlight {\n    box-shadow: var(--vue3-tutorial-highlight-shadow);\n}\n\n/* }}} */\n";
+var css_248z = "/* {{{ variables */\n\n:root {\n    /** Main color used for component */\n    --vue3-tutorial-brand-primary: #42b883;\n\n    /** Secondary color used for contrast */\n    --vue3-tutorial-brand-secondary: #2c3e50;\n\n    /** zIndex used by popup window for the tips. It should be higher than\n     * your other components\n     * The mask will use this value.\n     * The arrow will use this value + 10;\n     * The pop-up window will use this value + 20;\n     */\n    --vue3-tutorial-zindex: 1000;\n\n    /** The background color of the step window */\n    --vue3-tutorial-step-bg-color: var(--vue3-tutorial-brand-primary);\n    /** The text color of step window */\n    --vue3-tutorial-step-text-color: white;\n\n    /** The background color of the header of step window */\n    --vue3-tutorial-step-header-bg-color: var(--vue3-tutorial-brand-secondary);\n    /** The text color of the header of step window */\n    --vue3-tutorial-step-header-text-color: var(--vue3-tutorial-step-text-color);\n\n    /** The shadow style of the popup-window */\n    --vue3-tutorial-window-shadow: 2px 5px 15px black;\n\n    /** The shadow style of the highlighted element */\n    --vue3-tutorial-highlight-shadow: 0 0 10px var(--vue3-tutorial-brand-primary), inset 0 0 10px var(--vue3-tutorial-brand-primary);\n}\n\n/* }}} */\n/* {{{ animations */\n\n@keyframes v3-tutorial-verticalWave {\n    from {margin-top: -2px;}\n    to {margin-top: 2px;}\n}\n\n@keyframes v3-tutorial-horizontalWave {\n    from {margin-left: -2px;}\n    to {margin-left: 2px;}\n}\n\n/* }}} */\n/* {{{ Window */\n\n.vue3-tutorial__window {\n    position: fixed;\n    z-index: calc(var(--vue3-tutorial-zindex) + 20);\n    box-shadow: var(--vue3-tutorial-window-shadow);\n    border-radius: 3px;\n    --vue3-tutorial-priv-window-margin: 20px;\n}\n.vue3-tutorial__window.position-top {\n    transform: translate(-50%, calc(-100% - var(--vue3-tutorial-priv-window-margin)));\n}\n.vue3-tutorial__window.position-bottom {\n    transform: translate(-50%, var(--vue3-tutorial-priv-window-margin));\n}\n.vue3-tutorial__window.position-left {\n    transform: translate(calc(-100% - var(--vue3-tutorial-priv-window-margin)), -50%);\n}\n.vue3-tutorial__window.position-right {\n    transform: translate(var(--vue3-tutorial-priv-window-margin), -50%);\n}\n.vue3-tutorial__window.position-center {\n    transform: translate(-50%, -50%);\n}\n\n.vue3-tutorial__window-arrow {\n    position: fixed;\n    z-index: calc(var(--vue3-tutorial-zindex) + 10);\n    fill: var(--vue3-tutorial-brand-primary);\n    stroke: rgba(250, 250, 250, 0.5);\n}\n.vue3-tutorial__window-arrow.animation {\n    animation-timing-function: ease-in-out;\n    animation-duration: 0.75s;\n    animation-iteration-count: infinite;\n    animation-direction: alternate;\n}\n.vue3-tutorial__window-arrow.position-top {\n    transform: translate(-50%, -100%)  rotate(-135deg);\n    animation-name: v3-tutorial-verticalWave;\n}\n.vue3-tutorial__window-arrow.position-bottom {\n    transform: translate(-50%) rotate(45deg);\n    animation-name: v3-tutorial-verticalWave;\n}\n.vue3-tutorial__window-arrow.position-left {\n    transform: translate(-100%, -50%) rotate(135deg);\n    animation-name: v3-tutorial-horizontalWave;\n}\n.vue3-tutorial__window-arrow.position-right {\n    transform: translate(0, -50%) rotate(-45deg);\n    animation-name: v3-tutorial-horizontalWave;\n}\n.vue3-tutorial__window-arrow.position-center {\n    display: none;\n}\n\n/* }}} */\n/* {{{ Step */\n\n.vue3-tutorial__step {\n    background-color: var(--vue3-tutorial-step-bg-color);\n    color: var(--vue3-tutorial-step-text-color);\n    padding: 1rem;\n    border-radius: 3px;\n}\n\n.vue3-tutorial__step__header {\n    background-color: var(--vue3-tutorial-step-header-bg-color);\n    color: var(--vue3-tutorial-step-header-text-color);\n    text-align: center;\n    padding: 0.5rem;\n    margin-top: -1rem;\n    margin-left: -1rem;\n    margin-right: -1rem;\n    border-radius: 3px;\n}\n\n.vue3-tutorial__step__header__title {\n    font-weight: 300;\n}\n\n.vue3-tutorial__step__header__status {\n    font-size: 0.7em;\n    font-style: italic;\n    opacity: 0.8;\n}\n\n.vue3-tutorial__step__content {\n    margin: 1rem 0 1rem 0;\n}\n\n.vue3-tutorial__step__btn {\n    background: transparent;\n    border: 0.05rem solid var(--vue3-tutorial-step-text-color);\n    border-radius: 0.1rem;\n    color: var(--vue3-tutorial-step-text-color);\n    cursor: pointer;\n    display: inline-block;\n    font-size: 0.8rem;\n    height: 1.8rem;\n    line-height: 1rem;\n    outline: none;\n    margin: 0 0.2rem;\n    padding: 0.35rem 0.4rem;\n    text-align: center;\n    text-decoration: none;\n    transition: all 0.2s ease;\n    vertical-align: middle;\n    white-space: nowrap;\n}\n\n.vue3-tutorial__step__btn-skip {\n    position: absolute;\n    top: 1px;\n    right: 1px;\n    font-size: 32px;\n    width: 32px;\n    height: 32px;\n    border-radius: 32px;\n    padding: 0 3px 0 3px;\n    transform: translate(calc(50% - 5px), calc(-50% + 9px)) scale(0.4);\n    transition: transform 600ms;\n}\n.vue3-tutorial__step__btn-skip:hover {\n    transform: translate(calc(50% - 5px), calc(-50% + 9px)) scale(0.7);\n}\n\n/* }}} */\n/* {{{ External elements */\n\n.vue3-tutorial-highlight {\n    box-shadow: var(--vue3-tutorial-highlight-shadow);\n}\n\n/* }}} */\n";
 styleInject(css_248z);
 
 /* Component Purpose:
@@ -715,7 +715,7 @@ let VTutorial = class VTutorial extends Vue {
     }
 };
 __decorate([
-    Prop()
+    Prop({ default: () => ({ steps: [] }) })
 ], VTutorial.prototype, "tutorial", void 0);
 __decorate([
     Prop()

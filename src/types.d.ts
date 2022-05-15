@@ -71,14 +71,14 @@ export type Binding = {
 /* {{{ Steps */
 
 export interface StepOptions {
-    /** Class added to the main target element */
-    classTheme: string;
-
     /** Position of the pop-up window related to the target element */
     position: Placement;
 
     /** If true the targets are highlighted */
     highlight: boolean;
+
+    /** Class added to the targeted elements */
+    classForTargets: string;
 
     /** If true, the arrow is animate */
     arrowAnimation: boolean;

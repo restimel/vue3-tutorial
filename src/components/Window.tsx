@@ -185,7 +185,7 @@ export default class Window extends Vue<Props> {
         const position = this.computePosition[2];
 
         return (
-            <div class="vue3-tutorial-window-container">
+            <div class="vue3-tutorial__window-container">
                 {!this.hasNoPointer && (
                 <SVG
                     width="15"
@@ -194,7 +194,7 @@ export default class Window extends Vue<Props> {
                     path="M0,0L0,15L5,5L15,0L0,0L25,30L25,25L30,25Z"
                     style={this.stylePosition}
                     class={[
-                        'vue3-tutorial-window-arrow',
+                        'vue3-tutorial__window-arrow',
                         'position-' + position,
                         this.arrowAnimation ? 'animation' : '',
                     ]}
@@ -204,7 +204,7 @@ export default class Window extends Vue<Props> {
                 <div
                     style={this.stylePosition}
                     class={[
-                        'vue3-tutorial-window',
+                        'vue3-tutorial__window',
                         'position-' + position,
                     ]}
                     ref="modalWindow"
