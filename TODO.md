@@ -56,9 +56,9 @@
         * gif
         * important features
         * Live example
-            * create a dedicated project
+            * ~~create a dedicated project~~
             * create simple tutorial
-            * create page with complex cases
+            * ~create page with complex cases~
             * create more complex tutorial to show the possibilities
     * how to configure
         * step
