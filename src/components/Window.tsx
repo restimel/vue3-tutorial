@@ -61,19 +61,19 @@ export default class Window extends Vue<Props> {
             left: 3,
         };
 
-        if (box[3] + BOX_MARGIN + elHeight < screenHeight) {
+        if (box[3] + BOX_MARGIN + elHeight > screenHeight) {
             worstPosition.bottom += 100;
         }
 
-        if (box[1] - BOX_MARGIN - elHeight > 0) {
+        if (box[1] - BOX_MARGIN - elHeight < 0) {
             worstPosition.top += 100;
         }
 
-        if (box[2] + BOX_MARGIN + elWidth < screenWidth) {
+        if (box[2] + BOX_MARGIN + elWidth > screenWidth) {
             worstPosition.right += 100;
         }
 
-        if (box[0] - BOX_MARGIN - elWidth > 0) {
+        if (box[0] - BOX_MARGIN - elWidth < 0) {
             worstPosition.left += 100;
         }
 
@@ -106,7 +106,7 @@ export default class Window extends Vue<Props> {
     get computePosition(): [string, string, Placement] {
         const boxes = this.elementsBox;
         const box = boxes[0] as BoxNotEmpty;
-        const realPosition = this.realPosition;
+        const realPosition = !box ? 'center' : this.realPosition;
 
         let x: string;
         let y: string;
