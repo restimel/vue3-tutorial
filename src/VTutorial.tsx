@@ -12,21 +12,31 @@
  *   change [value, isExcluded, component]: triggered when the list is closed and a change occurs
  */
 
-import {Vue, Component, Emits, Prop, Watch, h} from 'vtyx';
-import VStep from './VStep';
 import {
-    BindingAction,
-    Options,
-    StepDescription,
-    Tutorial,
-} from './types.d';
+    Component,
+    Emits,
+    h,
+    Prop,
+    Vue,
+    Watch,
+} from 'vtyx';
+import VStep from './VStep';
 import '../css/tutorial.css';
+
 import {
     DEFAULT_STEP_OPTIONS,
     mergeStepOptions,
 } from './tools/defaultValues';
 import label from './tools/labels';
 import { startListening, stopListening } from './tools/keyBinding';
+import { isStepSpecialAction } from './tools/step';
+
+import {
+    BindingAction,
+    Options,
+    StepDescription,
+    Tutorial,
+} from './types.d';
 
 export interface Props {
     tutorial?: Tutorial;
@@ -82,8 +92,40 @@ export default class VTutorial extends Vue<Props> {
         );
     }
 
+    get currentStepIsSpecial(): boolean {
+        const step = this.currentStep;
+
+        return !!step && isStepSpecialAction(step);
+    }
+
+    get previousStepIsSpecial(): boolean {
+        const step = this.steps[this.currentIndex - 1];
+
+        if (!step) {
+            return true;
+        }
+
+        return isStepSpecialAction(step);
+    }
+
+    /* }}} */
+    /* {{{ watch */
+
+    @Watch('open', {immediate: true})
+    protected onOpenChange() {
+        if (this.open) {
+            this.start();
+        }
+    }
+
+    @Watch('steps')
+    protected onStepsChange() {
+        this.start();
+    }
+
     /* }}} */
     /* {{{ methods */
+    /* {{{ navigation */
 
     private start() {
         this.currentIndex = 0;
@@ -92,12 +134,15 @@ export default class VTutorial extends Vue<Props> {
         startListening(this.onKeyEvent.bind(this));
     }
 
-    private nextStep() {
+    private nextStep(forceNext = false) {
         if (!this.isRunning) {
             return;
         }
 
-        console.log('TODO: check that current step allow to move forward');
+        if (!forceNext && this.currentStepIsSpecial) {
+            return;
+        }
+
         if (this.currentIndex >= this.nbTotalSteps - 1) {
             this.stop(true);
         }
@@ -106,7 +151,7 @@ export default class VTutorial extends Vue<Props> {
         this.$emit('changeStep', this.currentIndex);
     }
 
-    private previousStep() {
+    private previousStep(forcePrevious = false) {
         if (!this.isRunning) {
             return;
         }
@@ -114,7 +159,11 @@ export default class VTutorial extends Vue<Props> {
         if (this.currentIndex <= 0) {
             return;
         }
-        console.log('TODO: check that step can be moved to');
+
+        if (!forcePrevious && this.previousStepIsSpecial) {
+            return;
+        }
+
         this.currentIndex--;
         this.$emit('previousStep', this.currentIndex);
         this.$emit('changeStep', this.currentIndex);
@@ -134,9 +183,11 @@ export default class VTutorial extends Vue<Props> {
         if (!confirm(label('skipConfirm'))) {
             return;
         }
-        console.log('TODO: add a confirm dialog');
+
         this.stop();
     }
+
+    /* }}} */
 
     private onKeyEvent(action: BindingAction) {
         switch (action) {
@@ -153,23 +204,7 @@ export default class VTutorial extends Vue<Props> {
     }
 
     /* }}} */
-    /* {{{ watch */
-
-    @Watch('open', {immediate: true})
-    protected onOpenChange() {
-        if (this.open) {
-            this.start();
-        }
-    }
-
-    @Watch('steps')
-    protected onStepsChange() {
-        this.start();
-    }
-
-    /* }}} */
     /* {{{ Life cycle */
-
     /* }}} */
 
     @Emits(['changeStep', 'nextStep', 'previousStep', 'start', 'stop'])
@@ -187,12 +222,13 @@ export default class VTutorial extends Vue<Props> {
                 tutorialInformation={{
                     currentIndex: this.currentIndex,
                     nbTotalSteps: this.nbTotalSteps,
+                    previousStepIsSpecial: this.previousStepIsSpecial,
                 }}
 
                 on={{
-                    previous: () => this.previousStep(),
-                    next: () => this.nextStep(),
-                    finish: () => this.nextStep(),
+                    previous: () => this.previousStep(true),
+                    next: () => this.nextStep(true),
+                    finish: () => this.nextStep(true),
                     skip: () => this.skip(),
                 }}
             />

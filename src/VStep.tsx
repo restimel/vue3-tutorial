@@ -3,19 +3,35 @@
  */
 
 
-import {Vue, Component, Emits, Prop, Watch, h} from 'vtyx';
+import {
+    Component,
+    Emits,
+    h,
+    Prop,
+    Vue,
+    Watch,
+} from 'vtyx';
 import Window, { Box } from './components/Window';
 import {
     mergeStepOptions,
 } from './tools/defaultValues';
 import {
+    checkExpression,
+    getActionType,
+    isStepSpecialAction,
+} from './tools/step';
+import label, { changeTexts } from './tools/labels';
+import { resetBindings } from './tools/keyBinding';
+import {
+    ActionType,
+    EventAction,
     Options,
     StepDescription,
     StepOptions,
     TutorialInformation,
 } from './types';
-import label, { changeTexts } from './tools/labels';
-import { resetBindings } from './tools/keyBinding';
+
+const nope = function() {};
 
 export interface Props {
     step: StepDescription;
@@ -40,6 +56,7 @@ export default class VStep extends Vue<Props> {
     /* {{{ data */
 
     private forceRecompute = 1;
+    private removeActionListener: () => void = nope;
 
     /* }}} */
     /* {{{ computed */
@@ -86,15 +103,65 @@ export default class VStep extends Vue<Props> {
         });
     }
 
+    /* {{{ Next action */
+
+    get nextActionType(): ActionType {
+        return getActionType(this.step);
+    }
+
+    get nextActionTarget(): HTMLElement | null {
+        const type = this.nextActionType;
+
+        if (type === 'next') {
+            return null;
+        }
+
+        const action = this.step.actionNext;
+        if (typeof action === 'string') {
+            return this.mainElement;
+        }
+
+        const target = action?.target;
+        if (typeof target !== 'string') {
+            return this.mainElement;
+        }
+
+        const element = document.querySelector(target) as HTMLElement;
+        return element;
+    }
+
+    get isButtonAction(): boolean {
+        return isStepSpecialAction(this.nextActionType);
+    }
+
+    get actionListener() {
+        return () => {
+            const type = this.nextActionType;
+            const valueEventName = ['input', 'change'];
+
+            if (valueEventName.includes(type)) {
+                const action = this.step.actionNext as EventAction;
+                const targetElement = this.nextActionTarget!;
+
+                if (!checkExpression(action, targetElement)) {
+                    return;
+                }
+            }
+
+            this.$emit('next');
+        };
+    }
+
+    /* }}} */
     /* {{{ buttons */
 
     get displayPreviousButton(): boolean {
         const info = this.tutorialInformation;
 
-        if (info.currentIndex <= 0) {
+        if (info.previousStepIsSpecial || info.currentIndex <= 0) {
             return false;
         }
-        console.log('TODO: check that previous step is reachable');
+
         return true;
     }
 
@@ -104,16 +171,14 @@ export default class VStep extends Vue<Props> {
         if (info.currentIndex >= info.nbTotalSteps - 1) {
             return false;
         }
-        console.log('TODO: check that there is no special action');
-        return true;
+        return this.isButtonAction;
     }
 
     get displayFinishButton(): boolean {
         const info = this.tutorialInformation;
 
-        console.log('TODO: check that there is no special action');
         if (info.currentIndex >= info.nbTotalSteps - 1) {
-            return true;
+            return this.isButtonAction;
         }
         return false;
     }
@@ -123,6 +188,35 @@ export default class VStep extends Vue<Props> {
     }
 
     /* }}} */
+    /* }}} */
+    /* {{{ watch */
+
+    @Watch('fullOptions.texts')
+    protected onTextsChange() {
+        changeTexts(this.fullOptions.texts);
+    }
+
+    @Watch('fullOptions.bindings')
+    protected onBindingsChange() {
+        resetBindings(this.fullOptions.bindings);
+    }
+
+    @Watch('elements', { deep: true })
+    protected onElementsChange(newElements: HTMLElement[], oldElements: HTMLElement[]) {
+        if (oldElements) {
+            this.removeClass(oldElements);
+        }
+        if (newElements) {
+            this.addClass(newElements);
+        }
+    }
+
+    @Watch('nextActionTarget')
+    @Watch('nextActionType', { immediate: true })
+    protected onActionTypeChange() {
+        this.addActionListener();
+    }
+
     /* }}} */
     /* {{{ methods */
 
@@ -167,27 +261,20 @@ export default class VStep extends Vue<Props> {
         });
     }
 
-    /* }}} */
-    /* {{{ watch */
+    private addActionListener() {
+        const eventName = this.nextActionType;
+        const el = this.nextActionTarget;
 
-    @Watch('fullOptions.texts')
-    protected onTextsChange() {
-        changeTexts(this.fullOptions.texts);
-    }
-
-    @Watch('fullOptions.bindings')
-    protected onBindingsChange() {
-        resetBindings(this.fullOptions.bindings);
-    }
-
-    @Watch('elements', { deep: true })
-    protected onElementsChange(newElements: HTMLElement[], oldElements: HTMLElement[]) {
-        if (oldElements) {
-            this.removeClass(oldElements);
+        this.removeActionListener();
+        if (!el || eventName === 'next') {
+            return;
         }
-        if (newElements) {
-            this.addClass(newElements);
-        }
+
+        el.addEventListener(eventName, this.actionListener);
+        this.removeActionListener = () => {
+            el.removeEventListener(eventName, this.actionListener);
+            this.removeActionListener = nope;
+        };
     }
 
     /* }}} */
@@ -201,6 +288,7 @@ export default class VStep extends Vue<Props> {
 
     public unmounted() {
         this.removeClass(this.elements);
+        this.removeActionListener();
     }
 
     @Emits(['finish', 'next', 'previous', 'skip'])

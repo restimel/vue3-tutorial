@@ -9,45 +9,35 @@ export type Dictionary = {
     stepState: string;
 }
 
-/* {{{ Action Next */
+/* {{{ Expression */
 
-type SimpleEventName = 'click' | 'mousedown' | 'mouseup' | 'hover';
-type ValueEventName = 'input' | 'change';
-type EventName = SimpleEventName | ValueEventName;
+export type ExpressionValueOperation = 'is' | 'is not' | 'contains' | 'do not contain';
+export type ExpressionUnaryOperation = 'is empty' | 'is not empty' |
+    'is checked' | 'is not checked' | 'is disabled' | 'is not disabled' |
+    'is rendered' | 'is not rendered';
 
-interface BaseAction {
+type TargetExpression = {
     target: string;
-}
-export interface SimpleAction extends BaseAction {
-    action: SimpleEventName;
-}
-export interface ValueAction extends BaseAction {
-    action: ValueEventName;
-    value: string;
-}
-export type Action = SimpleAction | ValueAction;
+};
+type OptionalTargetExpression = Partial<TargetExpression>;
 
-export type ActionNext = 'none' | SimpleEventName | Action;
+type UnaryExpression = {
+    check: ExpressionUnaryOperation;
+};
+
+type ValueExpression = {
+    check?: ExpressionValueOperation;
+    value: string;
+};
+
+export type CheckExpression = UnaryExpression | ValueExpression;
 
 /* }}} */
 /* {{{ Verification */
 
-export type VerificationValueOperation = 'is' | 'is not';
-export type VerificationUnaryOperation = 'is empty' | 'is not empty' |
-    'is checked' | 'is not checked' | 'is disabled' | 'is not disabled' |
-    'is rendered' | 'is not rendered';
+type VerificationValueDescription = TargetExpression & ValueExpression;
+type VerificationUnaryDescription = TargetExpression & UnaryExpression;
 
-interface VerificationBaseDescription {
-    target: string;
-}
-
-interface VerificationValueDescription extends VerificationBaseDescription {
-    check?: VerificationValueDescription;
-    value: string;
-}
-interface VerificationUnaryDescription extends VerificationBaseDescription {
-    check: VerificationUnaryDescription;
-}
 export type VerificationDescription = VerificationValueDescription | VerificationUnaryDescription;
 
 export type Verification = boolean | ((stepIdx: number) => boolean | Promise<boolean>) | VerificationDescription;
@@ -59,6 +49,32 @@ export interface CheckBeforeNextDescription extends VerificationUnaryDescription
 export type CheckBeforeNext = false | ((stepIdx: number) => string | Promise<string>) | CheckBeforeNextDescription;
 
 /* }}} */
+/* {{{ Action Next */
+
+type SimpleEventName = 'click' | 'mousedown' | 'mouseup' | 'hover';
+type ValueEventName = 'input' | 'change';
+type EventName = SimpleEventName | ValueEventName;
+
+type SimpleAction = OptionalTargetExpression & {
+    action: SimpleEventName;
+};
+type UnaryAction = OptionalTargetExpression & {
+    action: ValueEventName;
+} & UnaryExpression;
+type ValueAction = OptionalTargetExpression & {
+    action: ValueEventName;
+} & ValueExpression;
+
+
+export type Action = SimpleAction | UnaryAction | ValueAction;
+
+export type EventAction = UnaryAction | ValueAction;
+export type ActionType = 'next' | SimpleEventName | ValueEventName;
+
+export type ActionNext = '' | 'next' | SimpleEventName | Action;
+
+/* }}} */
+
 
 export type Placement = 'auto' | 'top' | 'bottom' | 'left' | 'right' | 'center';
 
@@ -117,6 +133,7 @@ export type Options = Partial<StepOptions>;
 export interface TutorialInformation {
     currentIndex: number;
     nbTotalSteps: number;
+    previousStepIsSpecial: boolean;
 }
 
 export interface Tutorial {

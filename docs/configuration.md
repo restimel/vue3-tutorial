@@ -171,24 +171,31 @@ Example:
 
 ### actionNext
 
-__Not done yet__
+type: _'' | 'next' | 'click' | 'mousedown' | 'mouseup' | 'hover' | Action_
 
-type: _'none' | 'click' | 'mousedown' | 'mouseup' | 'hover' | Action_
+defaultValue: `'next'`
 
-defaultValue: `'none'`
+Instead of displaying a next button, it is possible to force user to interact
+with the GUI interface.
 
-
-Before displaying the step, it checks this property and if it returns `true` it moves directly to the next step.
-
-This property is very useful to start tutorial in the correct context (for
-example, if you need to change page first).
-
-If the value is set to `true`, the step will always be skipped. It can be useful to disable a step.
+For more complex action, it is possible to declare an [Action expression](#action).
 
 Example:
 ```javascript
 {
-    skipStep: () => return location.hash !== '#userForm'),
+    actionNext: 'click', // force the user to click on the main target
+}
+```
+
+```javascript
+{
+    // force user to fill the input with a text which contains "foo"
+    actionNext: {
+        action: 'input',
+        target: 'input[name="first-name"]'
+        check: 'contains',
+        value: 'foo',
+    },
 }
 ```
 
@@ -202,19 +209,64 @@ defaultValue: `false`
 
 ...
 
-#### Action
+## Special types
+
+### Action
 
 Describe the action with properties.
 
-* **type**: `'click' | 'mousedown' | 'mouseup' | 'hover' | 'input' | 'change'`
+* **action**: {`'click' | 'mousedown' | 'mouseup' | 'hover' | 'input' | 'change'`}
 The kind of event to listen to.
 
-* **target**: `string` the element where the event should be listen to. If
-not defined it listen to the _main target_ of the step.
+* **target** _(optional)_: {`string`} the element where the event should be
+listen to. If not defined it listens to the _main target_ of the step.
 
-* **value**: `string` The value to compare (needed for the events `'input'`
-and `'change'`). It goes to next step when the target element has this value.
+For actions `'input'` and `'change'`, it is needed to add
+[Expression](#expression) about expected value.
 
+It goes to next step when the listened element fulfill the condition detailed
+by the expression.
+
+
+### Expression
+
+For actions, or for conditional steps, it would be useful to describe an
+expression about which state we expect (for example, an exact value or an
+element not be no more disabled).
+
+The **Expression* is composed with 2 properties:
+
+* **check**: {`ExpressionValueOperation | ExpressionUnaryOperation`} This is
+the operation to do to check the condition.
+
+* **value**: {`string`} The value to compare.
+
+If **check** is an `ExpressionUnaryOperation`, **value** should not be set.
+if **value** is set, **check** is optional then it will be equivalent to
+`'is'`.
+
+#### ExpressionUnaryOperation
+
+* **`'is empty'`**: the value should be empty
+* **`'is not empty'`**: the value should not be empty
+* **`'is checked'`**: the input should be ticked (should have attribute
+`checked`)
+* **`'is not checked'`**: the input should not be ticked (should not have
+attribute `checked`)
+* **`'is disabled'`**: the element should have attribute `disabled`
+* **`'is not disabled'`**: the element should not have attribute `disabled`
+* **`'is rendered'`**: the element should be available in DOM
+* **`'is not rendered'`**: the element should not be available in DOM
+
+#### ExpressionUnaryOperation
+
+* **`'is'`**: the value of the element should be strictly equal to the given
+value.
+* **`'is not'`**: the value of the element should be different to the given
+value.
+* **`'contains'`**: the value of the element should contain the given value.
+* **`'do not contain'`**: the value of the element should not contains the
+given value.
 
 ## Options
 
@@ -235,4 +287,12 @@ to keep the more global configuration).
 
 **Options** are used to define a different behavior. This is an object which have the following properties:
 
-*
+* **position**:
+* **highlight**:
+* **classForTargets**:
+* **arrowAnimation**:
+* **mask**:
+* **maskMargin**:
+* **bindings**:
+* **timeout**:
+* **texts**:
