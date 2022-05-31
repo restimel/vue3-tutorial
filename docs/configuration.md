@@ -8,7 +8,7 @@ Properties defines how to use the component.
 
 * **tutorial** {[Tutorial](#Tutorial)}: Describe the tutorial to show. If you
 modify the tutorial when it is running it restarts from first step.
-* **options** {[Options](#Options)} _(optional)_: Define the configuration at the _component_ level.
+* **options** {[Options](#Step_options)} _(optional)_: Define the configuration at the _component_ level.
 * **open** {boolean}: If set to `true`, the tutorial starts. If set to `false`,
 the tutorial ends.
 
@@ -36,7 +36,7 @@ Its properties are:
 debugging and to know which tutorial is running.
 * **steps** {array of [Step](#step)}: It describes the step sequence. When a
 step is finished, it displays the next one.
-* **options** {[Options](#Options)} _(optional)_: Define the configuration at the _tutorial_ level.
+* **options** {[Options](#Step_options)} _(optional)_: Define the configuration at the _tutorial_ level.
 
 ### tutorial example
 
@@ -130,7 +130,7 @@ Example:
 
 ### options
 
-type: _[Options](#Options)_
+type: _[Options](#Step_options)_
 
 defaultValue: `{}`
 
@@ -171,7 +171,7 @@ Example:
 
 ### actionNext
 
-type: _'' | 'next' | 'click' | 'mousedown' | 'mouseup' | 'hover' | Action_
+type: _'' | 'next' | 'click' | 'mousedown' | 'mouseup' | 'mouseover' | Action_
 
 defaultValue: `'next'`
 
@@ -215,7 +215,7 @@ defaultValue: `false`
 
 Describe the action with properties.
 
-* **action**: {`'click' | 'mousedown' | 'mouseup' | 'hover' | 'input' | 'change'`}
+* **action**: {`'click' | 'mousedown' | 'mouseup' | 'mouseover' | 'input' | 'change'`}
 The kind of event to listen to.
 
 * **target** _(optional)_: {`string`} the element where the event should be
@@ -268,7 +268,9 @@ value.
 * **`'do not contain'`**: the value of the element should not contains the
 given value.
 
-## Options
+## Step options
+
+This allows to configure how a step should behave.
 
 **Options** can be set at 4 different levels:
 * default
@@ -285,14 +287,43 @@ is the _component_ option.
 At each level, you can set all or some part of the properties (or none of them
 to keep the more global configuration).
 
-**Options** are used to define a different behavior. This is an object which have the following properties:
+**Options** are used to define a different step behavior. This is an object
+which have the following properties:
 
-* **position**:
-* **highlight**:
-* **classForTargets**:
-* **arrowAnimation**:
-* **mask**:
-* **maskMargin**:
-* **bindings**:
-* **timeout**:
-* **texts**:
+* **position** {`[Placement](#Placement)`} _(optional)_: Position of the step
+window related to the main target element. _default value: `'auto'`_
+* **highlight** {`boolean`} _(optional)_: Highlight the main target. The class
+`'vue3-tutorial-highlight'` is added to this element. _default value: `true`_
+* **classForTargets** {`string`} _(optional)_: Class added to all targets.
+This can be useful if you want that these elements use one of you own class.
+Default value: `''`_
+* **arrowAnimation** {`boolean`} _(optional)_: If true, the arrow is animate.
+_Default value: `true`_
+* **mask** {`boolean`} _(optional)_: If true a mask is added over the page
+except over targets. _Default value: `true`_
+* **maskMargin** {`number`} _(optional)_: Margin (in px) between target
+elements and mask. _Default value: `0`_
+* **bindings** {`[Bindings](#Bindings)`} _(optional)_:
+* **timeout** {`[Dictionary](#Dictionary)`} _(optional)_:
+* **texts** {`number`} _(optional)_: Duration in milliseconds before the
+timeout error is triggered. During this period, it will continually analyze
+DOM in order to find all targets. It continues until all targets are found
+or the timeout is reached. A value of 0 means that all targets should be
+already in DOM when the step is displayed. _Default value: `3000`_
+
+### Placement
+
+A string which can have only one of these values:
+
+* **`'auto'`**: Try to choose the best position according where the element
+is in the page.
+* **`'center'`**: Do not point to an element and put the step window at the
+center of the screen.
+* **`'bottom'`**: Under the main target.
+* **`'top'`**: Over the main target.
+* **`'left'`**: At left of the main target.
+* **`'right'`**: At right of the main target.
+
+### Bindings
+
+### Dictionary

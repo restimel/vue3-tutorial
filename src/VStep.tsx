@@ -55,32 +55,14 @@ export default class VStep extends Vue<Props> {
     /* }}} */
     /* {{{ data */
 
-    private forceRecompute = 1;
     private removeActionListener: () => void = nope;
+    private targetElements: Set<HTMLElement> = new Set();
 
     /* }}} */
     /* {{{ computed */
 
     get elements(): HTMLElement[] {
-        const target = this.step.target;
-
-        if (this.forceRecompute === 0 || !target?.length) {
-            return [];
-        }
-
-        const elementList: Set<HTMLElement> = new Set();
-        const targets = Array.isArray(target) ? target : [target];
-
-        targets.forEach((selector) => {
-            const elements = document.querySelectorAll(selector);
-            if (elements) {
-                for (const el of Array.from(elements)) {
-                    elementList.add(el as HTMLElement);
-                }
-            }
-        });
-
-        return Array.from(elementList);
+        return Array.from(this.targetElements);
     }
 
     get mainElement(): HTMLElement | null {
@@ -130,8 +112,8 @@ export default class VStep extends Vue<Props> {
         return element;
     }
 
-    get isButtonAction(): boolean {
-        return isStepSpecialAction(this.nextActionType);
+    get needsNextButton(): boolean {
+        return !isStepSpecialAction(this.nextActionType);
     }
 
     get actionListener() {
@@ -171,14 +153,14 @@ export default class VStep extends Vue<Props> {
         if (info.currentIndex >= info.nbTotalSteps - 1) {
             return false;
         }
-        return this.isButtonAction;
+        return this.needsNextButton;
     }
 
     get displayFinishButton(): boolean {
         const info = this.tutorialInformation;
 
         if (info.currentIndex >= info.nbTotalSteps - 1) {
-            return this.isButtonAction;
+            return this.needsNextButton;
         }
         return false;
     }
@@ -217,11 +199,49 @@ export default class VStep extends Vue<Props> {
         this.addActionListener();
     }
 
+    @Watch('step.target', { immediate: true })
+    protected onStepChange() {
+        this.resetElements();
+    }
+
     /* }}} */
     /* {{{ methods */
 
-    private recompute() {
-        this.forceRecompute++;
+    private resetElements() {
+        this.targetElements.clear();
+        this.getElements(performance.now());
+    }
+
+    private getElements(refTimestamp: number) {
+        const targetElements = this.targetElements;
+        const target = this.step.target;
+
+        if (!target?.length) {
+            return;
+        }
+        let isNotReadyYet = false;
+
+        const targets = Array.isArray(target) ? target : [target];
+
+        targets.forEach((selector) => {
+            const elements = document.querySelectorAll(selector);
+            if (elements.length) {
+                for (const el of Array.from(elements)) {
+                    targetElements.add(el as HTMLElement);
+                }
+            } else {
+                isNotReadyYet = true;
+            }
+        });
+
+        if (isNotReadyYet) {
+            const timeout = this.fullOptions.timeout;
+            if (performance.now() - refTimestamp < timeout) {
+                setTimeout(() => this.getElements(refTimestamp), 100);
+            } else {
+                console.log('error: timeout');
+            }
+        }
     }
 
     private addClass(newTargets: HTMLElement[]) {
@@ -279,11 +299,6 @@ export default class VStep extends Vue<Props> {
 
     /* }}} */
     /* {{{ Life cycle */
-
-    public created() {
-        setTimeout(() => this.recompute(), 100);
-    }
-
     /* }}} */
 
     public unmounted() {

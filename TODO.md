@@ -38,7 +38,7 @@
         * ~~"finished"~~
         * ~~"start"~~
         * "error"
-    * Add timeout about target
+    * ~~Add timeout about target~~
     * scrollIntoView
     * check that next is ok
     * skip current step
@@ -59,13 +59,16 @@
             * ~~create a dedicated project~~
             * create simple tutorial
             * ~create page with complex cases~
-            * create more complex tutorial to show the possibilities
+            * ~~create more complex tutorial to show the possibilities~~
     * how to configure
         * step
             * ~~action~~
             * skipStep
+                * "previous" on skipped test
             * checkNext
         * options
+            * Dictionary
+            * Bindings
     * ~~CSS variables~~
     * ~~emits~~
 * Error management
