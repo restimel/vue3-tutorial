@@ -99,16 +99,16 @@ let Window = class Window extends vtyx.Vue {
             right: 2,
             left: 3,
         };
-        if (box[3] + BOX_MARGIN + elHeight < screenHeight) {
+        if (box[3] + BOX_MARGIN + elHeight > screenHeight) {
             worstPosition.bottom += 100;
         }
-        if (box[1] - BOX_MARGIN - elHeight > 0) {
+        if (box[1] - BOX_MARGIN - elHeight < 0) {
             worstPosition.top += 100;
         }
-        if (box[2] + BOX_MARGIN + elWidth < screenWidth) {
+        if (box[2] + BOX_MARGIN + elWidth > screenWidth) {
             worstPosition.right += 100;
         }
-        if (box[0] - BOX_MARGIN - elWidth > 0) {
+        if (box[0] - BOX_MARGIN - elWidth < 0) {
             worstPosition.left += 100;
         }
         /* TODO check superposition with other target */
@@ -135,7 +135,7 @@ let Window = class Window extends vtyx.Vue {
     get computePosition() {
         const boxes = this.elementsBox;
         const box = boxes[0];
-        const realPosition = this.realPosition;
+        const realPosition = !box ? 'center' : this.realPosition;
         let x;
         let y;
         switch (realPosition) {
@@ -296,6 +296,60 @@ function mergeStepOptions(...options) {
 }
 
 /** File purpose:
+ * Handle step check
+ */
+function getActionType(step) {
+    const action = step.actionNext;
+    if (!action) {
+        return 'next';
+    }
+    if (typeof action === 'string') {
+        return action;
+    }
+    return action.action;
+}
+function isStepSpecialAction(arg) {
+    const actionType = typeof arg === 'string' ? arg : getActionType(arg);
+    return actionType !== 'next';
+}
+function checkExpression(expr, targetEl) {
+    /* XXX: This type assignation is only to avoid telling all possible HTML cases */
+    const targetElement = targetEl;
+    const checkOperation = expr.check || 'is';
+    const refValue = expr.value;
+    const value = targetElement.value;
+    switch (checkOperation) {
+        case 'is':
+            return value === refValue;
+        case 'is not':
+            return value !== refValue;
+        case 'contains':
+            return !!(value === null || value === void 0 ? void 0 : value.includes(refValue));
+        case 'do not contain':
+            return !!value && !value.includes(refValue);
+        case 'is not':
+            return value !== refValue;
+        case 'is empty':
+            return !value;
+        case 'is not empty':
+            return !!value;
+        case 'is checked':
+            return !!targetElement.checked;
+        case 'is not checked':
+            return !targetElement.checked;
+        case 'is disabled':
+            return !!targetElement.disabled;
+        case 'is not disabled':
+            return !targetElement.disabled;
+        case 'is rendered':
+            return document.body.contains(targetElement);
+        case 'is not rendered':
+            return !document.body.contains(targetElement);
+    }
+    console.log('Vue3-tutorial: Unknown operation "%s" has been encountered.', checkOperation);
+}
+
+/** File purpose:
  * Return strings depending on dictionary
  */
 const dictionary = vue.reactive(Object.assign({}, DEFAULT_DICTIONARY));
@@ -345,7 +399,6 @@ function resetBindings(binding) {
 function onKeyup(evt) {
     const key = evt.key;
     const focusedElement = evt.target;
-    console.log('keyboard element', evt.key, evt.target);
     if (focusedElement !== document.body) {
         /* Avoid triggering tasks when keyboard may be used by another element */
         return;
@@ -380,32 +433,20 @@ var __decorate$1 = (this && this.__decorate) || function (decorators, target, ke
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+const nope = function () { };
 let VStep = class VStep extends vtyx.Vue {
     constructor() {
         /* {{{ props */
         super(...arguments);
         /* }}} */
         /* {{{ data */
-        this.forceRecompute = 1;
+        this.removeActionListener = nope;
+        this.targetElements = new Set();
     }
     /* }}} */
     /* {{{ computed */
     get elements() {
-        const target = this.step.target;
-        if (this.forceRecompute === 0 || !(target === null || target === void 0 ? void 0 : target.length)) {
-            return [];
-        }
-        const elementList = new Set();
-        const targets = Array.isArray(target) ? target : [target];
-        targets.forEach((selector) => {
-            const elements = document.querySelectorAll(selector);
-            if (elements) {
-                for (const el of Array.from(elements)) {
-                    elementList.add(el);
-                }
-            }
-        });
-        return Array.from(elementList);
+        return Array.from(this.targetElements);
     }
     get mainElement() {
         const element = this.elements[0];
@@ -421,13 +462,50 @@ let VStep = class VStep extends vtyx.Vue {
             return [rect.left, rect.top, rect.right, rect.bottom];
         });
     }
+    /* {{{ Next action */
+    get nextActionType() {
+        return getActionType(this.step);
+    }
+    get nextActionTarget() {
+        const type = this.nextActionType;
+        if (type === 'next') {
+            return null;
+        }
+        const action = this.step.actionNext;
+        if (typeof action === 'string') {
+            return this.mainElement;
+        }
+        const target = action === null || action === void 0 ? void 0 : action.target;
+        if (typeof target !== 'string') {
+            return this.mainElement;
+        }
+        const element = document.querySelector(target);
+        return element;
+    }
+    get needsNextButton() {
+        return !isStepSpecialAction(this.nextActionType);
+    }
+    get actionListener() {
+        return () => {
+            const type = this.nextActionType;
+            const valueEventName = ['input', 'change'];
+            if (valueEventName.includes(type)) {
+                const action = this.step.actionNext;
+                const targetElement = this.nextActionTarget;
+                if (!checkExpression(action, targetElement)) {
+                    return;
+                }
+            }
+            this.$emit('next');
+        };
+    }
+    /* }}} */
     /* {{{ buttons */
     get displayPreviousButton() {
         const info = this.tutorialInformation;
-        if (info.currentIndex <= 0) {
+        if (info.previousStepIsSpecial || info.currentIndex <= 0) {
             return false;
         }
-        console.log('TODO: check that previous step is reachable');
         return true;
     }
     get displayNextButton() {
@@ -435,14 +513,12 @@ let VStep = class VStep extends vtyx.Vue {
         if (info.currentIndex >= info.nbTotalSteps - 1) {
             return false;
         }
-        console.log('TODO: check that there is no special action');
-        return true;
+        return this.needsNextButton;
     }
     get displayFinishButton() {
         const info = this.tutorialInformation;
-        console.log('TODO: check that there is no special action');
         if (info.currentIndex >= info.nbTotalSteps - 1) {
-            return true;
+            return this.needsNextButton;
         }
         return false;
     }
@@ -451,9 +527,61 @@ let VStep = class VStep extends vtyx.Vue {
     }
     /* }}} */
     /* }}} */
+    /* {{{ watch */
+    onTextsChange() {
+        changeTexts(this.fullOptions.texts);
+    }
+    onBindingsChange() {
+        resetBindings(this.fullOptions.bindings);
+    }
+    onElementsChange(newElements, oldElements) {
+        if (oldElements) {
+            this.removeClass(oldElements);
+        }
+        if (newElements) {
+            this.addClass(newElements);
+        }
+    }
+    onActionTypeChange() {
+        this.addActionListener();
+    }
+    onStepChange() {
+        this.resetElements();
+    }
+    /* }}} */
     /* {{{ methods */
-    recompute() {
-        this.forceRecompute++;
+    resetElements() {
+        this.targetElements.clear();
+        this.getElements(performance.now());
+    }
+    getElements(refTimestamp) {
+        const targetElements = this.targetElements;
+        const target = this.step.target;
+        if (!(target === null || target === void 0 ? void 0 : target.length)) {
+            return;
+        }
+        let isNotReadyYet = false;
+        const targets = Array.isArray(target) ? target : [target];
+        targets.forEach((selector) => {
+            const elements = document.querySelectorAll(selector);
+            if (elements.length) {
+                for (const el of Array.from(elements)) {
+                    targetElements.add(el);
+                }
+            }
+            else {
+                isNotReadyYet = true;
+            }
+        });
+        if (isNotReadyYet) {
+            const timeout = this.fullOptions.timeout;
+            if (performance.now() - refTimestamp < timeout) {
+                setTimeout(() => this.getElements(refTimestamp), 100);
+            }
+            else {
+                console.log('error: timeout');
+            }
+        }
     }
     addClass(newTargets) {
         const options = this.fullOptions;
@@ -482,30 +610,25 @@ let VStep = class VStep extends vtyx.Vue {
             }
         });
     }
-    /* }}} */
-    /* {{{ watch */
-    onTextsChange() {
-        changeTexts(this.fullOptions.texts);
-    }
-    onBindingsChange() {
-        resetBindings(this.fullOptions.bindings);
-    }
-    onElementsChange(newElements, oldElements) {
-        if (oldElements) {
-            this.removeClass(oldElements);
+    addActionListener() {
+        const eventName = this.nextActionType;
+        const el = this.nextActionTarget;
+        this.removeActionListener();
+        if (!el || eventName === 'next') {
+            return;
         }
-        if (newElements) {
-            this.addClass(newElements);
-        }
+        el.addEventListener(eventName, this.actionListener);
+        this.removeActionListener = () => {
+            el.removeEventListener(eventName, this.actionListener);
+            this.removeActionListener = nope;
+        };
     }
     /* }}} */
     /* {{{ Life cycle */
-    created() {
-        setTimeout(() => this.recompute(), 100);
-    }
     /* }}} */
     unmounted() {
         this.removeClass(this.elements);
+        this.removeActionListener();
     }
     render() {
         const options = this.fullOptions;
@@ -553,6 +676,13 @@ __decorate$1([
 __decorate$1([
     vtyx.Watch('elements', { deep: true })
 ], VStep.prototype, "onElementsChange", null);
+__decorate$1([
+    vtyx.Watch('nextActionTarget'),
+    vtyx.Watch('nextActionType', { immediate: true })
+], VStep.prototype, "onActionTypeChange", null);
+__decorate$1([
+    vtyx.Watch('step.target', { immediate: true })
+], VStep.prototype, "onStepChange", null);
 __decorate$1([
     vtyx.Emits(['finish', 'next', 'previous', 'skip'])
 ], VStep.prototype, "render", null);
@@ -629,19 +759,43 @@ let VTutorial = class VTutorial extends vtyx.Vue {
     get tutorialOptions() {
         return mergeStepOptions(DEFAULT_STEP_OPTIONS, this.options || {}, this.tutorial.options || {});
     }
+    get currentStepIsSpecial() {
+        const step = this.currentStep;
+        return !!step && isStepSpecialAction(step);
+    }
+    get previousStepIsSpecial() {
+        const step = this.steps[this.currentIndex - 1];
+        if (!step) {
+            return true;
+        }
+        return isStepSpecialAction(step);
+    }
+    /* }}} */
+    /* {{{ watch */
+    onOpenChange() {
+        if (this.open) {
+            this.start();
+        }
+    }
+    onStepsChange() {
+        this.start();
+    }
     /* }}} */
     /* {{{ methods */
+    /* {{{ navigation */
     start() {
         this.currentIndex = 0;
         this.isRunning = true;
         this.$emit('start', this.currentIndex);
         startListening(this.onKeyEvent.bind(this));
     }
-    nextStep() {
+    nextStep(forceNext = false) {
         if (!this.isRunning) {
             return;
         }
-        console.log('TODO: check that current step allow to move forward');
+        if (!forceNext && this.currentStepIsSpecial) {
+            return;
+        }
         if (this.currentIndex >= this.nbTotalSteps - 1) {
             this.stop(true);
         }
@@ -649,14 +803,16 @@ let VTutorial = class VTutorial extends vtyx.Vue {
         this.$emit('nextStep', this.currentIndex);
         this.$emit('changeStep', this.currentIndex);
     }
-    previousStep() {
+    previousStep(forcePrevious = false) {
         if (!this.isRunning) {
             return;
         }
         if (this.currentIndex <= 0) {
             return;
         }
-        console.log('TODO: check that step can be moved to');
+        if (!forcePrevious && this.previousStepIsSpecial) {
+            return;
+        }
         this.currentIndex--;
         this.$emit('previousStep', this.currentIndex);
         this.$emit('changeStep', this.currentIndex);
@@ -673,9 +829,9 @@ let VTutorial = class VTutorial extends vtyx.Vue {
         if (!confirm(label('skipConfirm'))) {
             return;
         }
-        console.log('TODO: add a confirm dialog');
         this.stop();
     }
+    /* }}} */
     onKeyEvent(action) {
         switch (action) {
             case 'next':
@@ -690,16 +846,6 @@ let VTutorial = class VTutorial extends vtyx.Vue {
         }
     }
     /* }}} */
-    /* {{{ watch */
-    onOpenChange() {
-        if (this.open) {
-            this.start();
-        }
-    }
-    onStepsChange() {
-        this.start();
-    }
-    /* }}} */
     /* {{{ Life cycle */
     /* }}} */
     render() {
@@ -710,10 +856,11 @@ let VTutorial = class VTutorial extends vtyx.Vue {
         return (vtyx.h(VStep$1, { step: step, options: this.tutorialOptions, tutorialInformation: {
                 currentIndex: this.currentIndex,
                 nbTotalSteps: this.nbTotalSteps,
+                previousStepIsSpecial: this.previousStepIsSpecial,
             }, on: {
-                previous: () => this.previousStep(),
-                next: () => this.nextStep(),
-                finish: () => this.nextStep(),
+                previous: () => this.previousStep(true),
+                next: () => this.nextStep(true),
+                finish: () => this.nextStep(true),
                 skip: () => this.skip(),
             } }));
     }

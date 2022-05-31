@@ -1,6 +1,6 @@
-import { Vue, h } from 'vtyx';
-import { Options, StepDescription, Tutorial } from './types.d';
+import { h, Vue } from 'vtyx';
 import '../css/tutorial.css';
+import { Options, StepDescription, Tutorial } from './types.d';
 export interface Props {
     tutorial?: Tutorial;
     options?: Options;
@@ -16,13 +16,15 @@ export default class VTutorial extends Vue<Props> {
     get nbTotalSteps(): number;
     get currentStep(): StepDescription | undefined;
     get tutorialOptions(): Options;
+    get currentStepIsSpecial(): boolean;
+    get previousStepIsSpecial(): boolean;
+    protected onOpenChange(): void;
+    protected onStepsChange(): void;
     private start;
     private nextStep;
     private previousStep;
     private stop;
     private skip;
     private onKeyEvent;
-    protected onOpenChange(): void;
-    protected onStepsChange(): void;
     render(): h.JSX.Element | undefined;
 }

@@ -51,7 +51,7 @@ export type CheckBeforeNext = false | ((stepIdx: number) => string | Promise<str
 /* }}} */
 /* {{{ Action Next */
 
-type SimpleEventName = 'click' | 'mousedown' | 'mouseup' | 'hover';
+type SimpleEventName = 'click' | 'mousedown' | 'mouseup' | 'mouseover';
 type ValueEventName = 'input' | 'change';
 type EventName = SimpleEventName | ValueEventName;
 
@@ -87,7 +87,7 @@ export type Binding = {
 /* {{{ Steps */
 
 export interface StepOptions {
-    /** Position of the pop-up window related to the target element */
+    /** Position of the pop-up window related to the main target element */
     position: Placement;
 
     /** If true the targets are highlighted */
@@ -108,11 +108,11 @@ export interface StepOptions {
     /** Keyboard bindings for actions */
     bindings: false | Partial<Binding>;
 
-    /** Timeout (in ms) after that the target is considered as "not found" */
-    timeout: number;
-
     /** Change texts that are used in the tutorial */
     texts: Partial<Dictionary>;
+
+    /** Timeout (in ms) after that the target is considered as "not found" */
+    timeout: number;
 }
 
 export interface StepDescription {
