@@ -1,76 +1,28 @@
 = TODO =
 
+== Target: v1.0 ==
+
 * Create a floating window
-    * ~~popup~~
-    * ~~add arrow~~
-    * ~~assert position is correct~~
-    * ~~add animation~~
-    * ~~auto position~~
     * manage target scrolls
-* ~~Identify element and point to it~~
-    * ~~single element~~
-    * ~~multi-element~~
-* ~~Content~~
-    * ~~content~~
-    * ~~title~~
-    * ~~index/total~~
-    * ~~navigation buttons~~
-        * ~~next~~
-        * ~~finished~~
-        * ~~previous~~
-        * ~~skip~~
-        * ~~CSS Style~~
-    * ~~conditional displays for these buttons~~
-        * ~~next: no action on current~~
-        * ~~finish: no action on current~~
-        * ~~previous: no action on previous~~
 * create a mask
     * Deactivate interaction with elements (without mask)
     * global mask
     * simple hole
     * multi-holes
 * steps
-    * ~~start new~~
-    * ~~next~~
-    * ~~finish~~
     * emits
-        * ~~"change step"~~,
-        * ~~"finished"~~
-        * ~~"start"~~
         * "error"
-    * ~~Add timeout about target~~
     * scrollIntoView
     * check that next is ok
     * skip current step
-* ~~Interactions~~
-    * ~~next button~~
-    * ~~conditional  nextStep (user action and button/keyboard)~~
-    * ~~action 'click/mousedown...'~~
-    * ~~action 'input/change...'~~
-* ~~keybindings~~
-    * ~~add listeners~~
-    * ~~remove listeners~~
-* documentation
-    * README
-        * ~~example code~~
-        * gif
-        * important features
-        * Live example
-            * ~~create a dedicated project~~
-            * create simple tutorial
-            * ~create page with complex cases~
-            * ~~create more complex tutorial to show the possibilities~~
-    * how to configure
-        * step
-            * ~~action~~
-            * skipStep
-                * "previous" on skipped test
-            * checkNext
-        * options
-            * Dictionary
-            * Bindings
-    * ~~CSS variables~~
-    * ~~emits~~
+        * "previous" on skipped test
+    * focus
+        * remove focus from any element at start of step
+            * Add an option to change focus
+                * no focus
+                * keep current focus
+                * focus on the main element
+                * focus on given target
 * Error management
     * target not found
     * step not found
@@ -78,26 +30,41 @@
     * send emits depending on error
 * Customization
     * Accept markdown
-    * ~~change all texts~~
 * Compare with vue-tour
     * missing feature
     * How to migrate → documentation
     * What is better in vue3-tutorial
+* documentation
+    * README
+        * gif
+        * important features
+        * Live example
+            * create simple tutorial
+    * how to configure
+        * step
+            * skipStep
+            * checkNext
+        * options
+            * Dictionary
+            * Bindings
 
-== improvement ==
+== improvement (for after v1.0) ==
 
 * Pause
     * restart at previous index
 * Step
-    * focus
-        * remove focus from any element at start of step (but what if it is the wanted behavior)
-        * focus on the highlighted element
     * follow target if they move (actions or scroll)
     * interaction action
         * timer
+        * "next" when clicking anywhere
     * options
         * hidden progress
-        * No interaction at all (user cannot click on any elements)
+        * No interaction at all (user cannot click on any elements (should it be the default for "next"?))
+    * header
+        * status (add icon on the right)
+            * working (spinner)
+            * Error (danger sign)
+            * custom
 * Window
     * improve auto placement
         * to avoid to be over secondary targets
