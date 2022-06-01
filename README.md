@@ -16,8 +16,6 @@ It integrates well with VueJS and is reactive to option changes.
 A tutorial scenario can integrate some optional steps, to adapt perfectly
 with the current state and to provide a smooth experience.
 
-It depends on only 1 lib ([VTYX](https://github.com/Intersec/vtyx) which is to use Vue3 with strong typing). And the package stays very light.
-
 Follow this link to have a
 [Live demonstration](https://restimel.github.io/vue3-tutorial-demonstration/dist/index.html)!
 

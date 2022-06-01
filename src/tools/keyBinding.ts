@@ -3,7 +3,6 @@
  * Manage key binding and interaction with keyboard
  */
 
-import { DEFAULT_BINDING } from '../tools/defaultValues';
 import {
     Binding,
     BindingAction,

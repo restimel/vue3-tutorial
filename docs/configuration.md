@@ -303,9 +303,12 @@ _Default value: `true`_
 except over targets. _Default value: `true`_
 * **maskMargin** {`number`} _(optional)_: Margin (in px) between target
 elements and mask. _Default value: `0`_
-* **bindings** {`[Bindings](#Bindings)`} _(optional)_:
-* **timeout** {`[Dictionary](#Dictionary)`} _(optional)_:
-* **texts** {`number`} _(optional)_: Duration in milliseconds before the
+* **bindings** {`[Bindings](#Bindings) | false`} _(optional)_: Define keys the
+user can type for different actions (next, previous, skip). If `false` then no
+keys will triggers these actions.
+* **texts** {`[Dictionary](#Dictionary)`} _(optional)_: Allow to change texts which are displayed in vue3-tutorial. This can be used for translations or to
+display your own texts.
+* **timeout** {`number`} _(optional)_: Duration in milliseconds before the
 timeout error is triggered. During this period, it will continually analyze
 DOM in order to find all targets. It continues until all targets are found
 or the timeout is reached. A value of 0 means that all targets should be
@@ -326,4 +329,42 @@ center of the screen.
 
 ### Bindings
 
+`Binding` is a structure where you describe which keys should be awaited to
+trigger the action.
+
+All properties accept either a string or an array of string (in such case any
+of these keys will trigger the action).
+The string should be the expected key (it can be any value return by
+[event.key](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key)
+).
+
+* **next**: When triggered the tutorial goes to the next step (except if the
+current step requires an action from user). _Default value: `['ArrowRight', 'Enter']`_.
+* **previous**: When triggered the tutorial goes to previous step (except if
+the previous step requires an action from user). _Default value: `'ArrowLeft'`_.
+* **skip**: When triggered the tutorial tries to ends (user still has to confirm). _Default value: `'Escape'`_.
+
+Example:
+```javascript
+{
+    bindings: {
+        next: ['f', 'PageDown'], // if user types 'f' or page-down key, it goes to next step.
+        previous: ['p', 'PageUp'], // if user types 'p' or page-up key, it goes to previous step.
+        // skip is not defined so it keeps default value (with escape key)
+    },
+}
+```
+
 ### Dictionary
+
+An object with the following properties (their values are the string to be
+displayed):
+
+* **finishButton**: The text on the "Finish" button.
+* **nextButton**: The text on the "Next" button.
+* **previousButton**: The text on the "Previous" button.
+* **skipButtonTitle**: The text on the title of the "Skip" button (the × on
+the window).
+* **skipConfirm**: The text displayed on the confirm dialog before skipping
+the tutorial.
+* **stepState**: The state of the step (Default: `'step %(currentStep)s / %(totalStep)s'`)

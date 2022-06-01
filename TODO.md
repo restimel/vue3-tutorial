@@ -38,15 +38,17 @@
     * README
         * gif
         * important features
-        * Live example
-            * create simple tutorial
     * how to configure
         * step
             * skipStep
             * checkNext
-        * options
-            * Dictionary
-            * Bindings
+        * ~~options~~
+            * ~~Dictionary~~
+            * ~~Bindings~~
+    * Live example
+        * create simple tutorial
+        * change highlight color in order to see it on background main color
+            → this may be a common pbl
 
 == improvement (for after v1.0) ==
 
