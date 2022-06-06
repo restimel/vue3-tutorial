@@ -9,6 +9,13 @@ export type Dictionary = {
     stepState: string;
 }
 
+export type Placement = 'auto' | 'top' | 'bottom' | 'left' | 'right' | 'center';
+
+export type BindingAction = 'next' | 'previous' | 'skip';
+export type Binding = {
+    [key in BindingAction]: string | string[];
+}
+
 /* {{{ Expression */
 
 export type ExpressionValueOperation = 'is' | 'is not' | 'contains' | 'do not contain';
@@ -74,14 +81,28 @@ export type ActionType = 'next' | SimpleEventName | ValueEventName;
 export type ActionNext = '' | 'next' | SimpleEventName | Action;
 
 /* }}} */
+/* }}} */
+/* {{{ Errors */
 
+export type TutorialError = {
+    code: number;
+    message: string;
+    details?: ErrorDetails;
+};
 
-export type Placement = 'auto' | 'top' | 'bottom' | 'left' | 'right' | 'center';
+export type TutorialEmittedError = TutorialError & {
+    tutorialName: string;
+    stepIndex: number;
+};
 
-export type BindingAction = 'next' | 'previous' | 'skip';
-export type Binding = {
-    [key in BindingAction]: string | string[];
-}
+export type ErrorDetails = { [key in string ]: any };
+
+export type TutorialErrorStatus = 'log' | 'info' | 'warning' | 'error';
+
+/** Structure describing each error code */
+export type TutorialErrorCodes = {
+    [code in number]: string;
+};
 
 /* }}} */
 /* {{{ Steps */

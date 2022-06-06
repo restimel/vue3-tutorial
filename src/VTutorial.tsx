@@ -30,12 +30,18 @@ import {
 import label from './tools/labels';
 import { startListening, stopListening } from './tools/keyBinding';
 import { isStepSpecialAction } from './tools/step';
+import error, {
+    registerError,
+    unRegisterError,
+} from './tools/errors';
 
 import {
     BindingAction,
     Options,
     StepDescription,
     Tutorial,
+    TutorialEmittedError,
+    TutorialError,
 } from './types.d';
 
 /* Export types in order to be used outside */
@@ -62,7 +68,7 @@ export {
 } from './types.d';
 
 export interface Props {
-    tutorial?: Tutorial;
+    tutorial?: Tutorial | null;
     options?: Options;
     open?: boolean;
 }
@@ -71,8 +77,8 @@ export interface Props {
 export default class VTutorial extends Vue<Props> {
     /* {{{ props */
 
-    @Prop({ default: () => ({steps: []}) })
-    private tutorial: Tutorial;
+    @Prop()
+    private tutorial?: Tutorial | null;
 
     @Prop()
     private options?: Options;
@@ -101,6 +107,10 @@ export default class VTutorial extends Vue<Props> {
         const step = this.steps[this.currentIndex];
 
         if (!step) {
+            error(302, {
+                nbTotalSteps: this.nbTotalSteps,
+                index: this.currentIndex,
+            });
             return;
         }
 
@@ -111,7 +121,7 @@ export default class VTutorial extends Vue<Props> {
         return mergeStepOptions(
             DEFAULT_STEP_OPTIONS,
             this.options || {},
-            this.tutorial.options || {}
+            this.tutorial?.options || {}
         );
     }
 
@@ -151,6 +161,11 @@ export default class VTutorial extends Vue<Props> {
     /* {{{ navigation */
 
     private start() {
+        if (!this.tutorial) {
+            error(303);
+            this.stop(false);
+            return;
+        }
         this.currentIndex = 0;
         this.isRunning = true;
         this.$emit('start', this.currentIndex);
@@ -228,9 +243,24 @@ export default class VTutorial extends Vue<Props> {
 
     /* }}} */
     /* {{{ Life cycle */
+
+    public mounted() {
+        registerError((err: TutorialError) => {
+            const errEmitted: TutorialEmittedError = Object.assign({
+                tutorialName: this.tutorial?.name ?? '',
+                stepIndex: this.currentIndex,
+            }, err);
+            this.$emit('error', errEmitted);
+        });
+    }
+
+    public unmounted() {
+        unRegisterError();
+    }
+
     /* }}} */
 
-    @Emits(['changeStep', 'nextStep', 'previousStep', 'start', 'stop'])
+    @Emits(['changeStep', 'error', 'nextStep', 'previousStep', 'start', 'stop'])
     public render() {
         const step = this.currentStep;
 

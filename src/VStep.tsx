@@ -30,6 +30,7 @@ import {
     StepOptions,
     TutorialInformation,
 } from './types';
+import error from './tools/errors';
 
 const nope = function() {};
 
@@ -108,8 +109,14 @@ export default class VStep extends Vue<Props> {
             return this.mainElement;
         }
 
-        const element = document.querySelector(target) as HTMLElement;
-        return element;
+        try {
+            const element = document.querySelector(target) as HTMLElement;
+            return element;
+        } catch(err) {
+            error(300, { selector: target, error: err as Error });
+        }
+
+        return null;
     }
 
     get needsNextButton(): boolean {
@@ -224,21 +231,17 @@ export default class VStep extends Vue<Props> {
         const targets = Array.isArray(target) ? target : [target];
 
         targets.forEach((selector) => {
-            const elements = document.querySelectorAll(selector);
-            if (elements.length) {
-                for (const el of Array.from(elements)) {
-                    targetElements.add(el as HTMLElement);
+            try {
+                const elements = document.querySelectorAll(selector);
+                if (elements.length) {
+                    for (const el of Array.from(elements)) {
+                        targetElements.add(el as HTMLElement);
+                    }
+                } else {
+                    isNotReadyYet = true;
                 }
-<<<<<<< HEAD
-            } else {
-                isNotReadyYet = true;
-||||||| parent of f646d72 (fixup! Fix Type definition.)
-            } catch (error) {
-                error(300, { selector, error });
-=======
             } catch (err) {
                 error(300, { selector, error: err as Error });
->>>>>>> f646d72 (fixup! Fix Type definition.)
             }
         });
 
@@ -247,7 +250,7 @@ export default class VStep extends Vue<Props> {
             if (performance.now() - refTimestamp < timeout) {
                 setTimeout(() => this.getElements(refTimestamp), 100);
             } else {
-                console.log('error: timeout');
+                error(324, { timeout });
             }
         }
     }

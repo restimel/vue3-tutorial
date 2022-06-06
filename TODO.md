@@ -17,8 +17,8 @@
         * mask
         * interactivity
 * steps
-    * emits
-        * "error"
+    * ~~emits~~
+        * ~~"error"~~
     * scrollIntoView
     * check that next is ok
     * skip current step
@@ -30,11 +30,11 @@
                 * keep current focus
                 * focus on the main element
                 * focus on given target
-* Error management
-    * target not found
-    * step not found
-    * no tutorial
-    * send emits depending on error
+* ~~Error management~~
+    * ~~target not found~~
+    * ~~step not found~~
+    * ~~no tutorial~~
+    * ~~send emits depending on error~~
 * Customization
     * Accept markdown
 * Compare with vue-tour

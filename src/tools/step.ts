@@ -9,6 +9,7 @@ import {
     StepDescription,
     ValueExpression,
 } from '../types';
+import error from './errors';
 
 export function getActionType(step: StepDescription): ActionType {
     const action = step.actionNext;
@@ -68,5 +69,6 @@ export function checkExpression(expr: CheckExpression, targetEl: HTMLElement): b
             return !document.body.contains(targetElement);
     }
 
-    console.log('Vue3-tutorial: Unknown operation "%s" has been encountered.', checkOperation);
+    error(301, { operation: checkOperation });
+    return false;
 }
