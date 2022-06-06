@@ -4,7 +4,7 @@
     "description": "Interactive tutorial component for Vue3 which help users to understand your application",
     "main": "dist/vue3-tutorial.common.js",
     "module": "dist/vue3-tutorial.esm.js",
-    "types": "types/index.d.ts",
+    "types": "types/VTutorial.d.ts",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/restimel/vue3-tutorial.git"

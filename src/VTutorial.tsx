@@ -38,6 +38,29 @@ import {
     Tutorial,
 } from './types.d';
 
+/* Export types in order to be used outside */
+export {
+    Action,
+    ActionNext,
+    ActionType,
+    Binding,
+    BindingAction,
+    CheckExpression,
+    Dictionary,
+    EventAction,
+    ExpressionUnaryOperation,
+    ExpressionValueOperation,
+    Options,
+    Placement,
+    StepDescription,
+    StepOptions,
+    Tutorial,
+    TutorialEmittedError,
+    TutorialErrorCodes,
+    TutorialErrorStatus,
+    TutorialInformation,
+} from './types.d';
+
 export interface Props {
     tutorial?: Tutorial;
     options?: Options;
@@ -54,7 +77,7 @@ export default class VTutorial extends Vue<Props> {
     @Prop()
     private options?: Options;
 
-    @Prop({default: false})
+    @Prop({ default: false })
     private open: boolean;
 
     /* }}} */
@@ -111,7 +134,7 @@ export default class VTutorial extends Vue<Props> {
     /* }}} */
     /* {{{ watch */
 
-    @Watch('open', {immediate: true})
+    @Watch('open', { immediate: true })
     protected onOpenChange() {
         if (this.open) {
             this.start();
@@ -143,7 +166,7 @@ export default class VTutorial extends Vue<Props> {
             return;
         }
 
-        if (this.currentIndex >= this.nbTotalSteps - 1) {
+        if (this.currentIndex >= this.nbTotalSteps - 1) {
             this.stop(true);
         }
         this.currentIndex++;

@@ -229,8 +229,16 @@ export default class VStep extends Vue<Props> {
                 for (const el of Array.from(elements)) {
                     targetElements.add(el as HTMLElement);
                 }
+<<<<<<< HEAD
             } else {
                 isNotReadyYet = true;
+||||||| parent of f646d72 (fixup! Fix Type definition.)
+            } catch (error) {
+                error(300, { selector, error });
+=======
+            } catch (err) {
+                error(300, { selector, error: err as Error });
+>>>>>>> f646d72 (fixup! Fix Type definition.)
             }
         });
 
