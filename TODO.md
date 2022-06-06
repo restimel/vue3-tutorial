@@ -1,4 +1,4 @@
-= TODO =
+= Roadmap =
 
 == Target: v1.0 ==
 
@@ -9,6 +9,13 @@
     * global mask
     * simple hole
     * multi-holes
+* Options
+    * a common API for
+        * target
+        * arrow
+        * highlight
+        * mask
+        * interactivity
 * steps
     * emits
         * "error"
@@ -34,6 +41,9 @@
     * missing feature
     * How to migrate → documentation
     * What is better in vue3-tutorial
+* Compare with EnjoyHint
+    * great feature
+    * presentation
 * documentation
     * README
         * gif
@@ -59,6 +69,7 @@
     * interaction action
         * timer
         * "next" when clicking anywhere
+        * keyboard event about key (note that keybinding may already be used for that)
     * options
         * hidden progress
         * No interaction at all (user cannot click on any elements (should it be the default for "next"?))
@@ -67,6 +78,16 @@
             * working (spinner)
             * Error (danger sign)
             * custom
+        * progress status with progress bar
+    * Content
+        * Add sections
+            * Tips
+            * info
+            * warning
+            * error/danger
+            * success
+    * button section
+        * When interactive, add a text to tell what is expected
 * Window
     * improve auto placement
         * to avoid to be over secondary targets
