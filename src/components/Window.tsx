@@ -4,7 +4,12 @@
 
 import {Vue, Component, Prop, h, Watch} from 'vtyx';
 import SVG from './SVG';
-import {Placement} from '../types.d';
+import {
+    minMaxValue,
+} from '../tools/tools';
+import {
+    Placement,
+} from '../types.d';
 
 /** [x1, y1, x2, y2] */
 type BoxNotEmpty = [number, number, number, number];
@@ -108,25 +113,29 @@ export default class Window extends Vue<Props> {
         const box = boxes[0] as BoxNotEmpty;
         const realPosition = !box ? 'center' : this.realPosition;
 
+        const [elWidth, elHeight] = this.elementSize;
+        const screenHeight = innerHeight - elHeight;
+        const screenWidth = innerWidth - elWidth;
+
         let x: string;
         let y: string;
 
         switch (realPosition) {
             case 'bottom':
-                x = (box[0] + box[2]) / 2 + 'px';
-                y = box[3] + 'px';
+                x = minMaxValue((box[0] + box[2]) / 2, 0, screenWidth) + 'px';
+                y = minMaxValue(box[3], 0, screenHeight) + 'px';
                 break;
             case 'top':
-                x = (box[0] + box[2]) / 2 + 'px';
-                y = box[1] + 'px';
+                x = minMaxValue((box[0] + box[2]) / 2, 0, screenWidth) + 'px';
+                y = minMaxValue(box[1], 0, screenHeight) + 'px';
                 break;
             case 'left':
-                x = box[0] + 'px';
-                y = (box[1] + box[3]) / 2 + 'px';
+                x = minMaxValue(box[0], 0, screenWidth) + 'px';
+                y = minMaxValue((box[1] + box[3]) / 2, 0, screenHeight) + 'px';
                 break;
             case 'right':
-                x = box[2] + 'px';
-                y = (box[1] + box[3]) / 2 + 'px';
+                x = minMaxValue(box[2], 0, screenWidth) + 'px';
+                y = minMaxValue((box[1] + box[3]) / 2, 0, screenHeight) + 'px';
                 break;
             case 'auto':
             case 'center':
