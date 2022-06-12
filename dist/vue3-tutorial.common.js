@@ -60,6 +60,63 @@ SVG = __decorate$3([
 var SVG$1 = SVG;
 
 /* File Purpose:
+ * Propose different common tools to help other components
+ */
+/** merge deeply an object in another one. */
+function merge(target, source, list = new Map()) {
+    if (typeof source !== 'object') {
+        return source;
+    }
+    if (typeof target !== 'object') {
+        if (Array.isArray(source)) {
+            target = [];
+        }
+        else {
+            target = {};
+        }
+    }
+    for (const key of Object.keys(source)) {
+        const val = source[key];
+        if (list.has(val)) {
+            target[key] = list.get(val);
+            continue;
+        }
+        const tgtValue = target[key];
+        if (typeof val === 'object') {
+            if (Array.isArray(val)) {
+                const valTarget = Array.isArray(tgtValue) ? tgtValue : [];
+                list.set(val, valTarget);
+                val.forEach((sourceVal, index) => {
+                    valTarget[index] = merge(valTarget[index], sourceVal, list);
+                });
+                target[key] = valTarget;
+                continue;
+            }
+            const valTarget = typeof tgtValue === 'object' ? tgtValue : {};
+            list.set(val, valTarget);
+            target[key] = merge(valTarget, val, list);
+        }
+        else {
+            target[key] = val;
+        }
+    }
+    return target;
+}
+/** Return a value which should be included between min and max */
+function minMaxValue(value, min, max) {
+    if (min > max) {
+        return min;
+    }
+    if (value < min) {
+        return min;
+    }
+    if (value > max) {
+        return max;
+    }
+    return value;
+}
+
+/* File Purpose:
  * Display a modal box on the screen depending on a position.
  */
 var __decorate$2 = (this && this.__decorate) || function (decorators, target, key, desc) {
@@ -136,24 +193,27 @@ let Window = class Window extends vtyx.Vue {
         const boxes = this.elementsBox;
         const box = boxes[0];
         const realPosition = !box ? 'center' : this.realPosition;
+        const [elWidth, elHeight] = this.elementSize;
+        const screenHeight = innerHeight - elHeight;
+        const screenWidth = innerWidth - elWidth;
         let x;
         let y;
         switch (realPosition) {
             case 'bottom':
-                x = (box[0] + box[2]) / 2 + 'px';
-                y = box[3] + 'px';
+                x = minMaxValue((box[0] + box[2]) / 2, 0, screenWidth) + 'px';
+                y = minMaxValue(box[3], 0, screenHeight) + 'px';
                 break;
             case 'top':
-                x = (box[0] + box[2]) / 2 + 'px';
-                y = box[1] + 'px';
+                x = minMaxValue((box[0] + box[2]) / 2, 0, screenWidth) + 'px';
+                y = minMaxValue(box[1], 0, screenHeight) + 'px';
                 break;
             case 'left':
-                x = box[0] + 'px';
-                y = (box[1] + box[3]) / 2 + 'px';
+                x = minMaxValue(box[0], 0, screenWidth) + 'px';
+                y = minMaxValue((box[1] + box[3]) / 2, 0, screenHeight) + 'px';
                 break;
             case 'right':
-                x = box[2] + 'px';
-                y = (box[1] + box[3]) / 2 + 'px';
+                x = minMaxValue(box[2], 0, screenWidth) + 'px';
+                y = minMaxValue((box[1] + box[3]) / 2, 0, screenHeight) + 'px';
                 break;
             case 'auto':
             case 'center':
@@ -228,45 +288,6 @@ var Window$1 = Window;
 /** File purpose:
  * It contains all default values and function to merge them.
  */
-function merge(target, source, list = new Map()) {
-    if (typeof source !== 'object') {
-        return source;
-    }
-    if (typeof target !== 'object') {
-        if (Array.isArray(source)) {
-            target = [];
-        }
-        else {
-            target = {};
-        }
-    }
-    for (const key of Object.keys(source)) {
-        const val = source[key];
-        if (list.has(val)) {
-            target[key] = list.get(val);
-            continue;
-        }
-        const tgtValue = target[key];
-        if (typeof val === 'object') {
-            if (Array.isArray(val)) {
-                const valTarget = Array.isArray(tgtValue) ? tgtValue : [];
-                list.set(val, valTarget);
-                val.forEach((sourceVal, index) => {
-                    valTarget[index] = merge(valTarget[index], sourceVal, list);
-                });
-                target[key] = valTarget;
-                continue;
-            }
-            const valTarget = typeof tgtValue === 'object' ? tgtValue : {};
-            list.set(val, valTarget);
-            target[key] = merge(valTarget, val, list);
-        }
-        else {
-            target[key] = val;
-        }
-    }
-    return target;
-}
 const DEFAULT_DICTIONARY = {
     finishButton: 'Finish',
     nextButton: 'Next',
@@ -288,11 +309,75 @@ const DEFAULT_STEP_OPTIONS = {
     mask: true,
     maskMargin: 0,
     bindings: DEFAULT_BINDING,
+    focus: 'no-focus',
     texts: DEFAULT_DICTIONARY,
     timeout: 3000,
 };
 function mergeStepOptions(...options) {
     return options.reduce((merged, option) => merge(merged, option), {});
+}
+
+/** File purpose:
+ * Manage errors that can happens anywhere in the library
+ */
+let errorCallback = null;
+const errorMap = {
+    /* 1xx : info */
+    /* 2xx : warning */
+    200: 'Unknown error code',
+    201: 'Unknown label',
+    /* 3xx : error */
+    300: 'Selector is not valid',
+    301: 'Unknown operation',
+    302: 'Step not found',
+    303: 'Tutorial is not defined',
+    324: 'Timeout: some targets have not been found in the allowing time',
+};
+const MESSAGE_LOG = 'vue3-tutorial [%d]: %s';
+function error(code, details) {
+    const message = errorMap[code];
+    if (!message) {
+        error(200, { code: code, details: details });
+    }
+    switch (errorStatus(code)) {
+        case 'log':
+            console.log(MESSAGE_LOG, code, message, details);
+            break;
+        case 'info':
+            console.log(MESSAGE_LOG, code, message, details);
+            break;
+        case 'warning':
+            console.warn(MESSAGE_LOG, code, message, details);
+            break;
+        case 'error':
+            console.error(MESSAGE_LOG, code, message, details);
+            break;
+    }
+    if (errorCallback) {
+        errorCallback({
+            code,
+            message,
+            details,
+        });
+    }
+}
+function errorStatus(code) {
+    if (code < 100) {
+        return 'log';
+    }
+    if (code < 200) {
+        return 'info';
+    }
+    if (code < 300) {
+        return 'warning';
+    }
+    return 'error';
+}
+function registerError(callback) {
+    errorCallback = callback;
+}
+function unRegisterError() {
+    errorCallback = null;
 }
 
 /** File purpose:
@@ -346,7 +431,8 @@ function checkExpression(expr, targetEl) {
         case 'is not rendered':
             return !document.body.contains(targetElement);
     }
-    console.log('Vue3-tutorial: Unknown operation "%s" has been encountered.', checkOperation);
+    error(301, { operation: checkOperation });
+    return false;
 }
 
 /** File purpose:
@@ -356,14 +442,14 @@ const dictionary = vue.reactive(Object.assign({}, DEFAULT_DICTIONARY));
 function label(key, replacement) {
     let text;
     if (typeof dictionary[key] === 'undefined') {
-        console.warn('Key "%s" is not defined');
+        error(201, { label: key });
         text = key;
     }
     else {
         text = dictionary[key];
     }
     if (replacement) {
-        text = text.replace(/%\(([^)]+)\)s/g, (_p, name) => replacement[name].toString());
+        text = text.replace(/%\(([^)]+)\)s/g, (_p, name) => { var _a, _b; return (_b = (_a = replacement[name]) === null || _a === void 0 ? void 0 : _a.toString()) !== null && _b !== void 0 ? _b : ''; });
     }
     return text;
 }
@@ -380,7 +466,13 @@ function changeTexts(dic) {
 const mapBinding = new Map();
 let eventCallback = null;
 let isListening = false;
+let currentBindingSignature = '';
 function resetBindings(binding) {
+    const signature = JSON.stringify(binding);
+    if (currentBindingSignature === signature) {
+        return;
+    }
+    currentBindingSignature = signature;
     mapBinding.clear();
     if (binding === false) {
         return;
@@ -399,7 +491,7 @@ function resetBindings(binding) {
 function onKeyup(evt) {
     const key = evt.key;
     const focusedElement = evt.target;
-    if (focusedElement !== document.body) {
+    if (!isListening || focusedElement !== document.body) {
         /* Avoid triggering tasks when keyboard may be used by another element */
         return;
     }
@@ -434,6 +526,29 @@ var __decorate$1 = (this && this.__decorate) || function (decorators, target, ke
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 const nope = function () { };
+function getElement(query, purpose, timeout, refTime = performance.now()) {
+    try {
+        const element = document.querySelector(query);
+        if (typeof timeout === 'number') {
+            if (element) {
+                return Promise.resolve(element);
+            }
+            if (performance.now() - refTime > timeout) {
+                error(324, { timeout, selector: query, purpose });
+                return Promise.resolve(null);
+            }
+            return getElement(query, purpose, timeout, refTime);
+        }
+        return element;
+    }
+    catch (err) {
+        error(300, { selector: query, purpose, error: err });
+    }
+    if (typeof timeout === 'number') {
+        return Promise.resolve(null);
+    }
+    return null;
+}
 let VStep = class VStep extends vtyx.Vue {
     constructor() {
         /* {{{ props */
@@ -442,6 +557,7 @@ let VStep = class VStep extends vtyx.Vue {
         /* {{{ data */
         this.removeActionListener = nope;
         this.targetElements = new Set();
+        this.timerSetFocus = 0;
     }
     /* }}} */
     /* {{{ computed */
@@ -479,8 +595,7 @@ let VStep = class VStep extends vtyx.Vue {
         if (typeof target !== 'string') {
             return this.mainElement;
         }
-        const element = document.querySelector(target);
-        return element;
+        return getElement(target, 'nextAction');
     }
     get needsNextButton() {
         return !isStepSpecialAction(this.nextActionType);
@@ -546,6 +661,63 @@ let VStep = class VStep extends vtyx.Vue {
         this.addActionListener();
     }
     onStepChange() {
+        const fullOptions = this.fullOptions;
+        const focusCfg = fullOptions.focus;
+        clearTimeout(this.timerSetFocus++);
+        switch (focusCfg) {
+            case false:
+            case 'no-focus': {
+                /* Remove focus from any element */
+                const el = document.activeElement;
+                el === null || el === void 0 ? void 0 : el.blur();
+                break;
+            }
+            case 'keep':
+                /* Do not change any focus */
+                return;
+            case true:
+            case 'main-target': {
+                /* set focus to the main target */
+                const timeout = fullOptions.timeout;
+                this.timerSetFocus = setTimeout(() => {
+                    stopWatch();
+                    error(324, { timeout, selector: '{main-target}', purpose: 'focus' });
+                }, timeout || 10);
+                const refTimer = this.timerSetFocus;
+                const stopWatch = vue.watch(() => this.mainElement, () => {
+                    const timerSetFocus = this.timerSetFocus;
+                    /* check that function is not outdated */
+                    if (refTimer !== timerSetFocus) {
+                        clearTimeout(timerSetFocus);
+                        stopWatch();
+                        return;
+                    }
+                    /* Check if mainElement is defined in order to set focus */
+                    const mainElement = this.mainElement;
+                    if (mainElement) {
+                        mainElement.focus();
+                        clearTimeout(timerSetFocus);
+                        /* defer stopWatch in order to be sure that the value exists (due to immediate option) */
+                        setTimeout(() => stopWatch(), 0);
+                        return;
+                    }
+                }, { immediate: true });
+                break;
+            }
+            default: {
+                /* Set focus to given target */
+                const target = focusCfg.target;
+                const refTimer = this.timerSetFocus;
+                getElement(target, 'focus', fullOptions.timeout).then((el) => {
+                    if (el && refTimer === this.timerSetFocus) {
+                        el.focus();
+                    }
+                });
+                break;
+            }
+        }
+    }
+    onStepTargetChange() {
         this.resetElements();
     }
     /* }}} */
@@ -563,14 +735,19 @@ let VStep = class VStep extends vtyx.Vue {
         let isNotReadyYet = false;
         const targets = Array.isArray(target) ? target : [target];
         targets.forEach((selector) => {
-            const elements = document.querySelectorAll(selector);
-            if (elements.length) {
-                for (const el of Array.from(elements)) {
-                    targetElements.add(el);
+            try {
+                const elements = document.querySelectorAll(selector);
+                if (elements.length) {
+                    for (const el of Array.from(elements)) {
+                        targetElements.add(el);
+                    }
+                }
+                else {
+                    isNotReadyYet = true;
                 }
             }
-            else {
-                isNotReadyYet = true;
+            catch (err) {
+                error(300, { selector, purpose: 'targets', error: err });
             }
         });
         if (isNotReadyYet) {
@@ -579,7 +756,7 @@ let VStep = class VStep extends vtyx.Vue {
                 setTimeout(() => this.getElements(refTimestamp), 100);
             }
             else {
-                console.log('error: timeout');
+                error(324, { timeout, selector: targets, purpose: 'targets' });
             }
         }
     }
@@ -671,7 +848,7 @@ __decorate$1([
     vtyx.Watch('fullOptions.texts')
 ], VStep.prototype, "onTextsChange", null);
 __decorate$1([
-    vtyx.Watch('fullOptions.bindings')
+    vtyx.Watch('fullOptions.bindings', { immediate: true, deep: true })
 ], VStep.prototype, "onBindingsChange", null);
 __decorate$1([
     vtyx.Watch('elements', { deep: true })
@@ -681,8 +858,11 @@ __decorate$1([
     vtyx.Watch('nextActionType', { immediate: true })
 ], VStep.prototype, "onActionTypeChange", null);
 __decorate$1([
-    vtyx.Watch('step.target', { immediate: true })
+    vtyx.Watch('step', { immediate: true, deep: false, flush: 'post' })
 ], VStep.prototype, "onStepChange", null);
+__decorate$1([
+    vtyx.Watch('step.target', { immediate: true })
+], VStep.prototype, "onStepTargetChange", null);
 __decorate$1([
     vtyx.Emits(['finish', 'next', 'previous', 'skip'])
 ], VStep.prototype, "render", null);
@@ -752,12 +932,19 @@ let VTutorial = class VTutorial extends vtyx.Vue {
     get currentStep() {
         const step = this.steps[this.currentIndex];
         if (!step) {
+            if (this.isRunning) {
+                error(302, {
+                    nbTotalSteps: this.nbTotalSteps,
+                    index: this.currentIndex,
+                });
+            }
             return;
         }
         return step;
     }
     get tutorialOptions() {
-        return mergeStepOptions(DEFAULT_STEP_OPTIONS, this.options || {}, this.tutorial.options || {});
+        var _a;
+        return mergeStepOptions(DEFAULT_STEP_OPTIONS, this.options || {}, ((_a = this.tutorial) === null || _a === void 0 ? void 0 : _a.options) || {});
     }
     get currentStepIsSpecial() {
         const step = this.currentStep;
@@ -784,6 +971,11 @@ let VTutorial = class VTutorial extends vtyx.Vue {
     /* {{{ methods */
     /* {{{ navigation */
     start() {
+        if (!this.tutorial) {
+            error(303);
+            this.stop(false);
+            return;
+        }
         this.currentIndex = 0;
         this.isRunning = true;
         this.$emit('start', this.currentIndex);
@@ -847,6 +1039,19 @@ let VTutorial = class VTutorial extends vtyx.Vue {
     }
     /* }}} */
     /* {{{ Life cycle */
+    mounted() {
+        registerError((err) => {
+            var _a, _b;
+            const errEmitted = Object.assign({
+                tutorialName: (_b = (_a = this.tutorial) === null || _a === void 0 ? void 0 : _a.name) !== null && _b !== void 0 ? _b : '',
+                stepIndex: this.currentIndex,
+            }, err);
+            this.$emit('error', errEmitted);
+        });
+    }
+    unmounted() {
+        unRegisterError();
+    }
     /* }}} */
     render() {
         const step = this.currentStep;
@@ -866,7 +1071,7 @@ let VTutorial = class VTutorial extends vtyx.Vue {
     }
 };
 __decorate([
-    vtyx.Prop({ default: () => ({ steps: [] }) })
+    vtyx.Prop()
 ], VTutorial.prototype, "tutorial", void 0);
 __decorate([
     vtyx.Prop()
@@ -881,7 +1086,7 @@ __decorate([
     vtyx.Watch('steps')
 ], VTutorial.prototype, "onStepsChange", null);
 __decorate([
-    vtyx.Emits(['changeStep', 'nextStep', 'previousStep', 'start', 'stop'])
+    vtyx.Emits(['changeStep', 'error', 'nextStep', 'previousStep', 'start', 'stop'])
 ], VTutorial.prototype, "render", null);
 VTutorial = __decorate([
     vtyx.Component

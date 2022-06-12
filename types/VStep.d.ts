@@ -12,6 +12,7 @@ export default class VStep extends Vue<Props> {
     private tutorialInformation;
     private removeActionListener;
     private targetElements;
+    private timerSetFocus;
     get elements(): HTMLElement[];
     get mainElement(): HTMLElement | null;
     get fullOptions(): StepOptions;
@@ -29,6 +30,7 @@ export default class VStep extends Vue<Props> {
     protected onElementsChange(newElements: HTMLElement[], oldElements: HTMLElement[]): void;
     protected onActionTypeChange(): void;
     protected onStepChange(): void;
+    protected onStepTargetChange(): void;
     private resetElements;
     private getElements;
     private addClass;
