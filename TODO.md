@@ -24,7 +24,8 @@
     * skip current step
         * "previous" on skipped test
     * focus
-        * remove focus from any element at start of step
+        * ~~remove focus from any element at start of step~~
+        * options
             * Add an option to change focus
                 * no focus
                 * keep current focus

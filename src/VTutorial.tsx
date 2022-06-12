@@ -107,10 +107,12 @@ export default class VTutorial extends Vue<Props> {
         const step = this.steps[this.currentIndex];
 
         if (!step) {
-            error(302, {
-                nbTotalSteps: this.nbTotalSteps,
-                index: this.currentIndex,
-            });
+            if (this.isRunning) {
+                error(302, {
+                    nbTotalSteps: this.nbTotalSteps,
+                    index: this.currentIndex,
+                });
+            }
             return;
         }
 

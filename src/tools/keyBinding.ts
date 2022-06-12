@@ -13,8 +13,15 @@ export type KeyboardEventCallback = (action: BindingAction) => void;
 const mapBinding: Map<string, BindingAction> = new Map();
 let eventCallback: KeyboardEventCallback | null = null;
 let isListening = false;
+let currentBindingSignature: string = '';
 
 export function resetBindings(binding: false | Partial<Binding>) {
+    const signature = JSON.stringify(binding);
+    if (currentBindingSignature === signature) {
+        return;
+    }
+    currentBindingSignature = signature;
+
     mapBinding.clear();
     if (binding === false) {
         return;

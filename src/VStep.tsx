@@ -185,7 +185,7 @@ export default class VStep extends Vue<Props> {
         changeTexts(this.fullOptions.texts);
     }
 
-    @Watch('fullOptions.bindings')
+    @Watch('fullOptions.bindings', { immediate: true, deep: true })
     protected onBindingsChange() {
         resetBindings(this.fullOptions.bindings);
     }
@@ -206,8 +206,15 @@ export default class VStep extends Vue<Props> {
         this.addActionListener();
     }
 
-    @Watch('step.target', { immediate: true })
+    @Watch('step', { immediate: true })
     protected onStepChange() {
+        /* Remove focus from any element */
+        const el = document.activeElement as HTMLElement | null;
+        el?.blur();
+    }
+
+    @Watch('step.target', { immediate: true })
+    protected onStepTargetChange() {
         this.resetElements();
     }
 
