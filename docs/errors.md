@@ -35,3 +35,20 @@ cannot behave correctly or going to next steps is problematic).
 |302 | Step not found | - **nbTotalSteps**: the number of steps in the tutorial<br> - **index**: the index not found | In the tutorial, the step is missing for given index. |
 |303 | Tutorial is not defined | | The tutorial i snot defined while we try to start the tour |
 |324 | Timeout | - **timeout**: the timeout duration<br> - **selector**: the selector which has expired<br> - **purpose** - explain the purpose of this selector (can be `'targets'`, '`nextAction`', or `'focus'`) | Some elements have not been found during the elapsed time. |
+
+
+## `errorStatus(code)`
+
+`errorStatus` is a function which can help you to know what kind of error was
+triggered depending on the code returned.
+
+```javascript
+import { errorStatus } from 'vue3-tutorial';
+
+errorStatus(205); // returns 'warning'
+errorStatus(302); // returns 'error'
+
+```
+
+The return type is `TutorialErrorStatus`, the possible values are:
+`'log'`, `'info'`, `'warning'`, or `'error'`.

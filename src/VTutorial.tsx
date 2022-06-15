@@ -44,6 +44,11 @@ import {
     TutorialError,
 } from './types.d';
 
+/* Export function helper to know the kind of error which is returned */
+export {
+    errorStatus,
+} from './tools/errors';
+
 /* Export types in order to be used outside */
 export {
     Action,
