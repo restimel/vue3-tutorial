@@ -17,25 +17,10 @@
         * mask
         * interactivity
 * steps
-    * ~~emits~~
-        * ~~"error"~~
     * scrollIntoView
     * check that next is ok
     * skip current step
         * "previous" on skipped test
-    * ~~focus~~
-        * ~~remove focus from any element at start of step~~
-        * ~~options~~
-            * Add an option to change focus
-                * ~~no focus~~
-                * ~~keep current focus~~
-                * ~~focus on the main element~~
-                * ~~focus on given target~~
-* ~~Error management~~
-    * ~~target not found~~
-    * ~~step not found~~
-    * ~~no tutorial~~
-    * ~~send emits depending on error~~
 * Customization
     * Accept markdown
 * Compare with vue-tour
@@ -53,9 +38,6 @@
         * step
             * skipStep
             * checkNext
-        * ~~options~~
-            * ~~Dictionary~~
-            * ~~Bindings~~
     * Live example
         * create simple tutorial
         * change highlight color in order to see it on background main color
