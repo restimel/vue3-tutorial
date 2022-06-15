@@ -288,27 +288,32 @@ At each level, you can set all or some part of the properties (or none of them
 to keep the more global configuration).
 
 **Options** are used to define a different step behavior. This is an object
-which have the following properties:
+which have the following properties (each property is optional):
 
-* **position** {`[Placement](#Placement)`} _(optional)_: Position of the step
+* **position** {`[Placement](#Placement)`}: Position of the step
 window related to the main target element. _default value: `'auto'`_
-* **highlight** {`boolean`} _(optional)_: Highlight the main target. The class
+* **highlight** {`boolean`}: Highlight the main target. The class
 `'vue3-tutorial-highlight'` is added to this element. _default value: `true`_
-* **classForTargets** {`string`} _(optional)_: Class added to all targets.
+* **classForTargets** {`string`}: Class added to all targets.
 This can be useful if you want that these elements use one of you own class.
 Default value: `''`_
-* **arrowAnimation** {`boolean`} _(optional)_: If true, the arrow is animate.
+* **arrowAnimation** {`boolean`}: If true, the arrow is animate.
 _Default value: `true`_
-* **mask** {`boolean`} _(optional)_: If true a mask is added over the page
+* **mask** {`boolean`}: If true a mask is added over the page
 except over targets. _Default value: `true`_
-* **maskMargin** {`number`} _(optional)_: Margin (in px) between target
+* **maskMargin** {`number`}: Margin (in px) between target
 elements and mask. _Default value: `0`_
-* **bindings** {`[Bindings](#Bindings) | false`} _(optional)_: Define keys the
+* **bindings** {`[Bindings](#Bindings) | false`}: Define keys the
 user can type for different actions (next, previous, skip). If `false` then no
 keys will triggers these actions.
-* **texts** {`[Dictionary](#Dictionary)`} _(optional)_: Allow to change texts which are displayed in vue3-tutorial. This can be used for translations or to
+* **focus** {`boolean | [FocusBehavior](#FocusBehavior)`}: Define what element
+to focus when changing step. `true` is equivalent to `'main-target'`. `false`
+is equivalent to `'no-focus'`. Note that setting focus to some elements may
+break the key binding which is only active if no elements are focused.
+_Default value: `'no-focus'`_.
+* **texts** {`[Dictionary](#Dictionary)`}: Allow to change texts which are displayed in vue3-tutorial. This can be used for translations or to
 display your own texts.
-* **timeout** {`number`} _(optional)_: Duration in milliseconds before the
+* **timeout** {`number`}: Duration in milliseconds before the
 timeout error is triggered. During this period, it will continually analyze
 DOM in order to find all targets. It continues until all targets are found
 or the timeout is reached. A value of 0 means that all targets should be
@@ -354,6 +359,15 @@ Example:
     },
 }
 ```
+
+### FocusBehavior
+
+Define what to do about focus when step is changing.
+
+* **`'no-focus'`**: Remove focus on any elements. _This is the default value_
+* **`'keep'`**: Keep the focus on the current active element.
+* **`'main-target'`**: Set focus to the main target of the step.
+* **`{ target: string }`**: set focus to the given target element.
 
 ### Dictionary
 

@@ -41,7 +41,7 @@ function onKeyup(evt: KeyboardEvent) {
     const key = evt.key;
     const focusedElement = evt.target;
 
-    if (focusedElement !== document.body) {
+    if (!isListening || focusedElement !== document.body) {
         /* Avoid triggering tasks when keyboard may be used by another element */
         return;
     }

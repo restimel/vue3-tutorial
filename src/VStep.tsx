@@ -2,7 +2,6 @@
  * It handles the display for one step
  */
 
-
 import {
     Component,
     Emits,
@@ -11,6 +10,9 @@ import {
     Vue,
     Watch,
 } from 'vtyx';
+import {
+    watch,
+} from 'vue';
 import Window, { Box } from './components/Window';
 import {
     mergeStepOptions,
@@ -24,6 +26,7 @@ import label, { changeTexts } from './tools/labels';
 import { resetBindings } from './tools/keyBinding';
 import {
     ActionType,
+    ErrorSelectorPurpose,
     EventAction,
     Options,
     StepDescription,
@@ -33,6 +36,35 @@ import {
 import error from './tools/errors';
 
 const nope = function() {};
+
+type SelectorElement = HTMLElement | null;
+
+function getElement(query: string, purpose: ErrorSelectorPurpose): SelectorElement;
+function getElement(query: string, purpose: ErrorSelectorPurpose, timeout: number): Promise<SelectorElement>;
+function getElement(query: string, purpose: ErrorSelectorPurpose, timeout: number, refTime: number): Promise<SelectorElement>;
+function getElement(query: string, purpose: ErrorSelectorPurpose, timeout?: number, refTime = performance.now()): SelectorElement | Promise<SelectorElement> {
+    try {
+        const element = document.querySelector(query) as SelectorElement;
+        if (typeof timeout === 'number') {
+            if (element) {
+                return Promise.resolve(element);
+            }
+            if (performance.now() - refTime > timeout) {
+                error(324, { timeout, selector: query, purpose });
+                return Promise.resolve(null);
+            }
+            return getElement(query, purpose, timeout, refTime);
+        }
+        return element;
+    } catch(err) {
+        error(300, { selector: query, purpose, error: err as Error });
+    }
+
+    if (typeof timeout === 'number') {
+        return Promise.resolve(null);
+    }
+    return null;
+}
 
 export interface Props {
     step: StepDescription;
@@ -58,6 +90,7 @@ export default class VStep extends Vue<Props> {
 
     private removeActionListener: () => void = nope;
     private targetElements: Set<HTMLElement> = new Set();
+    private timerSetFocus: number = 0;
 
     /* }}} */
     /* {{{ computed */
@@ -109,14 +142,7 @@ export default class VStep extends Vue<Props> {
             return this.mainElement;
         }
 
-        try {
-            const element = document.querySelector(target) as HTMLElement;
-            return element;
-        } catch(err) {
-            error(300, { selector: target, error: err as Error });
-        }
-
-        return null;
+        return getElement(target, 'nextAction');
     }
 
     get needsNextButton(): boolean {
@@ -206,11 +232,66 @@ export default class VStep extends Vue<Props> {
         this.addActionListener();
     }
 
-    @Watch('step', { immediate: true })
+    @Watch('step', { immediate: true, deep: false, flush: 'post' })
     protected onStepChange() {
-        /* Remove focus from any element */
-        const el = document.activeElement as HTMLElement | null;
-        el?.blur();
+        const fullOptions = this.fullOptions;
+        const focusCfg = fullOptions.focus;
+        clearTimeout(this.timerSetFocus++);
+
+        switch (focusCfg) {
+            case false:
+            case 'no-focus': {
+                /* Remove focus from any element */
+                const el = document.activeElement as HTMLElement | null;
+                el?.blur();
+                break;
+            }
+            case 'keep':
+                /* Do not change any focus */
+                return;
+            case true:
+            case 'main-target': {
+                /* set focus to the main target */
+                const timeout = fullOptions.timeout;
+                this.timerSetFocus = setTimeout(() => {
+                    stopWatch();
+                    error(324, { timeout, selector: '{main-target}', purpose: 'focus' });
+                }, timeout || 10);
+                const refTimer = this.timerSetFocus;
+
+                const stopWatch = watch(() => this.mainElement, () => {
+                    const timerSetFocus = this.timerSetFocus;
+                    /* check that function is not outdated */
+                    if (refTimer !== timerSetFocus) {
+                        clearTimeout(timerSetFocus);
+                        stopWatch();
+                        return;
+                    }
+
+                    /* Check if mainElement is defined in order to set focus */
+                    const mainElement = this.mainElement;
+                    if (mainElement) {
+                        mainElement.focus();
+                        clearTimeout(timerSetFocus);
+                        /* defer stopWatch in order to be sure that the value exists (due to immediate option) */
+                        setTimeout(() => stopWatch(), 0);
+                        return;
+                    }
+                }, { immediate: true });
+                break;
+            }
+            default: {
+                /* Set focus to given target */
+                const target = focusCfg.target;
+                const refTimer = this.timerSetFocus;
+                getElement(target, 'focus', fullOptions.timeout).then((el) => {
+                    if (el && refTimer === this.timerSetFocus) {
+                        el.focus();
+                    }
+                });
+                break;
+            }
+        }
     }
 
     @Watch('step.target', { immediate: true })
@@ -248,7 +329,7 @@ export default class VStep extends Vue<Props> {
                     isNotReadyYet = true;
                 }
             } catch (err) {
-                error(300, { selector, error: err as Error });
+                error(300, { selector, purpose: 'targets', error: err as Error });
             }
         });
 
@@ -257,7 +338,7 @@ export default class VStep extends Vue<Props> {
             if (performance.now() - refTimestamp < timeout) {
                 setTimeout(() => this.getElements(refTimestamp), 100);
             } else {
-                error(324, { timeout });
+                error(324, { timeout, selector: targets, purpose: 'targets' });
             }
         }
     }

@@ -23,15 +23,15 @@ cannot behave correctly or going to next steps is problematic).
 
 | Code | Message | Details | What does it means? |
 |:----:|---------|---------|---------------------|
-|200 | Unknown error code |  - **code**: the unknown error code<br> - **details**: the details given to the error | The given error code is not known |
-|201 | Unknown label |  - **label**: the unknown label | The text to be displayed is missing from dictionary. |
+|200 | Unknown error code | - **code**: the unknown error code<br> - **details**: the details given to the error | The given error code is not known |
+|201 | Unknown label | - **label**: the unknown label | The text to be displayed is missing from dictionary. |
 
 ### Error (3xx)
 
 | Code | Message | Details | What does it means? |
 |:----:|---------|---------|---------------------|
-|300 | Selector is not valid |  - **selector**: the broken selector<br> - **error**: the javascript error | The DOM selector given to `querySelector` is not valid. Elements cannot be found correctly.  |
-|301 | Unknown operation |  - **operation**: the unknown operation | In an expression operation (action, skiptStep, nextStep), the check operator is not known. It is not possible to evaluate the expression. |
-|302 | Step not found |  - **nbTotalSteps**: the number of steps in the tutorial<br> - **index**: the index not found | In the tutorial, the step is missing for given index. |
+|300 | Selector is not valid | - **selector**: the broken selector<br> - **purpose** - explain the purpose of this selector (can be `'targets'`, '`nextAction`', or `'focus'`)<br> - **error**: the javascript error | The DOM selector given to `querySelector` is not valid. Elements cannot be found correctly.  |
+|301 | Unknown operation | - **operation**: the unknown operation | In an expression operation (action, skiptStep, nextStep), the check operator is not known. It is not possible to evaluate the expression. |
+|302 | Step not found | - **nbTotalSteps**: the number of steps in the tutorial<br> - **index**: the index not found | In the tutorial, the step is missing for given index. |
 |303 | Tutorial is not defined | | The tutorial i snot defined while we try to start the tour |
-|324 | Timeout |  - **timeout**: the timeout duration | Some elements have not been found during the elapsed time. |
+|324 | Timeout | - **timeout**: the timeout duration<br> - **selector**: the selector which has expired<br> - **purpose** - explain the purpose of this selector (can be `'targets'`, '`nextAction`', or `'focus'`) | Some elements have not been found during the elapsed time. |

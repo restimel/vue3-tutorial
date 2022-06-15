@@ -23,14 +23,14 @@
     * check that next is ok
     * skip current step
         * "previous" on skipped test
-    * focus
+    * ~~focus~~
         * ~~remove focus from any element at start of step~~
-        * options
+        * ~~options~~
             * Add an option to change focus
-                * no focus
-                * keep current focus
-                * focus on the main element
-                * focus on given target
+                * ~~no focus~~
+                * ~~keep current focus~~
+                * ~~focus on the main element~~
+                * ~~focus on given target~~
 * ~~Error management~~
     * ~~target not found~~
     * ~~step not found~~
@@ -79,7 +79,7 @@
             * working (spinner)
             * Error (danger sign)
             * custom
-        * progress status with progress bar
+        * progress status with progress bar (and/or %)
     * Content
         * Add sections
             * Tips

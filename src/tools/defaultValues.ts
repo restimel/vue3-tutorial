@@ -33,6 +33,7 @@ export const DEFAULT_STEP_OPTIONS: StepOptions = {
     mask: true,
     maskMargin: 0,
     bindings: DEFAULT_BINDING,
+    focus: 'no-focus',
     texts: DEFAULT_DICTIONARY,
     timeout: 3000,
 };

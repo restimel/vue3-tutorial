@@ -104,6 +104,15 @@ export type TutorialErrorCodes = {
     [code in number]: string;
 };
 
+export type ErrorSelectorPurpose = 'targets' | 'nextAction' | 'focus';
+
+/* }}} */
+/* {{{ Focus */
+
+export type FocusBehavior = 'no-focus' | 'keep' | 'main-target' | {
+    target: string;
+};
+
 /* }}} */
 /* {{{ Steps */
 
@@ -128,6 +137,9 @@ export interface StepOptions {
 
     /** Keyboard bindings for actions */
     bindings: false | Partial<Binding>;
+
+    /** Manage how to set focus when step is changing */
+    focus: boolean | FocusBehavior;
 
     /** Change texts that are used in the tutorial */
     texts: Partial<Dictionary>;
