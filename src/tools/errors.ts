@@ -19,6 +19,9 @@ const errorMap: TutorialErrorCodes = {
     /* 2xx : warning */
     200: 'Unknown error code',
     201: 'Unknown label',
+    202: 'Not able to check if step can be skipped',
+    203: 'Tutorial has no active steps',
+    204: 'There are no previous step',
 
     /* 3xx : error */
     300: 'Selector is not valid',

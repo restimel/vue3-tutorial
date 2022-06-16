@@ -6,10 +6,13 @@ Events which are emitted bu vue3-tutorial component.
 
 * `'changeStep'`: Triggered when step is changed (for any reason).
 The first argument is the new step index.
+The second argument is the old step index.
 * `'nextStep'`: Triggered when moving to a step forward.
 The first argument is the new step index.
+The second argument is the old step index.
 * `'previousStep'`: Triggered when moving to a step backward.
 The first argument is the new step index.
+The second argument is the old step index.
 * `'start'`: Triggered when the tutorial starts.
 The first argument is the new step index.
 * `'stop'`: Triggered when the tutorial ends.

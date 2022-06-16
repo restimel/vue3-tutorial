@@ -1,3 +1,8 @@
+/* {{{ Not specific to Vue3-tutorial */
+
+export type SelectorElement = HTMLElement | null;
+
+/* }}} */
 /* {{{ Generic */
 
 export type Dictionary = {
@@ -104,7 +109,7 @@ export type TutorialErrorCodes = {
     [code in number]: string;
 };
 
-export type ErrorSelectorPurpose = 'targets' | 'nextAction' | 'focus';
+export type ErrorSelectorPurpose = 'targets' | 'nextAction' | 'focus' | 'skipStep';
 
 /* }}} */
 /* {{{ Focus */

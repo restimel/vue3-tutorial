@@ -2,6 +2,13 @@
  * Propose different common tools to help other components
  */
 
+import error from './errors';
+
+import {
+    ErrorSelectorPurpose,
+    SelectorElement,
+} from '../types.d';
+
 /** merge deeply an object in another one. */
 export function merge<A extends object, B extends object>(target: A, source: B, list = new Map()): A & B {
     if (typeof source !== 'object') {
@@ -57,4 +64,32 @@ export function minMaxValue(value: number, min: number, max: number): number {
         return max;
     }
     return value;
+}
+
+
+export function getElement(query: string, purpose: ErrorSelectorPurpose): SelectorElement;
+export function getElement(query: string, purpose: ErrorSelectorPurpose, timeout: number): Promise<SelectorElement>;
+export function getElement(query: string, purpose: ErrorSelectorPurpose, timeout: number, refTime: number): Promise<SelectorElement>;
+export function getElement(query: string, purpose: ErrorSelectorPurpose, timeout?: number, refTime = performance.now()): SelectorElement | Promise<SelectorElement> {
+    try {
+        const element = document.querySelector(query) as SelectorElement;
+        if (typeof timeout === 'number') {
+            if (element) {
+                return Promise.resolve(element);
+            }
+            if (performance.now() - refTime > timeout) {
+                error(324, { timeout, selector: query, purpose });
+                return Promise.resolve(null);
+            }
+            return getElement(query, purpose, timeout, refTime);
+        }
+        return element;
+    } catch(err) {
+        error(300, { selector: query, purpose, error: err as Error });
+    }
+
+    if (typeof timeout === 'number') {
+        return Promise.resolve(null);
+    }
+    return null;
 }

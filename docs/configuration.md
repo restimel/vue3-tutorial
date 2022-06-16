@@ -149,8 +149,6 @@ Example:
 
 ### skipStep
 
-__Not done yet__
-
 type: _boolean | ((stepIdx: number) => boolean | Promise<boolean>) | VerificationDescription_
 
 defaultValue: `false`
@@ -162,10 +160,25 @@ example, if you need to change page first).
 
 If the value is set to `true`, the step will always be skipped. It can be useful to disable a step.
 
+It is possible to declare an [expression](#expression). For more complex
+action, it is possible to use a function (which could return either a boolean
+or a promise which should return a boolean).
+
 Example:
 ```javascript
 {
     skipStep: () => return location.hash !== '#userForm'),
+}
+```
+
+or
+
+```javascript
+{
+    skipStep: {
+        target: 'input.tos',
+        check: 'is checked',
+    },
 }
 ```
 

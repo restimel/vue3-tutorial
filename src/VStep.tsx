@@ -26,7 +26,6 @@ import label, { changeTexts } from './tools/labels';
 import { resetBindings } from './tools/keyBinding';
 import {
     ActionType,
-    ErrorSelectorPurpose,
     EventAction,
     Options,
     StepDescription,
@@ -34,37 +33,9 @@ import {
     TutorialInformation,
 } from './types';
 import error from './tools/errors';
+import { getElement } from './tools/tools';
 
 const nope = function() {};
-
-type SelectorElement = HTMLElement | null;
-
-function getElement(query: string, purpose: ErrorSelectorPurpose): SelectorElement;
-function getElement(query: string, purpose: ErrorSelectorPurpose, timeout: number): Promise<SelectorElement>;
-function getElement(query: string, purpose: ErrorSelectorPurpose, timeout: number, refTime: number): Promise<SelectorElement>;
-function getElement(query: string, purpose: ErrorSelectorPurpose, timeout?: number, refTime = performance.now()): SelectorElement | Promise<SelectorElement> {
-    try {
-        const element = document.querySelector(query) as SelectorElement;
-        if (typeof timeout === 'number') {
-            if (element) {
-                return Promise.resolve(element);
-            }
-            if (performance.now() - refTime > timeout) {
-                error(324, { timeout, selector: query, purpose });
-                return Promise.resolve(null);
-            }
-            return getElement(query, purpose, timeout, refTime);
-        }
-        return element;
-    } catch(err) {
-        error(300, { selector: query, purpose, error: err as Error });
-    }
-
-    if (typeof timeout === 'number') {
-        return Promise.resolve(null);
-    }
-    return null;
-}
 
 export interface Props {
     step: StepDescription;
@@ -158,7 +129,7 @@ export default class VStep extends Vue<Props> {
                 const action = this.step.actionNext as EventAction;
                 const targetElement = this.nextActionTarget!;
 
-                if (!checkExpression(action, targetElement)) {
+                if (!checkExpression(action, targetElement, 'nextAction')) {
                     return;
                 }
             }

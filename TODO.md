@@ -19,8 +19,15 @@
 * steps
     * scrollIntoView
     * check that next is ok
+        * block next action
+        * disable button
+        * enable button
     * skip current step
-        * "previous" on skipped test
+        * ~~skip current step~~
+        * ~~"previous" on skipped test~~
+    * Expression
+        * change props (instead of value)
+        * add a timeout for their target
 * Customization
     * Accept markdown
 * Compare with vue-tour
@@ -36,7 +43,7 @@
         * important features
     * how to configure
         * step
-            * skipStep
+            * ~~skipStep~~
             * checkNext
     * Live example
         * create simple tutorial

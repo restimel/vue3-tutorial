@@ -6,6 +6,7 @@
 import {
     ActionType,
     CheckExpression,
+    ErrorSelectorPurpose,
     StepDescription,
     ValueExpression,
 } from '../types';
@@ -33,7 +34,7 @@ export function isStepSpecialAction(arg: StepDescription | ActionType): boolean 
     return actionType !== 'next';
 }
 
-export function checkExpression(expr: CheckExpression, targetEl: HTMLElement): boolean {
+export function checkExpression(expr: CheckExpression, targetEl: HTMLElement, purpose: ErrorSelectorPurpose): boolean {
     /* XXX: This type assignation is only to avoid telling all possible HTML cases */
     const targetElement = targetEl as HTMLInputElement;
     const checkOperation = expr.check || 'is';
@@ -69,6 +70,6 @@ export function checkExpression(expr: CheckExpression, targetEl: HTMLElement): b
             return !document.body.contains(targetElement);
     }
 
-    error(301, { operation: checkOperation });
+    error(301, { operation: checkOperation, purpose });
     return false;
 }
