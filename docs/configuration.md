@@ -160,7 +160,7 @@ example, if you need to change page first).
 
 If the value is set to `true`, the step will always be skipped. It can be useful to disable a step.
 
-It is possible to declare an [expression](#expression). For more complex
+It is possible to declare a [check expression](#check_expression). For more complex
 action, it is possible to use a function (which could return either a boolean
 or a promise which should return a boolean).
 
@@ -191,7 +191,7 @@ defaultValue: `'next'`
 Instead of displaying a next button, it is possible to force user to interact
 with the GUI interface.
 
-For more complex action, it is possible to declare an [Action expression](#action).
+For more complex action, it is possible to declare an [Action expression](#action_expression).
 
 Example:
 ```javascript
@@ -224,7 +224,17 @@ defaultValue: `false`
 
 ## Special types
 
-### Action
+### Check expression
+
+Describe a condition check with properties.
+
+* **target**: {`string`} the element where the condition should be checked.
+
+And properties from [Expression](#expression) in order to explain expected
+condition.
+
+
+### Action expression
 
 Describe the action with properties.
 
@@ -234,12 +244,11 @@ The kind of event to listen to.
 * **target** _(optional)_: {`string`} the element where the event should be
 listen to. If not defined it listens to the _main target_ of the step.
 
-For actions `'input'` and `'change'`, it is needed to add
+For actions `'input'` and `'change'`, it is needed to be completed with an
 [Expression](#expression) about expected value.
 
 It goes to next step when the listened element fulfill the condition detailed
 by the expression.
-
 
 ### Expression
 
@@ -247,12 +256,15 @@ For actions, or for conditional steps, it would be useful to describe an
 expression about which state we expect (for example, an exact value or an
 element not be no more disabled).
 
-The **Expression* is composed with 2 properties:
+The **Expression** is composed with 3 properties:
 
 * **check**: {`ExpressionValueOperation | ExpressionUnaryOperation`} This is
 the operation to do to check the condition.
 
 * **value**: {`string`} The value to compare.
+
+* **property** _(optional)_: Define which property to read on the elmeent to
+get the value. _Default value is `'value'`._
 
 If **check** is an `ExpressionUnaryOperation`, **value** should not be set.
 if **value** is set, **check** is optional then it will be equivalent to
@@ -278,7 +290,7 @@ value.
 * **`'is not'`**: the value of the element should be different to the given
 value.
 * **`'contains'`**: the value of the element should contain the given value.
-* **`'do not contain'`**: the value of the element should not contains the
+* **`'does not contain'`**: the value of the element should not contains the
 given value.
 
 ## Step options

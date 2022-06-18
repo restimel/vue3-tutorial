@@ -23,7 +23,8 @@ export type Binding = {
 
 /* {{{ Expression */
 
-export type ExpressionValueOperation = 'is' | 'is not' | 'contains' | 'do not contain';
+export type ExpressionValueOperation = 'is' | 'is not' | 'contains' |
+    'do not contain' | 'does not contain';
 export type ExpressionUnaryOperation = 'is empty' | 'is not empty' |
     'is checked' | 'is not checked' | 'is disabled' | 'is not disabled' |
     'is rendered' | 'is not rendered';
@@ -35,11 +36,13 @@ type OptionalTargetExpression = Partial<TargetExpression>;
 
 type UnaryExpression = {
     check: ExpressionUnaryOperation;
+    property?: keyof HTMLElement;
 };
 
 type ValueExpression = {
     check?: ExpressionValueOperation;
     value: string;
+    property?: keyof HTMLElement;
 };
 
 export type CheckExpression = UnaryExpression | ValueExpression;

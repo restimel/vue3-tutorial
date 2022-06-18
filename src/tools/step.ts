@@ -38,20 +38,20 @@ export function checkExpression(expr: CheckExpression, targetEl: HTMLElement, pu
     /* XXX: This type assignation is only to avoid telling all possible HTML cases */
     const targetElement = targetEl as HTMLInputElement;
     const checkOperation = expr.check || 'is';
+    const prop = expr.property ?? 'value';
     const refValue: string | undefined = (expr as ValueExpression).value;
-    const value: string | undefined = targetElement.value;
+    const value = targetElement[prop];
 
     switch (checkOperation) {
         case 'is':
-            return value === refValue;
+            return value == refValue;
         case 'is not':
-            return value !== refValue;
+            return value != refValue;
         case 'contains':
-            return !!value?.includes(refValue);
+            return !!(value as any)?.includes?.(refValue);
         case 'do not contain':
-            return !!value && !value.includes(refValue);
-        case 'is not':
-            return value !== refValue;
+        case 'does not contain':
+            return !(value as any)?.includes?.(refValue);
         case 'is empty':
             return !value;
         case 'is not empty':

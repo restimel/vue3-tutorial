@@ -22,12 +22,13 @@
         * block next action
         * disable button
         * enable button
-    * skip current step
+    * ~~skip current step~~
         * ~~skip current step~~
         * ~~"previous" on skipped test~~
     * Expression
-        * change props (instead of value)
+        * ~~change props (instead of value)~~
         * add a timeout for their target
+        * check url
 * Customization
     * Accept markdown
 * Compare with vue-tour
