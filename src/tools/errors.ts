@@ -22,6 +22,7 @@ const errorMap: TutorialErrorCodes = {
     202: 'Not able to check if step can be skipped',
     203: 'Tutorial has no active steps',
     204: 'There are no previous step',
+    224: 'Timeout: some targets have not been found in the allowing time',
 
     /* 3xx : error */
     300: 'Selector is not valid',

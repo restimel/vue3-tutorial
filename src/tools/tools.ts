@@ -5,6 +5,7 @@
 import error from './errors';
 
 import {
+    ErrorDetails,
     ErrorSelectorPurpose,
     SelectorElement,
 } from '../types.d';
@@ -66,22 +67,58 @@ export function minMaxValue(value: number, min: number, max: number): number {
     return value;
 }
 
+type GetElementSyncOptions = {
+    purpose: ErrorSelectorPurpose;
+    timeoutError?: (details: ErrorDetails) => void;
+};
 
-export function getElement(query: string, purpose: ErrorSelectorPurpose): SelectorElement;
-export function getElement(query: string, purpose: ErrorSelectorPurpose, timeout: number): Promise<SelectorElement>;
-export function getElement(query: string, purpose: ErrorSelectorPurpose, timeout: number, refTime: number): Promise<SelectorElement>;
-export function getElement(query: string, purpose: ErrorSelectorPurpose, timeout?: number, refTime = performance.now()): SelectorElement | Promise<SelectorElement> {
+type GetElementAsyncOptions = GetElementSyncOptions & {
+    timeout: number;
+    refTime?: number;
+};
+
+export type GetElementOptions = GetElementSyncOptions | GetElementAsyncOptions;
+
+export function getElement(query: string, options: GetElementSyncOptions): SelectorElement;
+export function getElement(query: string, options: GetElementAsyncOptions): Promise<SelectorElement>;
+export function getElement(query: string, options: GetElementOptions): SelectorElement | Promise<SelectorElement> {
+    const {
+        purpose,
+        timeout,
+        timeoutError,
+        refTime = performance.now(),
+    } = options as GetElementAsyncOptions;
+
     try {
         const element = document.querySelector(query) as SelectorElement;
         if (typeof timeout === 'number') {
             if (element) {
                 return Promise.resolve(element);
             }
+
+            /* Timeout have ben reached */
             if (performance.now() - refTime > timeout) {
-                error(324, { timeout, selector: query, purpose });
+                const details = {
+                    timeout,
+                    selector: query,
+                    purpose,
+                };
+
+                if (typeof timeoutError === 'function') {
+                    timeoutError(details);
+                } else {
+                    error(324, details);
+                }
+
                 return Promise.resolve(null);
             }
-            return getElement(query, purpose, timeout, refTime);
+
+            /* If timeout is not reached then search again */
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    resolve(getElement(query, { purpose, timeout, refTime, timeoutError }));
+                }, 50);
+            });
         }
         return element;
     } catch(err) {

@@ -27,7 +27,7 @@
         * ~~"previous" on skipped test~~
     * Expression
         * ~~change props (instead of value)~~
-        * add a timeout for their target
+        * ~~add a timeout for their target~~
         * check url
 * Customization
     * Accept markdown

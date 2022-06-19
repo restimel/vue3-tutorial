@@ -28,6 +28,7 @@ cannot behave correctly or going to next steps is problematic).
 |202 | Not able to check if step can be skipped | - **index**: the index of the step where the skip test has failed<br> - **fromIndex**: the index of the step from where the tutorial was just before.<br> - **error**: the javascript error | An error occurred when testing to skip the current step. |
 |203 | Tutorial has no active steps | | The tutorial has no steps or they are all skipped. |
 |204 | There are no previous step | | The tutorial has no steps or they are all skipped. |
+|224 | Timeout | - **timeout**: the timeout duration<br> - **selector**: the selector which has expired<br> - **purpose** - explain the purpose of this selector (is of type [`ErrorSelectorPurpose`](#ErrorSelectorPurpose)) | Some elements have not been found during the elapsed time. |
 
 ### Error (3xx)
 

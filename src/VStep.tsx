@@ -113,7 +113,7 @@ export default class VStep extends Vue<Props> {
             return this.mainElement;
         }
 
-        return getElement(target, 'nextAction');
+        return getElement(target, { purpose: 'nextAction' });
     }
 
     get needsNextButton(): boolean {
@@ -255,7 +255,10 @@ export default class VStep extends Vue<Props> {
                 /* Set focus to given target */
                 const target = focusCfg.target;
                 const refTimer = this.timerSetFocus;
-                getElement(target, 'focus', fullOptions.timeout).then((el) => {
+                getElement(target, {
+                    purpose: 'focus',
+                    timeout: fullOptions.timeout,
+                }).then((el) => {
                     if (el && refTimer === this.timerSetFocus) {
                         el.focus();
                     }

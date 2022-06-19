@@ -230,6 +230,10 @@ Describe a condition check with properties.
 
 * **target**: {`string`} the element where the condition should be checked.
 
+* **timeout** _optional_: {`number`} Duration in milliseconds to find the
+`target` before the timeout warning is triggered.
+_Default value is the `timeout` defined in [step options](#step_options)._
+
 And properties from [Expression](#expression) in order to explain expected
 condition.
 
@@ -243,6 +247,10 @@ The kind of event to listen to.
 
 * **target** _(optional)_: {`string`} the element where the event should be
 listen to. If not defined it listens to the _main target_ of the step.
+
+* **timeout** _optional_: {`number`} Duration in milliseconds to find the
+`target` before the timeout warning is triggered.
+_Default value is the `timeout` defined in [step options](#step_options)._
 
 For actions `'input'` and `'change'`, it is needed to be completed with an
 [Expression](#expression) about expected value.

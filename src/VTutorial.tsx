@@ -43,6 +43,7 @@ import error, {
 
 import {
     BindingAction,
+    ErrorDetails,
     Options,
     StepDescription,
     Tutorial,
@@ -146,11 +147,28 @@ export default class VTutorial extends Vue<Props> {
         if (typeof skipStep === 'function') {
             return skipStep(this.currentIndex);
         }
+        const operator = skipStep.check;
+        const isOperatorNotRendered = operator === 'is not rendered';
+        const isOperatorRender = isOperatorNotRendered || operator === 'is rendered';
         const targetSelector = skipStep.target;
-        const targetElement = await getElement(targetSelector, 'skipStep');
+        const targetElement = await getElement(targetSelector, {
+            purpose: 'skipStep',
+            timeout: skipStep.timeout ?? step?.options?.timeout ?? this.tutorialOptions.timeout!,
+            timeoutError: (details: ErrorDetails) => {
+                if (isOperatorRender) {
+                    return;
+                }
+                error(224, details);
+            },
+        });
 
         if (!targetElement) {
-            return false;
+            /* If the element has not been found return false only if it is
+             * not the purpose of the operator */
+            if (!isOperatorNotRendered) {
+                return false;
+            }
+            return true;
         }
 
         return checkExpression(skipStep, targetElement, 'skipStep');
