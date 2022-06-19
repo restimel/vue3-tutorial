@@ -134,46 +134,6 @@ export default class VTutorial extends Vue<Props> {
         return step;
     }
 
-    private async skipCurrentStep(step: StepDescription | undefined): Promise<boolean> {
-        const skipStep = step?.skipStep;
-
-        if (!skipStep) {
-            return false;
-        }
-
-        if (typeof skipStep === 'boolean') {
-            return skipStep;
-        }
-        if (typeof skipStep === 'function') {
-            return skipStep(this.currentIndex);
-        }
-        const operator = skipStep.check;
-        const isOperatorNotRendered = operator === 'is not rendered';
-        const isOperatorRender = isOperatorNotRendered || operator === 'is rendered';
-        const targetSelector = skipStep.target;
-        const targetElement = await getElement(targetSelector, {
-            purpose: 'skipStep',
-            timeout: skipStep.timeout ?? step?.options?.timeout ?? this.tutorialOptions.timeout!,
-            timeoutError: (details: ErrorDetails) => {
-                if (isOperatorRender) {
-                    return;
-                }
-                error(224, details);
-            },
-        });
-
-        if (!targetElement) {
-            /* If the element has not been found return false only if it is
-             * not the purpose of the operator */
-            if (!isOperatorNotRendered) {
-                return false;
-            }
-            return true;
-        }
-
-        return checkExpression(skipStep, targetElement, 'skipStep');
-    }
-
     get tutorialOptions(): Options {
         return mergeStepOptions(
             DEFAULT_STEP_OPTIONS,
@@ -216,6 +176,46 @@ export default class VTutorial extends Vue<Props> {
     /* }}} */
     /* {{{ methods */
     /* {{{ navigation */
+
+    private async skipCurrentStep(step: StepDescription | undefined): Promise<boolean> {
+        const skipStep = step?.skipStep;
+
+        if (!skipStep) {
+            return false;
+        }
+
+        if (typeof skipStep === 'boolean') {
+            return skipStep;
+        }
+        if (typeof skipStep === 'function') {
+            return skipStep(this.currentIndex);
+        }
+        const operator = skipStep.check;
+        const isOperatorNotRendered = operator === 'is not rendered';
+        const isOperatorRender = isOperatorNotRendered || operator === 'is rendered';
+        const targetSelector = skipStep.target;
+        const targetElement = await getElement(targetSelector, {
+            purpose: 'skipStep',
+            timeout: skipStep.timeout ?? step?.options?.timeout ?? this.tutorialOptions.timeout!,
+            timeoutError: (details: ErrorDetails) => {
+                if (isOperatorRender) {
+                    return;
+                }
+                error(224, details);
+            },
+        });
+
+        if (!targetElement) {
+            /* If the element has not been found return false only if it is
+                * not the purpose of the operator */
+            if (!isOperatorNotRendered) {
+                return false;
+            }
+            return true;
+        }
+
+        return checkExpression(skipStep, targetElement, 'skipStep');
+    }
 
     private async findStep(oldIndex: number, upDirection = true): Promise<number> {
         let newIndex = oldIndex;

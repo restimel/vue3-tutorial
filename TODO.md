@@ -4,6 +4,7 @@
 
 * Create a floating window
     * manage target scrolls
+        * adapt window position depending on scroll
 * create a mask
     * Deactivate interaction with elements (without mask)
     * global mask
@@ -11,13 +12,16 @@
     * multi-holes
 * Options
     * a common API for
-        * target
+        * target (main Element)
         * arrow
         * highlight
         * mask
         * interactivity
+        → checkExpression should include getElement
 * steps
     * scrollIntoView
+        * scroll into view
+        * keep page
     * check that next is ok
         * block next action
         * disable button
@@ -29,15 +33,10 @@
         * ~~change props (instead of value)~~
         * ~~add a timeout for their target~~
         * check url
+* Tutorial
+    * Change architecture to test all steps status (mainly for skipStep and compute options)
 * Customization
     * Accept markdown
-* Compare with vue-tour
-    * missing feature
-    * How to migrate → documentation
-    * What is better in vue3-tutorial
-* Compare with EnjoyHint
-    * great feature
-    * presentation
 * documentation
     * README
         * gif
@@ -46,13 +45,26 @@
         * step
             * ~~skipStep~~
             * checkNext
+        * split file to avoid having a big big file
     * Live example
         * create simple tutorial
         * change highlight color in order to see it on background main color
             → this may be a common pbl
+* Clean up
+    * Change code error, in order to have a logic between 2xy and 3xy
+* Compare with vue-tour
+    * missing feature
+    * How to migrate → documentation
+    * What is better in vue3-tutorial
+* Compare with EnjoyHint
+    * great feature
+    * presentation
 
 == improvement (for after v1.0) ==
 
+* Errors
+    * Add info
+    * Add options to filter what is emitted
 * Pause
     * restart at previous index
 * Step
@@ -80,13 +92,15 @@
     * button section
         * When interactive, add a text to tell what is expected
 * Window
+    * Allow user to move the window
     * improve auto placement
         * to avoid to be over secondary targets
         * to prefer left/right when target is at sides
-    * Allow user to move the window
-    * change HTML
+    * allow to change HTML
+* Skip
+    * replace confirm dialog by modal dialog
+* Options
+    * Set an expression timeout (to have a default timeout different than timeout)
 * Global
     * allow to have several instance of vue3-tutorial on the same page
         * do not return a singleton (labels, keyBinding)
-* Skip
-    * replace confirm dialog by modal dialog
