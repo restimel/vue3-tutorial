@@ -1,4 +1,4 @@
-= Roadmap =
+= Road-map =
 
 == Target: v1.0 ==
 
@@ -26,15 +26,8 @@
         * block next action
         * disable button
         * enable button
-    * ~~skip current step~~
-        * ~~skip current step~~
-        * ~~"previous" on skipped test~~
     * Expression
-        * ~~change props (instead of value)~~
-        * ~~add a timeout for their target~~
         * check url
-* ~~Tutorial~~
-    * ~~Change architecture to test all steps status (mainly for skipStep and compute options)~~
 * Customization
     * Accept markdown
 * documentation
@@ -43,7 +36,6 @@
         * important features
     * how to configure
         * step
-            * ~~skipStep~~
             * checkNext
         * split file to avoid having a big big file
     * Live example
@@ -83,7 +75,7 @@
             * custom
         * progress status with progress bar (and/or %)
     * Content
-        * Add sections
+        * Add sections (extend markdown ?)
             * Tips
             * info
             * warning
