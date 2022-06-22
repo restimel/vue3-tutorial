@@ -519,6 +519,7 @@ function getStep(stepDesc, tutorialOptions, info) {
         status: {
             isActionNext: true,
             skipped: false,
+            index: info.currentIndex,
         },
         /* will be filled immediately */
         options: {},
@@ -745,6 +746,7 @@ let VStep = class VStep extends Vue {
     onActionTypeChange() {
         this.addActionListener();
     }
+    /* XXX: flush: post is needed because some of the variable are related to DOM */
     onStepChange() {
         const fullOptions = this.fullOptions;
         const focusCfg = fullOptions.focus;
@@ -764,6 +766,7 @@ let VStep = class VStep extends Vue {
             case 'main-target': {
                 /* set focus to the main target */
                 const timeout = fullOptions.timeout;
+                /* Timer is to stop the watch after timeout. */
                 this.timerSetFocus = setTimeout(() => {
                     stopWatch();
                     error(324, { timeout, selector: '{main-target}', purpose: 'focus' });
@@ -944,10 +947,10 @@ __decorate$1([
     Watch('nextActionType', { immediate: true })
 ], VStep.prototype, "onActionTypeChange", null);
 __decorate$1([
-    Watch('step', { immediate: true, deep: false, flush: 'post' })
+    Watch('step.desc', { immediate: true, deep: false, flush: 'post' })
 ], VStep.prototype, "onStepChange", null);
 __decorate$1([
-    Watch('step.target', { immediate: true })
+    Watch('step.desc.target', { immediate: true })
 ], VStep.prototype, "onStepTargetChange", null);
 __decorate$1([
     Emits(['finish', 'next', 'previous', 'skip'])
@@ -1047,8 +1050,10 @@ let VTutorial = class VTutorial extends Vue {
     }
     get previousStepIsSpecial() {
         let step;
+        let index = this.currentIndex;
         do {
-            step = this.steps[this.currentIndex - 1];
+            index--;
+            step = this.steps[index];
         } while (step === null || step === void 0 ? void 0 : step.status.skipped);
         if (!step) {
             return true;
