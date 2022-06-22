@@ -161,9 +161,11 @@ export default class VTutorial extends Vue<Props> {
 
     get previousStepIsSpecial(): boolean {
         let step: Step;
+        let index = this.currentIndex;
         do {
-            step = this.steps[this.currentIndex - 1];
-        } while(step?.status.skipped);
+            index--;
+            step = this.steps[index];
+        } while (step?.status.skipped);
 
         if (!step) {
             return true;
@@ -222,7 +224,7 @@ export default class VTutorial extends Vue<Props> {
                     /* When moving backward, we reuse the previous skipped status */
                     isSkipped = step.status.skipped;
                 }
-            } while(isSkipped);
+            } while (isSkipped);
         } catch (err) {
             error(202, {
                 index: this.currentIndex,
