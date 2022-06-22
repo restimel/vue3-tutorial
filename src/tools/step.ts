@@ -137,6 +137,7 @@ export function getStep(stepDesc: StepDescription, tutorialOptions: Options, inf
         status: {
             isActionNext: true,
             skipped: false,
+            index: info.currentIndex,
         },
 
         /* will be filled immediately */

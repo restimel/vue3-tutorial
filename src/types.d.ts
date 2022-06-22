@@ -181,8 +181,13 @@ export interface StepDescription {
 }
 
 interface StepStatus {
+    /* reactive value about if the step should be skipped */
     skipped: boolean;
+    /* reactive value about if the step displays the next button (and so
+     * does not have special actions) */
     isActionNext: boolean;
+    /* The index of the step. It is more for information */
+    index: number;
 }
 
 export interface Step {

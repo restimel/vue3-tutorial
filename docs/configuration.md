@@ -277,8 +277,10 @@ the operation to do to check the condition.
 
 * **value**: {`string`} The value to compare.
 
-* **property** _(optional)_: Define which property to read on the elmeent to
-get the value. _Default value is `'value'`._
+* **property** _(optional)_: Define which property to read on the element to
+get the value (note: this is the JavaScript name that should be used, for
+example, it should be `className` for `class` property).
+_Default value is `'value'`._
 
 If **check** is an `ExpressionUnaryOperation`, **value** should not be set.
 if **value** is set, **check** is optional then it will be equivalent to

@@ -197,7 +197,8 @@ export default class VStep extends Vue<Props> {
         this.addActionListener();
     }
 
-    @Watch('step', { immediate: true, deep: false, flush: 'post' })
+    /* XXX: flush: post is needed because some of the variable are related to DOM */
+    @Watch('step.desc', { immediate: true, deep: false, flush: 'post' })
     protected onStepChange() {
         const fullOptions = this.fullOptions;
         const focusCfg = fullOptions.focus;
@@ -218,6 +219,8 @@ export default class VStep extends Vue<Props> {
             case 'main-target': {
                 /* set focus to the main target */
                 const timeout = fullOptions.timeout;
+
+                /* Timer is to stop the watch after timeout. */
                 this.timerSetFocus = setTimeout(() => {
                     stopWatch();
                     error(324, { timeout, selector: '{main-target}', purpose: 'focus' });
@@ -262,7 +265,7 @@ export default class VStep extends Vue<Props> {
         }
     }
 
-    @Watch('step.target', { immediate: true })
+    @Watch('step.desc.target', { immediate: true })
     protected onStepTargetChange() {
         this.resetElements();
     }
