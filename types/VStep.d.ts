@@ -1,14 +1,12 @@
 import { h, Vue } from 'vtyx';
 import { Box } from './components/Window';
-import { ActionType, Options, StepDescription, StepOptions, TutorialInformation } from './types';
+import { ActionType, Step, StepOptions, TutorialInformation } from './types';
 export interface Props {
-    step: StepDescription;
-    options: Options;
+    step: Step;
     tutorialInformation: TutorialInformation;
 }
 export default class VStep extends Vue<Props> {
     private step;
-    private options;
     private tutorialInformation;
     private removeActionListener;
     private targetElements;

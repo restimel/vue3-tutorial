@@ -1,6 +1,6 @@
 {
     "name": "vue3-tutorial",
-    "version": "0.7.0",
+    "version": "0.8.0",
     "description": "Interactive tutorial component for Vue3 which help users to understand your application",
     "main": "dist/vue3-tutorial.common.js",
     "module": "dist/vue3-tutorial.esm.js",
@@ -40,7 +40,7 @@
         "test": "npm run build && tape test/**/*.spec.js"
     },
     "dependencies": {
-        "vtyx": "4.0.5",
+        "vtyx": "^4.0.5",
         "vue3-markdown-it": "^1.0.10"
     },
     "devDependencies": {

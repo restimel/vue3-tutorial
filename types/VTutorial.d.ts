@@ -1,6 +1,7 @@
 import { h, Vue } from 'vtyx';
 import '../css/tutorial.css';
-import { Options, StepDescription, Tutorial } from './types.d';
+import { Options, Step, Tutorial } from './types.d';
+export { errorStatus, } from './tools/errors';
 export { Action, ActionNext, ActionType, Binding, BindingAction, CheckExpression, Dictionary, ErrorSelectorPurpose, EventAction, ExpressionUnaryOperation, ExpressionValueOperation, FocusBehavior, Options, Placement, StepDescription, StepOptions, Tutorial, TutorialEmittedError, TutorialErrorCodes, TutorialErrorStatus, TutorialInformation, } from './types.d';
 export interface Props {
     tutorial?: Tutorial | null;
@@ -13,14 +14,15 @@ export default class VTutorial extends Vue<Props> {
     private open;
     private currentIndex;
     private isRunning;
-    get steps(): StepDescription[];
+    get steps(): Step[];
     get nbTotalSteps(): number;
-    get currentStep(): StepDescription | undefined;
+    get currentStep(): Step | undefined;
     get tutorialOptions(): Options;
     get currentStepIsSpecial(): boolean;
     get previousStepIsSpecial(): boolean;
     protected onOpenChange(): void;
     protected onStepsChange(): void;
+    private findStep;
     private start;
     private nextStep;
     private previousStep;

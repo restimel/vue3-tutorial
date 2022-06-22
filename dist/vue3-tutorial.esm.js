@@ -1,5 +1,6 @@
 import { Prop, Component, Vue, h, Watch, Emits } from 'vtyx';
 import { reactive, watch } from 'vue';
+import Markdown from 'vue3-markdown-it';
 
 /* File Purpose:
  * It displays an SVG content
@@ -54,6 +55,73 @@ SVG = __decorate$3([
     Component
 ], SVG);
 var SVG$1 = SVG;
+
+/** File purpose:
+ * Manage errors that can happens anywhere in the library
+ */
+let errorCallback = null;
+const errorMap = {
+    /* 1xx : info */
+    /* 2xx : warning */
+    200: 'Unknown error code',
+    201: 'Unknown label',
+    202: 'Not able to check if step can be skipped',
+    203: 'Tutorial has no active steps',
+    204: 'There are no previous step',
+    224: 'Timeout: some targets have not been found in the allowing time',
+    /* 3xx : error */
+    300: 'Selector is not valid',
+    301: 'Unknown operation',
+    302: 'Step not found',
+    303: 'Tutorial is not defined',
+    324: 'Timeout: some targets have not been found in the allowing time',
+};
+const MESSAGE_LOG = 'vue3-tutorial [%d]: %s';
+function error(code, details) {
+    const message = errorMap[code];
+    if (!message) {
+        error(200, { code: code, details: details });
+    }
+    switch (errorStatus(code)) {
+        case 'log':
+            console.log(MESSAGE_LOG, code, message, details);
+            break;
+        case 'info':
+            console.log(MESSAGE_LOG, code, message, details);
+            break;
+        case 'warning':
+            console.warn(MESSAGE_LOG, code, message, details);
+            break;
+        case 'error':
+            console.error(MESSAGE_LOG, code, message, details);
+            break;
+    }
+    if (errorCallback) {
+        errorCallback({
+            code,
+            message,
+            details,
+        });
+    }
+}
+function errorStatus(code) {
+    if (code < 100) {
+        return 'log';
+    }
+    if (code < 200) {
+        return 'info';
+    }
+    if (code < 300) {
+        return 'warning';
+    }
+    return 'error';
+}
+function registerError(callback) {
+    errorCallback = callback;
+}
+function unRegisterError() {
+    errorCallback = null;
+}
 
 /* File Purpose:
  * Propose different common tools to help other components
@@ -110,6 +178,46 @@ function minMaxValue(value, min, max) {
         return max;
     }
     return value;
+}
+function getElement(query, options) {
+    const { purpose, timeout, timeoutError, refTime = performance.now(), } = options;
+    try {
+        const element = document.querySelector(query);
+        if (typeof timeout === 'number') {
+            if (element) {
+                return Promise.resolve(element);
+            }
+            /* Timeout have ben reached */
+            if (performance.now() - refTime > timeout) {
+                const details = {
+                    timeout,
+                    selector: query,
+                    purpose,
+                };
+                if (typeof timeoutError === 'function') {
+                    timeoutError(details);
+                }
+                else {
+                    error(324, details);
+                }
+                return Promise.resolve(null);
+            }
+            /* If timeout is not reached then search again */
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    resolve(getElement(query, { purpose, timeout, refTime, timeoutError }));
+                }, 50);
+            });
+        }
+        return element;
+    }
+    catch (err) {
+        error(300, { selector: query, purpose, error: err });
+    }
+    if (typeof timeout === 'number') {
+        return Promise.resolve(null);
+    }
+    return null;
 }
 
 /* File Purpose:
@@ -314,70 +422,7 @@ function mergeStepOptions(...options) {
 }
 
 /** File purpose:
- * Manage errors that can happens anywhere in the library
- */
-let errorCallback = null;
-const errorMap = {
-    /* 1xx : info */
-    /* 2xx : warning */
-    200: 'Unknown error code',
-    201: 'Unknown label',
-    /* 3xx : error */
-    300: 'Selector is not valid',
-    301: 'Unknown operation',
-    302: 'Step not found',
-    303: 'Tutorial is not defined',
-    324: 'Timeout: some targets have not been found in the allowing time',
-};
-const MESSAGE_LOG = 'vue3-tutorial [%d]: %s';
-function error(code, details) {
-    const message = errorMap[code];
-    if (!message) {
-        error(200, { code: code, details: details });
-    }
-    switch (errorStatus(code)) {
-        case 'log':
-            console.log(MESSAGE_LOG, code, message, details);
-            break;
-        case 'info':
-            console.log(MESSAGE_LOG, code, message, details);
-            break;
-        case 'warning':
-            console.warn(MESSAGE_LOG, code, message, details);
-            break;
-        case 'error':
-            console.error(MESSAGE_LOG, code, message, details);
-            break;
-    }
-    if (errorCallback) {
-        errorCallback({
-            code,
-            message,
-            details,
-        });
-    }
-}
-function errorStatus(code) {
-    if (code < 100) {
-        return 'log';
-    }
-    if (code < 200) {
-        return 'info';
-    }
-    if (code < 300) {
-        return 'warning';
-    }
-    return 'error';
-}
-function registerError(callback) {
-    errorCallback = callback;
-}
-function unRegisterError() {
-    errorCallback = null;
-}
-
-/** File purpose:
- * Handle step check
+ * Handle step relative methods
  */
 function getActionType(step) {
     const action = step.actionNext;
@@ -393,23 +438,24 @@ function isStepSpecialAction(arg) {
     const actionType = typeof arg === 'string' ? arg : getActionType(arg);
     return actionType !== 'next';
 }
-function checkExpression(expr, targetEl) {
+function checkExpression(expr, targetEl, purpose) {
+    var _a, _b, _c;
     /* XXX: This type assignation is only to avoid telling all possible HTML cases */
     const targetElement = targetEl;
     const checkOperation = expr.check || 'is';
+    const prop = (_a = expr.property) !== null && _a !== void 0 ? _a : 'value';
     const refValue = expr.value;
-    const value = targetElement.value;
+    const value = targetElement[prop];
     switch (checkOperation) {
         case 'is':
-            return value === refValue;
+            return value == refValue;
         case 'is not':
-            return value !== refValue;
+            return value != refValue;
         case 'contains':
-            return !!(value === null || value === void 0 ? void 0 : value.includes(refValue));
+            return !!((_b = value === null || value === void 0 ? void 0 : value.includes) === null || _b === void 0 ? void 0 : _b.call(value, refValue));
         case 'do not contain':
-            return !!value && !value.includes(refValue);
-        case 'is not':
-            return value !== refValue;
+        case 'does not contain':
+            return !((_c = value === null || value === void 0 ? void 0 : value.includes) === null || _c === void 0 ? void 0 : _c.call(value, refValue));
         case 'is empty':
             return !value;
         case 'is not empty':
@@ -427,9 +473,75 @@ function checkExpression(expr, targetEl) {
         case 'is not rendered':
             return !document.body.contains(targetElement);
     }
-    error(301, { operation: checkOperation });
+    error(301, { operation: checkOperation, purpose });
     return false;
 }
+async function skipCurrentStep(step, info) {
+    var _a;
+    const stepDesc = step.desc;
+    const skipStep = stepDesc === null || stepDesc === void 0 ? void 0 : stepDesc.skipStep;
+    if (!skipStep) {
+        return false;
+    }
+    if (typeof skipStep === 'boolean') {
+        return skipStep;
+    }
+    if (typeof skipStep === 'function') {
+        return skipStep(info.currentIndex);
+    }
+    const operator = skipStep.check;
+    const isOperatorNotRendered = operator === 'is not rendered';
+    const isOperatorRender = isOperatorNotRendered || operator === 'is rendered';
+    const targetSelector = skipStep.target;
+    const targetElement = await getElement(targetSelector, {
+        purpose: 'skipStep',
+        timeout: (_a = skipStep.timeout) !== null && _a !== void 0 ? _a : step.options.timeout,
+        timeoutError: (details) => {
+            if (isOperatorRender) {
+                return;
+            }
+            error(224, details);
+        },
+    });
+    if (!targetElement) {
+        /* If the element has not been found return false only if it is
+         * not the purpose of the operator */
+        if (!isOperatorNotRendered) {
+            return false;
+        }
+        return true;
+    }
+    return checkExpression(skipStep, targetElement, 'skipStep');
+}
+function getStep(stepDesc, tutorialOptions, info) {
+    const step = reactive({
+        desc: stepDesc,
+        status: {
+            isActionNext: true,
+            skipped: false,
+        },
+        /* will be filled immediately */
+        options: {},
+        async checkSkipped() {
+            /* recompute the skip status */
+            const skipped = await skipCurrentStep(step, info);
+            step.status.skipped = skipped;
+            return skipped;
+        },
+    });
+    /* handle options */
+    watch(() => [stepDesc, tutorialOptions], () => {
+        step.options = mergeStepOptions(tutorialOptions, stepDesc.options || {});
+    }, { immediate: true, deep: true });
+    /* handle status.isActionNext */
+    watch(() => stepDesc.actionNext, () => {
+        const nextActionType = getActionType(stepDesc);
+        step.status.isActionNext = !isStepSpecialAction(nextActionType);
+    }, { immediate: true, deep: true });
+    step.checkSkipped();
+    return step;
+}
+/* test */
 
 /** File purpose:
  * Return strings depending on dictionary
@@ -522,29 +634,6 @@ var __decorate$1 = (this && this.__decorate) || function (decorators, target, ke
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 const nope = function () { };
-function getElement(query, purpose, timeout, refTime = performance.now()) {
-    try {
-        const element = document.querySelector(query);
-        if (typeof timeout === 'number') {
-            if (element) {
-                return Promise.resolve(element);
-            }
-            if (performance.now() - refTime > timeout) {
-                error(324, { timeout, selector: query, purpose });
-                return Promise.resolve(null);
-            }
-            return getElement(query, purpose, timeout, refTime);
-        }
-        return element;
-    }
-    catch (err) {
-        error(300, { selector: query, purpose, error: err });
-    }
-    if (typeof timeout === 'number') {
-        return Promise.resolve(null);
-    }
-    return null;
-}
 let VStep = class VStep extends Vue {
     constructor() {
         /* {{{ props */
@@ -565,7 +654,7 @@ let VStep = class VStep extends Vue {
         return element || null;
     }
     get fullOptions() {
-        return mergeStepOptions(this.options, this.step.options || {});
+        return this.step.options;
     }
     get elementsBox() {
         const elements = this.elements;
@@ -576,14 +665,14 @@ let VStep = class VStep extends Vue {
     }
     /* {{{ Next action */
     get nextActionType() {
-        return getActionType(this.step);
+        return getActionType(this.step.desc);
     }
     get nextActionTarget() {
         const type = this.nextActionType;
         if (type === 'next') {
             return null;
         }
-        const action = this.step.actionNext;
+        const action = this.step.desc.actionNext;
         if (typeof action === 'string') {
             return this.mainElement;
         }
@@ -591,19 +680,19 @@ let VStep = class VStep extends Vue {
         if (typeof target !== 'string') {
             return this.mainElement;
         }
-        return getElement(target, 'nextAction');
+        return getElement(target, { purpose: 'nextAction' });
     }
     get needsNextButton() {
-        return !isStepSpecialAction(this.nextActionType);
+        return this.step.status.isActionNext;
     }
     get actionListener() {
         return () => {
             const type = this.nextActionType;
             const valueEventName = ['input', 'change'];
             if (valueEventName.includes(type)) {
-                const action = this.step.actionNext;
+                const action = this.step.desc.actionNext;
                 const targetElement = this.nextActionTarget;
-                if (!checkExpression(action, targetElement)) {
+                if (!checkExpression(action, targetElement, 'nextAction')) {
                     return;
                 }
             }
@@ -704,7 +793,10 @@ let VStep = class VStep extends Vue {
                 /* Set focus to given target */
                 const target = focusCfg.target;
                 const refTimer = this.timerSetFocus;
-                getElement(target, 'focus', fullOptions.timeout).then((el) => {
+                getElement(target, {
+                    purpose: 'focus',
+                    timeout: fullOptions.timeout,
+                }).then((el) => {
                     if (el && refTimer === this.timerSetFocus) {
                         el.focus();
                     }
@@ -724,7 +816,7 @@ let VStep = class VStep extends Vue {
     }
     getElements(refTimestamp) {
         const targetElements = this.targetElements;
-        const target = this.step.target;
+        const target = this.step.desc.target;
         if (!(target === null || target === void 0 ? void 0 : target.length)) {
             return;
         }
@@ -805,17 +897,18 @@ let VStep = class VStep extends Vue {
     }
     render() {
         const options = this.fullOptions;
-        const step = this.step;
+        const stepDesc = this.step.desc;
         const information = this.tutorialInformation;
         return (h(Window$1, { elementsBox: this.elementsBox, position: options.position, arrowAnimation: options.arrowAnimation },
             h("aside", { slot: "content", class: "vue3-tutorial__step" },
                 h("header", { class: "vue3-tutorial__step__header" },
-                    h("div", { class: "vue3-tutorial__step__header__title" }, step.title),
+                    h("div", { class: "vue3-tutorial__step__header__title" }, stepDesc.title),
                     h("div", { class: "vue3-tutorial__step__header__status" }, label('stepState', {
                         currentStep: information.currentIndex + 1,
                         totalStep: information.nbTotalSteps,
                     }))),
-                h("div", { class: "vue3-tutorial__step__content" }, step.content),
+                h("div", { class: "vue3-tutorial__step__content" },
+                    h(Markdown, { source: stepDesc.content })),
                 h("nav", { class: "vue3-tutorial__step__commands" },
                     this.displayPreviousButton && (h("button", { class: "vue3-tutorial__step__btn vue3-tutorial__step__btn-previous", on: {
                             click: () => this.$emit('previous'),
@@ -834,9 +927,6 @@ let VStep = class VStep extends Vue {
 __decorate$1([
     Prop()
 ], VStep.prototype, "step", void 0);
-__decorate$1([
-    Prop()
-], VStep.prototype, "options", void 0);
 __decorate$1([
     Prop()
 ], VStep.prototype, "tutorialInformation", void 0);
@@ -920,7 +1010,16 @@ let VTutorial = class VTutorial extends Vue {
     /* {{{ computed */
     get steps() {
         var _a, _b;
-        return (_b = (_a = this.tutorial) === null || _a === void 0 ? void 0 : _a.steps) !== null && _b !== void 0 ? _b : [];
+        const steps = (_b = (_a = this.tutorial) === null || _a === void 0 ? void 0 : _a.steps) !== null && _b !== void 0 ? _b : [];
+        const tutorialOptions = this.tutorialOptions;
+        const length = steps.length;
+        return steps.map((step, index) => {
+            return getStep(step, tutorialOptions, {
+                currentIndex: index,
+                nbTotalSteps: length,
+                previousStepIsSpecial: false,
+            });
+        });
     }
     get nbTotalSteps() {
         return this.steps.length;
@@ -944,14 +1043,17 @@ let VTutorial = class VTutorial extends Vue {
     }
     get currentStepIsSpecial() {
         const step = this.currentStep;
-        return !!step && isStepSpecialAction(step);
+        return !!step && !step.status.isActionNext;
     }
     get previousStepIsSpecial() {
-        const step = this.steps[this.currentIndex - 1];
+        let step;
+        do {
+            step = this.steps[this.currentIndex - 1];
+        } while (step === null || step === void 0 ? void 0 : step.status.skipped);
         if (!step) {
             return true;
         }
-        return isStepSpecialAction(step);
+        return !step.status.isActionNext;
     }
     /* }}} */
     /* {{{ watch */
@@ -966,44 +1068,93 @@ let VTutorial = class VTutorial extends Vue {
     /* }}} */
     /* {{{ methods */
     /* {{{ navigation */
-    start() {
+    async findStep(oldIndex, upDirection = true) {
+        let newIndex = oldIndex;
+        const nbTotalSteps = this.nbTotalSteps;
+        const steps = this.steps;
+        let step;
+        try {
+            let isSkipped;
+            do {
+                if (upDirection) {
+                    if (newIndex >= nbTotalSteps - 1) {
+                        this.stop(true);
+                        return -1;
+                    }
+                    newIndex++;
+                }
+                else {
+                    if (newIndex <= 0) {
+                        error(204);
+                        return -1;
+                    }
+                    newIndex--;
+                }
+                step = steps[newIndex];
+                if (upDirection) {
+                    /* When moving forward, we check the skipped status */
+                    isSkipped = await step.checkSkipped();
+                }
+                else {
+                    /* When moving backward, we reuse the previous skipped status */
+                    isSkipped = step.status.skipped;
+                }
+            } while (isSkipped);
+        }
+        catch (err) {
+            error(202, {
+                index: this.currentIndex,
+                fromIndex: oldIndex,
+                error: err,
+            });
+            return -1;
+        }
+        return newIndex;
+    }
+    async start() {
         if (!this.tutorial) {
             error(303);
             this.stop(false);
             return;
         }
-        this.currentIndex = 0;
+        this.currentIndex = await this.findStep(-1, true);
+        if (this.currentIndex === -1) {
+            error(203);
+            return;
+        }
         this.isRunning = true;
         this.$emit('start', this.currentIndex);
         startListening(this.onKeyEvent.bind(this));
     }
-    nextStep(forceNext = false) {
+    async nextStep(forceNext = false) {
         if (!this.isRunning) {
             return;
         }
         if (!forceNext && this.currentStepIsSpecial) {
             return;
         }
-        if (this.currentIndex >= this.nbTotalSteps - 1) {
-            this.stop(true);
+        const oldIndex = this.currentIndex;
+        const currentIndex = await this.findStep(oldIndex, true);
+        if (currentIndex > -1) {
+            this.currentIndex = currentIndex;
+            this.$emit('nextStep', currentIndex, oldIndex);
+            this.$emit('changeStep', currentIndex, oldIndex);
         }
-        this.currentIndex++;
-        this.$emit('nextStep', this.currentIndex);
-        this.$emit('changeStep', this.currentIndex);
     }
-    previousStep(forcePrevious = false) {
+    async previousStep(forcePrevious = false) {
         if (!this.isRunning) {
-            return;
-        }
-        if (this.currentIndex <= 0) {
             return;
         }
         if (!forcePrevious && this.previousStepIsSpecial) {
             return;
         }
-        this.currentIndex--;
-        this.$emit('previousStep', this.currentIndex);
-        this.$emit('changeStep', this.currentIndex);
+        const oldIndex = this.currentIndex;
+        const currentIndex = await this.findStep(oldIndex, false);
+        if (currentIndex > -1) {
+            this.currentIndex = currentIndex;
+            this.$emit('previousStep', currentIndex, oldIndex);
+            this.$emit('changeStep', currentIndex, oldIndex);
+        }
     }
     stop(isFinished = false) {
         if (!this.isRunning) {
@@ -1054,7 +1205,7 @@ let VTutorial = class VTutorial extends Vue {
         if (!this.isRunning || !step) {
             return;
         }
-        return (h(VStep$1, { step: step, options: this.tutorialOptions, tutorialInformation: {
+        return (h(VStep$1, { step: step, tutorialInformation: {
                 currentIndex: this.currentIndex,
                 nbTotalSteps: this.nbTotalSteps,
                 previousStepIsSpecial: this.previousStepIsSpecial,
@@ -1089,4 +1240,4 @@ VTutorial = __decorate([
 ], VTutorial);
 var VTutorial$1 = VTutorial;
 
-export { VTutorial$1 as default };
+export { VTutorial$1 as default, errorStatus };
