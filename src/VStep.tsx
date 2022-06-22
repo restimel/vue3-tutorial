@@ -13,10 +13,10 @@ import {
 import {
     watch,
 } from 'vue';
+
 import Window, { Box } from './components/Window';
-import {
-    mergeStepOptions,
-} from './tools/defaultValues';
+import Markdown from 'vue3-markdown-it';
+
 import {
     checkExpression,
     getActionType,
@@ -408,7 +408,9 @@ export default class VStep extends Vue<Props> {
                     <div
                         class="vue3-tutorial__step__content"
                     >
-                        {stepDesc.content}
+                        <Markdown
+                            source={stepDesc.content}
+                        />
                     </div>
                     <nav
                         class="vue3-tutorial__step__commands"

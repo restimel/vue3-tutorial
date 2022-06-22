@@ -121,10 +121,16 @@ defaultValue: _this is a mandatory property_
 The main content to be displayed in the step pop-up window. It should explain
 to user what to do.
 
+It supports markdown. So to display a text on a new line, 2 line feeds (`\n`)
+should be added.
+
+It is possible to display some text in bold with `**` or in italic with `_`.
+
+
 Example:
 ```javascript
 {
-    content: 'After filling your name and your phone number. Submit the form.',
+    content: 'After filling your **name** and your **phone number**, submit the _form_.',
 }
 ```
 
