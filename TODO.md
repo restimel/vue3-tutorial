@@ -33,8 +33,8 @@
         * ~~change props (instead of value)~~
         * ~~add a timeout for their target~~
         * check url
-* Tutorial
-    * Change architecture to test all steps status (mainly for skipStep and compute options)
+* ~~Tutorial~~
+    * ~~Change architecture to test all steps status (mainly for skipStep and compute options)~~
 * Customization
     * Accept markdown
 * documentation

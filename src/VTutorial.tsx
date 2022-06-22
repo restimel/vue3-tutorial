@@ -34,6 +34,7 @@ import {
 } from './tools/keyBinding';
 import {
     checkExpression,
+    getStep,
     isStepSpecialAction,
 } from './tools/step';
 import error, {
@@ -45,6 +46,7 @@ import {
     BindingAction,
     ErrorDetails,
     Options,
+    Step,
     StepDescription,
     Tutorial,
     TutorialEmittedError,
@@ -110,15 +112,25 @@ export default class VTutorial extends Vue<Props> {
     /* }}} */
     /* {{{ computed */
 
-    get steps() {
-        return this.tutorial?.steps ?? [];
+    get steps(): Step[] {
+        const steps = this.tutorial?.steps ?? [];
+        const tutorialOptions = this.tutorialOptions;
+        const length = steps.length;
+
+        return steps.map((step, index) => {
+            return getStep(step, tutorialOptions, {
+                currentIndex: index,
+                nbTotalSteps: length,
+                previousStepIsSpecial: false,
+            });
+        });
     }
 
-    get nbTotalSteps() {
+    get nbTotalSteps(): number {
         return this.steps.length;
     }
 
-    get currentStep(): StepDescription | undefined {
+    get currentStep(): Step | undefined {
         const step = this.steps[this.currentIndex];
 
         if (!step) {
@@ -144,18 +156,20 @@ export default class VTutorial extends Vue<Props> {
 
     get currentStepIsSpecial(): boolean {
         const step = this.currentStep;
-
-        return !!step && isStepSpecialAction(step);
+        return !!step && !step.status.isActionNext;
     }
 
     get previousStepIsSpecial(): boolean {
-        const step = this.steps[this.currentIndex - 1];
+        let step: Step;
+        do {
+            step = this.steps[this.currentIndex - 1];
+        } while(step?.status.skipped);
 
         if (!step) {
             return true;
         }
 
-        return isStepSpecialAction(step);
+        return !step.status.isActionNext;
     }
 
     /* }}} */
@@ -177,53 +191,14 @@ export default class VTutorial extends Vue<Props> {
     /* {{{ methods */
     /* {{{ navigation */
 
-    private async skipCurrentStep(step: StepDescription | undefined): Promise<boolean> {
-        const skipStep = step?.skipStep;
-
-        if (!skipStep) {
-            return false;
-        }
-
-        if (typeof skipStep === 'boolean') {
-            return skipStep;
-        }
-        if (typeof skipStep === 'function') {
-            return skipStep(this.currentIndex);
-        }
-        const operator = skipStep.check;
-        const isOperatorNotRendered = operator === 'is not rendered';
-        const isOperatorRender = isOperatorNotRendered || operator === 'is rendered';
-        const targetSelector = skipStep.target;
-        const targetElement = await getElement(targetSelector, {
-            purpose: 'skipStep',
-            timeout: skipStep.timeout ?? step?.options?.timeout ?? this.tutorialOptions.timeout!,
-            timeoutError: (details: ErrorDetails) => {
-                if (isOperatorRender) {
-                    return;
-                }
-                error(224, details);
-            },
-        });
-
-        if (!targetElement) {
-            /* If the element has not been found return false only if it is
-                * not the purpose of the operator */
-            if (!isOperatorNotRendered) {
-                return false;
-            }
-            return true;
-        }
-
-        return checkExpression(skipStep, targetElement, 'skipStep');
-    }
-
     private async findStep(oldIndex: number, upDirection = true): Promise<number> {
         let newIndex = oldIndex;
         const nbTotalSteps = this.nbTotalSteps;
         const steps = this.steps;
-        let step: StepDescription;
+        let step: Step;
 
         try {
+            let isSkipped: boolean;
             do {
                 if (upDirection) {
                     if (newIndex >= nbTotalSteps - 1) {
@@ -239,7 +214,15 @@ export default class VTutorial extends Vue<Props> {
                     newIndex--;
                 }
                 step = steps[newIndex];
-            } while(await this.skipCurrentStep(step));
+
+                if (upDirection) {
+                    /* When moving forward, we check the skipped status */
+                    isSkipped = await step.checkSkipped();
+                } else {
+                    /* When moving backward, we reuse the previous skipped status */
+                    isSkipped = step.status.skipped;
+                }
+            } while(isSkipped);
         } catch (err) {
             error(202, {
                 index: this.currentIndex,
@@ -370,7 +353,6 @@ export default class VTutorial extends Vue<Props> {
         return (
             <VStep
                 step={step}
-                options={this.tutorialOptions}
                 tutorialInformation={{
                     currentIndex: this.currentIndex,
                     nbTotalSteps: this.nbTotalSteps,

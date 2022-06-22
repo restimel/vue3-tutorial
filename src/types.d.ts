@@ -31,6 +31,7 @@ export type ExpressionUnaryOperation = 'is empty' | 'is not empty' |
 
 type TargetExpression = {
     target: string;
+    timeout?: number;
 };
 type OptionalTargetExpression = Partial<TargetExpression>;
 
@@ -157,13 +158,38 @@ export interface StepOptions {
 }
 
 export interface StepDescription {
+    /** Selector to the main element(s). */
     target?: string | string[];
+
+    /** Title of the step. */
     title?: string;
+
+    /** Text content of the step. */
     content: string;
+
+    /** Specific options for this step */
     options?: Options;
+
+    /** Check if this step should be skipped.  */
     skipStep?: Verification;
+
+    /** Define the action to go to the next step. */
     actionNext?: ActionNext;
+
+    /** Disable the "next" button if this condition expression returns false. */
     checkBeforeNext?: CheckBeforeNext;
+}
+
+interface StepStatus {
+    skipped: boolean;
+    isActionNext: boolean;
+}
+
+export interface Step {
+    desc: StepDescription;
+    status: StepStatus;
+    options: StepOptions;
+    checkSkipped: () => Promise<boolean>;
 }
 
 export type Options = Partial<StepOptions>;

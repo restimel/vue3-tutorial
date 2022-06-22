@@ -1,16 +1,31 @@
 
 /** File purpose:
- * Handle step check
+ * Handle step relative methods
  */
 
 import {
     ActionType,
     CheckExpression,
+    ErrorDetails,
     ErrorSelectorPurpose,
+    Options,
+    Step,
     StepDescription,
+    TutorialInformation,
     ValueExpression,
 } from '../types';
+
 import error from './errors';
+import { getElement } from './tools';
+
+import {
+    mergeStepOptions,
+} from './defaultValues';
+
+import {
+    reactive,
+    watch,
+} from 'vue';
 
 export function getActionType(step: StepDescription): ActionType {
     const action = step.actionNext;
@@ -73,3 +88,82 @@ export function checkExpression(expr: CheckExpression, targetEl: HTMLElement, pu
     error(301, { operation: checkOperation, purpose });
     return false;
 }
+
+async function skipCurrentStep(step: Step, info: TutorialInformation): Promise<boolean> {
+    const stepDesc = step.desc;
+    const skipStep = stepDesc?.skipStep;
+
+    if (!skipStep) {
+        return false;
+    }
+
+    if (typeof skipStep === 'boolean') {
+        return skipStep;
+    }
+    if (typeof skipStep === 'function') {
+        return skipStep(info.currentIndex);
+    }
+
+    const operator = skipStep.check;
+    const isOperatorNotRendered = operator === 'is not rendered';
+    const isOperatorRender = isOperatorNotRendered || operator === 'is rendered';
+    const targetSelector = skipStep.target;
+    const targetElement = await getElement(targetSelector, {
+        purpose: 'skipStep',
+        timeout: skipStep.timeout ?? step.options.timeout,
+        timeoutError: (details: ErrorDetails) => {
+            if (isOperatorRender) {
+                return;
+            }
+            error(224, details);
+        },
+    });
+
+    if (!targetElement) {
+        /* If the element has not been found return false only if it is
+         * not the purpose of the operator */
+        if (!isOperatorNotRendered) {
+            return false;
+        }
+        return true;
+    }
+
+    return checkExpression(skipStep, targetElement, 'skipStep');
+}
+
+export function getStep(stepDesc: StepDescription, tutorialOptions: Options, info: TutorialInformation): Step {
+    const step: Step = reactive({
+        desc: stepDesc,
+        status: {
+            isActionNext: true,
+            skipped: false,
+        },
+
+        /* will be filled immediately */
+        options: {} as any,
+
+        async checkSkipped() {
+            /* recompute the skip status */
+            const skipped = await skipCurrentStep(step, info);
+            step.status.skipped = skipped;
+            return skipped;
+        },
+    });
+
+    /* handle options */
+    watch(() => [stepDesc, tutorialOptions], () => {
+        step.options = mergeStepOptions(tutorialOptions, stepDesc.options || {});
+    }, {immediate: true, deep: true});
+
+    /* handle status.isActionNext */
+    watch(() => stepDesc.actionNext, () => {
+        const nextActionType = getActionType(stepDesc);
+        step.status.isActionNext = !isStepSpecialAction(nextActionType);
+    }, { immediate: true, deep: true });
+
+    step.checkSkipped();
+
+    return step;
+}
+
+/* test */

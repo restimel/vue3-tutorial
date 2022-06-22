@@ -20,15 +20,13 @@ import {
 import {
     checkExpression,
     getActionType,
-    isStepSpecialAction,
 } from './tools/step';
 import label, { changeTexts } from './tools/labels';
 import { resetBindings } from './tools/keyBinding';
 import {
     ActionType,
     EventAction,
-    Options,
-    StepDescription,
+    Step,
     StepOptions,
     TutorialInformation,
 } from './types';
@@ -38,8 +36,7 @@ import { getElement } from './tools/tools';
 const nope = function() {};
 
 export interface Props {
-    step: StepDescription;
-    options: Options;
+    step: Step;
     tutorialInformation: TutorialInformation;
 }
 
@@ -48,10 +45,7 @@ export default class VStep extends Vue<Props> {
     /* {{{ props */
 
     @Prop()
-    private step: StepDescription;
-
-    @Prop()
-    private options: Options;
+    private step: Step;
 
     @Prop()
     private tutorialInformation: TutorialInformation;
@@ -77,7 +71,7 @@ export default class VStep extends Vue<Props> {
     }
 
     get fullOptions(): StepOptions {
-        return mergeStepOptions(this.options, this.step.options || {});
+        return this.step.options;
     }
 
     get elementsBox(): Box[] {
@@ -93,7 +87,7 @@ export default class VStep extends Vue<Props> {
     /* {{{ Next action */
 
     get nextActionType(): ActionType {
-        return getActionType(this.step);
+        return getActionType(this.step.desc);
     }
 
     get nextActionTarget(): HTMLElement | null {
@@ -103,7 +97,7 @@ export default class VStep extends Vue<Props> {
             return null;
         }
 
-        const action = this.step.actionNext;
+        const action = this.step.desc.actionNext;
         if (typeof action === 'string') {
             return this.mainElement;
         }
@@ -117,7 +111,7 @@ export default class VStep extends Vue<Props> {
     }
 
     get needsNextButton(): boolean {
-        return !isStepSpecialAction(this.nextActionType);
+        return this.step.status.isActionNext;
     }
 
     get actionListener() {
@@ -126,7 +120,7 @@ export default class VStep extends Vue<Props> {
             const valueEventName = ['input', 'change'];
 
             if (valueEventName.includes(type)) {
-                const action = this.step.actionNext as EventAction;
+                const action = this.step.desc.actionNext as EventAction;
                 const targetElement = this.nextActionTarget!;
 
                 if (!checkExpression(action, targetElement, 'nextAction')) {
@@ -283,7 +277,7 @@ export default class VStep extends Vue<Props> {
 
     private getElements(refTimestamp: number) {
         const targetElements = this.targetElements;
-        const target = this.step.target;
+        const target = this.step.desc.target;
 
         if (!target?.length) {
             return;
@@ -382,7 +376,7 @@ export default class VStep extends Vue<Props> {
     @Emits(['finish', 'next', 'previous', 'skip'])
     public render() {
         const options = this.fullOptions;
-        const step = this.step;
+        const stepDesc = this.step.desc;
         const information = this.tutorialInformation;
 
         return (
@@ -400,7 +394,7 @@ export default class VStep extends Vue<Props> {
                         <div
                             class="vue3-tutorial__step__header__title"
                         >
-                            {step.title}
+                            {stepDesc.title}
                         </div>
                         <div
                             class="vue3-tutorial__step__header__status"
@@ -414,7 +408,7 @@ export default class VStep extends Vue<Props> {
                     <div
                         class="vue3-tutorial__step__content"
                     >
-                        {step.content}
+                        {stepDesc.content}
                     </div>
                     <nav
                         class="vue3-tutorial__step__commands"
