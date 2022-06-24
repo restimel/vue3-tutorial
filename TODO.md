@@ -2,9 +2,9 @@
 
 == Target: v1.0 ==
 
-* Create a floating window
-    * manage target scrolls
-        * adapt window position depending on scroll
+* ~~Create a floating window~~
+    * ~~manage target scrolls~~
+        * ~~adapt window position depending on scroll~~
 * create a mask
     * Deactivate interaction with elements (without mask)
     * global mask
@@ -21,7 +21,7 @@
 * steps
     * scrollIntoView
         * scroll into view
-        * keep page
+        * keep page position (and add arrows)
     * check that next is ok
         * block next action
         * disable button
@@ -58,7 +58,7 @@
 * Pause
     * restart at previous index
 * Step
-    * follow target if they move (actions or scroll)
+    * ~~follow target if they move (actions or scroll)~~
     * interaction action
         * timer
         * "next" when clicking anywhere
@@ -90,7 +90,7 @@
 * Skip
     * replace confirm dialog by modal dialog
 * Options
-    * Set an expression timeout (to have a default timeout different than timeout)
+    * title (mainly for tutorial, to set title for all steps in one tutorial, maybe remove the title property from step)
 * Global
     * allow to have several instance of vue3-tutorial on the same page
         * do not return a singleton (labels, keyBinding)

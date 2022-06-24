@@ -55,7 +55,10 @@ export default class VStep extends Vue<Props> {
 
     private removeActionListener: () => void = nope;
     private targetElements: Set<HTMLElement> = new Set();
+    private parentElements: Set<HTMLElement> = new Set();
     private timerSetFocus: number = 0;
+    private updateBox = 0;
+
 
     /* }}} */
     /* {{{ computed */
@@ -76,6 +79,9 @@ export default class VStep extends Vue<Props> {
 
     get elementsBox(): Box[] {
         const elements = this.elements;
+
+        /* XXX: only for reactivity, to force to recompute box coordinates */
+        this.updateBox;
 
         return elements.map((element) => {
             const rect = element.getBoundingClientRect();
@@ -114,6 +120,9 @@ export default class VStep extends Vue<Props> {
         return this.step.status.isActionNext;
     }
 
+    /* }}} */
+    /* {{{ listeners */
+
     get actionListener() {
         return () => {
             const type = this.nextActionType;
@@ -129,6 +138,12 @@ export default class VStep extends Vue<Props> {
             }
 
             this.$emit('next');
+        };
+    }
+
+    get recomputeBoxListener() {
+        return () => {
+            this.updateBox++;
         };
     }
 
@@ -189,6 +204,29 @@ export default class VStep extends Vue<Props> {
         if (newElements) {
             this.addClass(newElements);
         }
+
+        /* remove events */
+        this.clearScrollListener();
+        const parentElements = this.parentElements;
+
+        function addParents(el: HTMLElement) {
+            let node: HTMLElement | null = el;
+            while (node) {
+                node = node.parentElement;
+                if (node) {
+                    parentElements.add(node);
+                }
+            }
+        }
+
+        this.elements.forEach(addParents);
+
+        parentElements.add(window as any);
+    }
+
+    @Watch('parentElements', { deep: true })
+    protected onParentElementsChange() {
+        this.addScrollListener();
     }
 
     @Watch('nextActionTarget')
@@ -335,6 +373,7 @@ export default class VStep extends Vue<Props> {
             }
         }
     }
+
     private removeClass(oldTargets: HTMLElement[]) {
         const options = this.fullOptions;
 
@@ -367,13 +406,49 @@ export default class VStep extends Vue<Props> {
         };
     }
 
+    private addScrollListener() {
+        const callback = this.recomputeBoxListener;
+        const parentElements = this.parentElements;
+
+        for (const el of parentElements) {
+            el.addEventListener('scroll', callback);
+        }
+    }
+
+    private clearScrollListener() {
+        const callback = this.recomputeBoxListener;
+        const elements = this.parentElements;
+
+        for (const el of elements) {
+            el.removeEventListener('scroll', callback);
+        }
+
+        this.parentElements.clear();
+    }
+
+    private addResizeListener() {
+        const callback = this.recomputeBoxListener;
+        window.addEventListener('resize', callback);
+    }
+
+    private removeResizeListener() {
+        const callback = this.recomputeBoxListener;
+        window.removeEventListener('resize', callback);
+    }
+
     /* }}} */
     /* {{{ Life cycle */
     /* }}} */
 
+    public mounted() {
+        this.addResizeListener();
+    }
+
     public unmounted() {
         this.removeClass(this.elements);
         this.removeActionListener();
+        this.clearScrollListener();
+        this.removeResizeListener();
     }
 
     @Emits(['finish', 'next', 'previous', 'skip'])

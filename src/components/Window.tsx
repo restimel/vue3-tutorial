@@ -113,9 +113,8 @@ export default class Window extends Vue<Props> {
         const box = boxes[0] as BoxNotEmpty;
         const realPosition = !box ? 'center' : this.realPosition;
 
-        const [elWidth, elHeight] = this.elementSize;
-        const screenHeight = innerHeight - elHeight;
-        const screenWidth = innerWidth - elWidth;
+        const screenHeight = innerHeight;
+        const screenWidth = innerWidth;
 
         let x: string;
         let y: string;
@@ -159,6 +158,14 @@ export default class Window extends Vue<Props> {
     }
 
     /* }}} */
+    /* {{{ watch */
+
+    @Watch('elementsBox', { deep: true })
+    protected onElementBoxChange() {
+        setTimeout(this.refUpdateSize, 10);
+    }
+
+    /* }}} */
     /* {{{ methods */
 
     private updateSize() {
@@ -166,14 +173,6 @@ export default class Window extends Vue<Props> {
         const rect = el.getBoundingClientRect();
 
         this.elementSize = [rect.width, rect.height];
-    }
-
-    /* }}} */
-    /* {{{ watch */
-
-    @Watch('elementBox')
-    protected onElementBoxChange() {
-        setTimeout(this.refUpdateSize, 10);
     }
 
     /* }}} */
