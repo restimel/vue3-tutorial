@@ -28,8 +28,6 @@
         * enable button
     * Expression
         * check url
-* Customization
-    * Accept markdown
 * documentation
     * README
         * gif
