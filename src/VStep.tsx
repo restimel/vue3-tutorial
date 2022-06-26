@@ -14,7 +14,7 @@ import {
     watch,
 } from 'vue';
 
-import Window, { Box } from './components/Window';
+import Window from './components/Window';
 import Markdown from 'vue3-markdown-it';
 
 import {
@@ -25,13 +25,17 @@ import label, { changeTexts } from './tools/labels';
 import { resetBindings } from './tools/keyBinding';
 import {
     ActionType,
+    Box,
     EventAction,
     Step,
     StepOptions,
     TutorialInformation,
 } from './types';
 import error from './tools/errors';
-import { getElement } from './tools/tools';
+import {
+    getElement,
+    getBox,
+} from './tools/tools';
 
 const nope = function() {};
 
@@ -59,7 +63,6 @@ export default class VStep extends Vue<Props> {
     private timerSetFocus: number = 0;
     private updateBox = 0;
 
-
     /* }}} */
     /* {{{ computed */
 
@@ -83,10 +86,9 @@ export default class VStep extends Vue<Props> {
         /* XXX: only for reactivity, to force to recompute box coordinates */
         this.updateBox;
 
+        const memo = new Map();
         return elements.map((element) => {
-            const rect = element.getBoundingClientRect();
-
-            return [rect.left, rect.top, rect.right, rect.bottom];
+            return getBox(element, memo);
         });
     }
 
@@ -218,7 +220,6 @@ export default class VStep extends Vue<Props> {
                 }
             }
         }
-
         this.elements.forEach(addParents);
 
         parentElements.add(window as any);

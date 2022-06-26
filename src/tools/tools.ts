@@ -5,6 +5,7 @@
 import error from './errors';
 
 import {
+    BoxNotEmpty,
     ErrorDetails,
     ErrorSelectorPurpose,
     SelectorElement,
@@ -129,4 +130,98 @@ export function getElement(query: string, options: GetElementOptions): SelectorE
         return Promise.resolve(null);
     }
     return null;
+}
+
+export function getBox(el: HTMLElement, memo: Map<HTMLElement, BoxNotEmpty>, isParent = false): BoxNotEmpty {
+    /* Check if result is already in memory */
+    if (isParent && memo.has(el)) {
+        return memo.get(el)!;
+    }
+
+    /* Check if this element is a root element */
+    const parentEl = el.parentElement;
+    if (!parentEl) {
+        const rect = el.getBoundingClientRect();
+        const box: BoxNotEmpty = [rect.left, rect.top, rect.right, rect.bottom, 'visible'];
+        memo.set(el, box);
+        return box;
+    }
+
+    /* Now we want to check if current element is visible in parent element
+     * (due to scroll) */
+    const parentBox = getBox(parentEl, memo, true);
+
+    /* parent is itself not visible */
+    if (parentBox[4] !== 'visible') {
+        memo.set(el, parentBox);
+        return parentBox;
+    }
+
+    /* Check if current element never scrolls, in such case, we keep the
+     * parentElement box size */
+    if (isParent) {
+        const currentOverflow = getComputedStyle(el).overflow;
+        if (currentOverflow === 'visible') {
+            memo.set(el, parentBox);
+            return parentBox;
+        }
+    }
+
+    /* compare position with the parent scroll status */
+    const rect = el.getBoundingClientRect();
+    const [parentLeft, parentTop, parentRight, parentBottom] = parentBox;
+    const {
+        left: currentLeft,
+        top: currentTop,
+        right: currentRight,
+        bottom: currentBottom,
+    } = rect;
+    const min = Math.min;
+    const max = Math.max;
+
+    let box: BoxNotEmpty;
+    if (currentTop > parentBottom) {
+        box = [
+            max(currentLeft, parentLeft),
+            parentBottom,
+            min(currentRight, parentRight),
+            parentBottom,
+            'bottom',
+        ];
+    } else if (currentBottom < parentTop) {
+        box = [
+            max(currentLeft, parentLeft),
+            parentTop,
+            min(currentRight, parentRight),
+            parentTop,
+            'top',
+        ];
+    } else if (currentLeft > parentRight) {
+        box = [
+            parentRight,
+            max(currentTop, parentTop),
+            parentRight,
+            min(currentBottom, parentBottom),
+            'right',
+        ];
+    } else if (currentRight < parentLeft) {
+        box = [
+            parentLeft,
+            max(currentTop, parentTop),
+            parentLeft,
+            min(currentBottom, parentBottom),
+            'left',
+        ];
+    } else {
+        box = [
+            max(currentLeft, parentLeft),
+            max(currentTop, parentTop),
+            min(currentRight, parentRight),
+            min(currentBottom, parentBottom),
+            'visible',
+        ];
+    }
+
+    memo.set(el, box);
+    return box;
 }

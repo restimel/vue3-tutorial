@@ -8,12 +8,13 @@ import {
     minMaxValue,
 } from '../tools/tools';
 import {
+    Box,
+    BoxNotEmpty,
     Placement,
 } from '../types.d';
 
-/** [x1, y1, x2, y2] */
-type BoxNotEmpty = [number, number, number, number];
-export type Box = BoxNotEmpty | [];
+/** [style X, style Y, orientation] */
+type Position = [string, string, Placement];
 
 export interface Props {
     elementsBox?: Box[];
@@ -42,6 +43,10 @@ export default class Window extends Vue<Props> {
     /* }}} */
     /* {{{ computed */
 
+    get mainElement(): Box {
+        return this.elementsBox[0];
+    }
+
     get realPosition(): Placement {
         const position = this.position;
 
@@ -49,8 +54,7 @@ export default class Window extends Vue<Props> {
             return position;
         }
 
-        const boxes = this.elementsBox;
-        const box = boxes[0];
+        const box = this.mainElement;
         if (!box?.length) {
             return 'center';
         }
@@ -105,14 +109,66 @@ export default class Window extends Vue<Props> {
 
     get hasNoPointer(): boolean {
         const boxes = this.elementsBox;
-        return !boxes?.length || !boxes[0].length || this.realPosition === 'center';
+        return !boxes?.length || !boxes[0].length || !!this.getScrollPosition || this.realPosition === 'center';
     }
 
-    get computePosition(): [string, string, Placement] {
-        const boxes = this.elementsBox;
-        const box = boxes[0] as BoxNotEmpty;
-        const realPosition = !box ? 'center' : this.realPosition;
+    get computePosition(): Position {
+        const box = this.mainElement as BoxNotEmpty;
+        const realPosition = !box || box[4] !== 'visible' ? 'center' : this.realPosition;
 
+        return this.getPosition(box, realPosition);
+    }
+
+    get stylePosition(): string {
+        const [x, y, ] = this.computePosition;
+
+        return `left: ${x}; top: ${y};`;
+    }
+
+    /* XXX: This is only to create a reference to the same function */
+    get refUpdateSize() {
+        return this.updateSize.bind(this);
+    }
+
+    /* {{{ scroll */
+
+    get getScrollPosition(): Position | undefined {
+        const box = this.mainElement;
+        const hiddenPosition = box?.[4];
+
+        if (!hiddenPosition || hiddenPosition === 'visible') {
+            return;
+        }
+
+        return this.getPosition(box as BoxNotEmpty, hiddenPosition);
+    }
+
+    get styleScrollPosition(): string {
+        const [x, y, ] = this.getScrollPosition || [];
+
+        return `left: ${x}; top: ${y};`;
+    }
+
+    /* }}} */
+    /* }}} */
+    /* {{{ watch */
+
+    @Watch('elementsBox', { deep: true })
+    protected onElementBoxChange() {
+        setTimeout(this.refUpdateSize, 10);
+    }
+
+    /* }}} */
+    /* {{{ methods */
+
+    private updateSize() {
+        const el = this.$refs.modalWindow as HTMLElement;
+        const rect = el.getBoundingClientRect();
+
+        this.elementSize = [rect.width, rect.height];
+    }
+
+    private getPosition(box: BoxNotEmpty, realPosition: Placement): Position {
         const screenHeight = innerHeight;
         const screenWidth = innerWidth;
 
@@ -146,35 +202,6 @@ export default class Window extends Vue<Props> {
         return [x, y, realPosition];
     }
 
-    get stylePosition(): string {
-        const [x, y, ] = this.computePosition;
-
-        return `left: ${x}; top: ${y};`;
-    }
-
-    /* XXX: This is only to create a reference to the same function */
-    get refUpdateSize() {
-        return this.updateSize.bind(this);
-    }
-
-    /* }}} */
-    /* {{{ watch */
-
-    @Watch('elementsBox', { deep: true })
-    protected onElementBoxChange() {
-        setTimeout(this.refUpdateSize, 10);
-    }
-
-    /* }}} */
-    /* {{{ methods */
-
-    private updateSize() {
-        const el = this.$refs.modalWindow as HTMLElement;
-        const rect = el.getBoundingClientRect();
-
-        this.elementSize = [rect.width, rect.height];
-    }
-
     /* }}} */
     /* {{{ Life cycle */
 
@@ -199,11 +226,25 @@ export default class Window extends Vue<Props> {
                     width="15"
                     height="15"
                     viewBox="0 0 30 30"
-                    path="M0,0L0,15L5,5L15,0L0,0L25,30L25,25L30,25Z"
+                    path="M0,0L0,15L5,5L25,30L25,25L30,25L5,5L15,0L0,0Z"
                     style={this.stylePosition}
                     class={[
                         'vue3-tutorial__window-arrow',
                         'position-' + position,
+                        this.arrowAnimation ? 'animation' : '',
+                    ]}
+                />
+                )}
+                {!!this.getScrollPosition && (
+                <SVG
+                    width="30"
+                    height="30"
+                    viewBox="0 0 30 30"
+                    path="M0,0L0,15L7,7L10,30L30,10L7,7L15,0L0,0Z"
+                    style={this.styleScrollPosition}
+                    class={[
+                        'vue3-tutorial__window-scroll-arrow',
+                        'position-' + this.getScrollPosition[2],
                         this.arrowAnimation ? 'animation' : '',
                     ]}
                 />

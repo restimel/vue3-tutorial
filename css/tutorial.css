@@ -36,13 +36,13 @@
 /* {{{ animations */
 
 @keyframes v3-tutorial-verticalWave {
-    from {margin-top: -2px;}
-    to {margin-top: 2px;}
+    from {margin-top: -3px;}
+    to {margin-top: 3px;}
 }
 
 @keyframes v3-tutorial-horizontalWave {
-    from {margin-left: -2px;}
-    to {margin-left: 2px;}
+    from {margin-left: -3px;}
+    to {margin-left: 3px;}
 }
 
 /* }}} */
@@ -71,13 +71,15 @@
     transform: translate(-50%, -50%);
 }
 
-.vue3-tutorial__window-arrow {
+.vue3-tutorial__window-arrow,
+.vue3-tutorial__window-scroll-arrow {
     position: fixed;
     z-index: calc(var(--vue3-tutorial-zindex) + 10);
     fill: var(--vue3-tutorial-brand-primary);
-    stroke: rgba(250, 250, 250, 0.5);
+    stroke: var(--vue3-tutorial-brand-secondary);
 }
-.vue3-tutorial__window-arrow.animation {
+.vue3-tutorial__window-arrow.animation,
+.vue3-tutorial__window-scroll-arrow.animation {
     animation-timing-function: ease-in-out;
     animation-duration: 0.75s;
     animation-iteration-count: infinite;
@@ -100,6 +102,27 @@
     animation-name: v3-tutorial-horizontalWave;
 }
 .vue3-tutorial__window-arrow.position-center {
+    display: none;
+}
+
+.vue3-tutorial__window-scroll-arrow.position-top {
+    transform: translate(-50%) rotate(45deg);
+    animation-name: v3-tutorial-verticalWave;
+}
+.vue3-tutorial__window-scroll-arrow.position-bottom {
+    transform: translate(-50%, -100%)  rotate(-135deg);
+    animation-name: v3-tutorial-verticalWave;
+}
+.vue3-tutorial__window-scroll-arrow.position-left {
+    transform: translate(0, -50%) rotate(-45deg);
+    animation-name: v3-tutorial-horizontalWave;
+}
+.vue3-tutorial__window-scroll-arrow.position-right {
+    transform: translate(-100%, -50%) rotate(135deg);
+    animation-name: v3-tutorial-horizontalWave;
+}
+.vue3-tutorial__window-scroll-arrow.position-center,
+.vue3-tutorial__window-scroll-arrow.position-visible {
     display: none;
 }
 

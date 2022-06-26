@@ -21,6 +21,12 @@ export type Binding = {
     [key in BindingAction]: string | string[];
 }
 
+export type HiddenPosition = 'visible' | 'top' | 'bottom' | 'left' | 'right';
+
+/** [x1, y1, x2, y2, hiddenPosition] */
+export type BoxNotEmpty = [number, number, number, number, HiddenPosition];
+export type Box = BoxNotEmpty | [];
+
 /* {{{ Expression */
 
 export type ExpressionValueOperation = 'is' | 'is not' | 'contains' |

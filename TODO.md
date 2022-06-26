@@ -21,7 +21,8 @@
 * steps
     * scrollIntoView
         * scroll into view
-        * keep page position (and add arrows)
+        * keep page position
+            * ~~and add arrows~~
     * check that next is ok
         * block next action
         * disable button
