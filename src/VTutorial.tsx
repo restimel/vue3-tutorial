@@ -75,6 +75,7 @@ export {
     FocusBehavior,
     Options,
     Placement,
+    ScrollBehavior,
     StepDescription,
     StepOptions,
     Tutorial,

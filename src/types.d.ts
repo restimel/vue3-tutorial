@@ -119,13 +119,22 @@ export type TutorialErrorCodes = {
     [code in number]: string;
 };
 
-export type ErrorSelectorPurpose = 'targets' | 'nextAction' | 'focus' | 'skipStep';
+export type ErrorSelectorPurpose = 'targets' | 'nextAction' | 'focus' | 'skipStep' | 'scroll';
 
 /* }}} */
 /* {{{ Focus */
 
 export type FocusBehavior = 'no-focus' | 'keep' | 'main-target' | {
     target: string;
+};
+
+/* }}} */
+/* {{{ scroll */
+
+type ScrollKind = 'no-scroll' | 'scroll-to';
+export type ScrollBehavior = ScrollKind | {
+    target: string;
+    timeout?: number;
 };
 
 /* }}} */
@@ -155,6 +164,9 @@ export interface StepOptions {
 
     /** Manage how to set focus when step is changing */
     focus: boolean | FocusBehavior;
+
+    /** Manage how to scroll when target is not in view */
+    scroll: boolean | ScrollBehavior;
 
     /** Change texts that are used in the tutorial */
     texts: Partial<Dictionary>;

@@ -15,14 +15,16 @@
         * target (main Element)
         * arrow
         * highlight
+        * scroll
         * mask
         * interactivity
         → checkExpression should include getElement
 * steps
     * scrollIntoView
-        * scroll into view
-        * keep page position
+        * ~~scroll into view~~
+        * ~~keep page position~~
             * ~~and add arrows~~
+        * scroll only if element is not visible
     * check that next is ok
         * block next action
         * disable button

@@ -50,6 +50,7 @@ It can have one of this values:
  * `'nextAction'`: When trying to get the element where listener should be
  added to go to next step.
  * `'focus'`: When trying to get the element to set focus on.
+ * `'scroll'`: When trying to get the element to scroll to.
  * `'skipStep'`: When trying to check if the step should be skipped.
 
 

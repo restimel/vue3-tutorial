@@ -27,6 +27,7 @@ import {
     ActionType,
     Box,
     EventAction,
+    ScrollKind,
     Step,
     StepOptions,
     TutorialInformation,
@@ -86,7 +87,7 @@ export default class VStep extends Vue<Props> {
         /* XXX: only for reactivity, to force to recompute box coordinates */
         this.updateBox;
 
-        const memo = new Map();
+        const memo = new WeakMap();
         return elements.map((element) => {
             return getBox(element, memo);
         });
@@ -207,8 +208,10 @@ export default class VStep extends Vue<Props> {
             this.addClass(newElements);
         }
 
-        /* remove events */
+        /* Remove events */
         this.clearScrollListener();
+
+        /* Add events */
         const parentElements = this.parentElements;
 
         function addParents(el: HTMLElement) {
@@ -239,6 +242,60 @@ export default class VStep extends Vue<Props> {
     /* XXX: flush: post is needed because some of the variable are related to DOM */
     @Watch('step.desc', { immediate: true, deep: false, flush: 'post' })
     protected onStepChange() {
+        this.scroll();
+        this.setFocus();
+    }
+
+    @Watch('step.desc.target', { immediate: true })
+    protected onStepTargetChange() {
+        this.resetElements();
+    }
+
+    /* }}} */
+    /* {{{ methods */
+
+    private resetElements() {
+        this.targetElements.clear();
+        this.getElements(performance.now());
+    }
+
+    private getElements(refTimestamp: number) {
+        const targetElements = this.targetElements;
+        const target = this.step.desc.target;
+
+        if (!target?.length) {
+            return;
+        }
+        let isNotReadyYet = false;
+
+        const targets = Array.isArray(target) ? target : [target];
+
+        targets.forEach((selector) => {
+            try {
+                const elements = document.querySelectorAll(selector);
+                if (elements.length) {
+                    for (const el of Array.from(elements)) {
+                        targetElements.add(el as HTMLElement);
+                    }
+                } else {
+                    isNotReadyYet = true;
+                }
+            } catch (err) {
+                error(300, { selector, purpose: 'targets', error: err as Error });
+            }
+        });
+
+        if (isNotReadyYet) {
+            const timeout = this.fullOptions.timeout;
+            if (performance.now() - refTimestamp < timeout) {
+                setTimeout(() => this.getElements(refTimestamp), 100);
+            } else {
+                error(324, { timeout, selector: targets, purpose: 'targets' });
+            }
+        }
+    }
+
+    private setFocus() {
         const fullOptions = this.fullOptions;
         const focusCfg = fullOptions.focus;
         clearTimeout(this.timerSetFocus++);
@@ -304,52 +361,29 @@ export default class VStep extends Vue<Props> {
         }
     }
 
-    @Watch('step.desc.target', { immediate: true })
-    protected onStepTargetChange() {
-        this.resetElements();
-    }
+    private async scroll() {
+        const options = this.fullOptions;
+        const scroll = options.scroll;
+        let behavior: ScrollKind;
+        let target: HTMLElement | null;
 
-    /* }}} */
-    /* {{{ methods */
-
-    private resetElements() {
-        this.targetElements.clear();
-        this.getElements(performance.now());
-    }
-
-    private getElements(refTimestamp: number) {
-        const targetElements = this.targetElements;
-        const target = this.step.desc.target;
-
-        if (!target?.length) {
-            return;
+        if (typeof scroll === 'boolean') {
+            behavior = scroll ? 'scroll-to' : 'no-scroll';
+            target = this.mainElement;
+        } else if (typeof scroll === 'string') {
+            behavior = scroll;
+            target = this.mainElement;
+        } else {
+            behavior = 'scroll-to';
+            target = await getElement(scroll.target, {
+                purpose: 'scroll',
+                timeout: scroll.timeout ?? options.timeout,
+                errorIsWarning: true,
+            });
         }
-        let isNotReadyYet = false;
 
-        const targets = Array.isArray(target) ? target : [target];
-
-        targets.forEach((selector) => {
-            try {
-                const elements = document.querySelectorAll(selector);
-                if (elements.length) {
-                    for (const el of Array.from(elements)) {
-                        targetElements.add(el as HTMLElement);
-                    }
-                } else {
-                    isNotReadyYet = true;
-                }
-            } catch (err) {
-                error(300, { selector, purpose: 'targets', error: err as Error });
-            }
-        });
-
-        if (isNotReadyYet) {
-            const timeout = this.fullOptions.timeout;
-            if (performance.now() - refTimestamp < timeout) {
-                setTimeout(() => this.getElements(refTimestamp), 100);
-            } else {
-                error(324, { timeout, selector: targets, purpose: 'targets' });
-            }
+        if (target && behavior === 'scroll-to') {
+            target.scrollIntoView({ behavior: 'smooth' });
         }
     }
 

@@ -71,6 +71,7 @@ export function minMaxValue(value: number, min: number, max: number): number {
 type GetElementSyncOptions = {
     purpose: ErrorSelectorPurpose;
     timeoutError?: (details: ErrorDetails) => void;
+    errorIsWarning?: boolean;
 };
 
 type GetElementAsyncOptions = GetElementSyncOptions & {
@@ -87,6 +88,7 @@ export function getElement(query: string, options: GetElementOptions): SelectorE
         purpose,
         timeout,
         timeoutError,
+        errorIsWarning,
         refTime = performance.now(),
     } = options as GetElementAsyncOptions;
 
@@ -107,6 +109,8 @@ export function getElement(query: string, options: GetElementOptions): SelectorE
 
                 if (typeof timeoutError === 'function') {
                     timeoutError(details);
+                } else if (errorIsWarning) {
+                    error(224, details);
                 } else {
                     error(324, details);
                 }
@@ -132,7 +136,7 @@ export function getElement(query: string, options: GetElementOptions): SelectorE
     return null;
 }
 
-export function getBox(el: HTMLElement, memo: Map<HTMLElement, BoxNotEmpty>, isParent = false): BoxNotEmpty {
+export function getBox(el: HTMLElement, memo: WeakMap<HTMLElement, BoxNotEmpty>, isParent = false): BoxNotEmpty {
     /* Check if result is already in memory */
     if (isParent && memo.has(el)) {
         return memo.get(el)!;

@@ -352,6 +352,10 @@ to focus when changing step. `true` is equivalent to `'main-target'`. `false`
 is equivalent to `'no-focus'`. Note that setting focus to some elements may
 break the key binding which is only active if no elements are focused.
 _Default value: `'no-focus'`_.
+* **scroll** {`boolean | [ScrollBehavior](#ScrollBehavior)`}: Define how to
+behave when main target element is not visible in the page (due to scroll).
+`true` is equivalent to `'scroll-to'`. `false` is equivalent to `'no-scroll'`.
+_Default value: `'scroll-to'` on main target element_.
 * **texts** {`[Dictionary](#Dictionary)`}: Allow to change texts which are displayed in vue3-tutorial. This can be used for translations or to
 display your own texts.
 * **timeout** {`number`}: Duration in milliseconds before the
@@ -409,6 +413,20 @@ Define what to do about focus when step is changing.
 * **`'keep'`**: Keep the focus on the current active element.
 * **`'main-target'`**: Set focus to the main target of the step.
 * **`{ target: string }`**: set focus to the given target element.
+
+### ScrollBehavior
+
+Define how to behave when target element is not visible due to scroll.
+
+* **`'no-scroll'`**: Do not change the page position.
+Arrow is added to show where to scroll in order to see the target element.
+* **`'scroll-to'`**: When changing step automatically scroll to the target.
+ _This is the default value_
+* **`{ ... }`**:
+  * **target** `string`: Scroll to this element instead of the main target.
+  * **timeout** _optional_: {`number`} Duration in milliseconds to find the
+`target` before the timeout warning is triggered.
+_Default value is the `timeout` defined in [step options](#step_options)._
 
 ### Dictionary
 
