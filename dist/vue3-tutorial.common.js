@@ -188,7 +188,7 @@ function minMaxValue(value, min, max) {
     return value;
 }
 function getElement(query, options) {
-    const { purpose, timeout, timeoutError, refTime = performance.now(), } = options;
+    const { purpose, timeout, timeoutError, errorIsWarning, refTime = performance.now(), } = options;
     try {
         const element = document.querySelector(query);
         if (typeof timeout === 'number') {
@@ -204,6 +204,9 @@ function getElement(query, options) {
                 };
                 if (typeof timeoutError === 'function') {
                     timeoutError(details);
+                }
+                else if (errorIsWarning) {
+                    error(224, details);
                 }
                 else {
                     error(324, details);
@@ -227,6 +230,91 @@ function getElement(query, options) {
     }
     return null;
 }
+function getBox(el, memo, isParent = false) {
+    /* Check if result is already in memory */
+    if (isParent && memo.has(el)) {
+        return memo.get(el);
+    }
+    /* Check if this element is a root element */
+    const parentEl = el.parentElement;
+    if (!parentEl) {
+        const rect = el.getBoundingClientRect();
+        const box = [rect.left, rect.top, rect.right, rect.bottom, 'visible'];
+        memo.set(el, box);
+        return box;
+    }
+    /* Now we want to check if current element is visible in parent element
+     * (due to scroll) */
+    const parentBox = getBox(parentEl, memo, true);
+    /* parent is itself not visible */
+    if (parentBox[4] !== 'visible') {
+        memo.set(el, parentBox);
+        return parentBox;
+    }
+    /* Check if current element never scrolls, in such case, we keep the
+     * parentElement box size */
+    if (isParent) {
+        const currentOverflow = getComputedStyle(el).overflow;
+        if (currentOverflow === 'visible') {
+            memo.set(el, parentBox);
+            return parentBox;
+        }
+    }
+    /* compare position with the parent scroll status */
+    const rect = el.getBoundingClientRect();
+    const [parentLeft, parentTop, parentRight, parentBottom] = parentBox;
+    const { left: currentLeft, top: currentTop, right: currentRight, bottom: currentBottom, } = rect;
+    const min = Math.min;
+    const max = Math.max;
+    let box;
+    if (currentTop > parentBottom) {
+        box = [
+            max(currentLeft, parentLeft),
+            parentBottom,
+            min(currentRight, parentRight),
+            parentBottom,
+            'bottom',
+        ];
+    }
+    else if (currentBottom < parentTop) {
+        box = [
+            max(currentLeft, parentLeft),
+            parentTop,
+            min(currentRight, parentRight),
+            parentTop,
+            'top',
+        ];
+    }
+    else if (currentLeft > parentRight) {
+        box = [
+            parentRight,
+            max(currentTop, parentTop),
+            parentRight,
+            min(currentBottom, parentBottom),
+            'right',
+        ];
+    }
+    else if (currentRight < parentLeft) {
+        box = [
+            parentLeft,
+            max(currentTop, parentTop),
+            parentLeft,
+            min(currentBottom, parentBottom),
+            'left',
+        ];
+    }
+    else {
+        box = [
+            max(currentLeft, parentLeft),
+            max(currentTop, parentTop),
+            min(currentRight, parentRight),
+            min(currentBottom, parentBottom),
+            'visible',
+        ];
+    }
+    memo.set(el, box);
+    return box;
+}
 
 /* File Purpose:
  * Display a modal box on the screen depending on a position.
@@ -248,13 +336,15 @@ let Window = class Window extends vtyx.Vue {
     }
     /* }}} */
     /* {{{ computed */
+    get mainElement() {
+        return this.elementsBox[0];
+    }
     get realPosition() {
         const position = this.position;
         if (position !== 'auto') {
             return position;
         }
-        const boxes = this.elementsBox;
-        const box = boxes[0];
+        const box = this.mainElement;
         if (!(box === null || box === void 0 ? void 0 : box.length)) {
             return 'center';
         }
@@ -299,15 +389,50 @@ let Window = class Window extends vtyx.Vue {
     }
     get hasNoPointer() {
         const boxes = this.elementsBox;
-        return !(boxes === null || boxes === void 0 ? void 0 : boxes.length) || !boxes[0].length || this.realPosition === 'center';
+        return !(boxes === null || boxes === void 0 ? void 0 : boxes.length) || !boxes[0].length || !!this.getScrollPosition || this.realPosition === 'center';
     }
     get computePosition() {
-        const boxes = this.elementsBox;
-        const box = boxes[0];
-        const realPosition = !box ? 'center' : this.realPosition;
-        const [elWidth, elHeight] = this.elementSize;
-        const screenHeight = innerHeight - elHeight;
-        const screenWidth = innerWidth - elWidth;
+        const box = this.mainElement;
+        const realPosition = !box || box[4] !== 'visible' ? 'center' : this.realPosition;
+        return this.getPosition(box, realPosition);
+    }
+    get stylePosition() {
+        const [x, y,] = this.computePosition;
+        return `left: ${x}; top: ${y};`;
+    }
+    /* XXX: This is only to create a reference to the same function */
+    get refUpdateSize() {
+        return this.updateSize.bind(this);
+    }
+    /* {{{ scroll */
+    get getScrollPosition() {
+        const box = this.mainElement;
+        const hiddenPosition = box === null || box === void 0 ? void 0 : box[4];
+        if (!hiddenPosition || hiddenPosition === 'visible') {
+            return;
+        }
+        return this.getPosition(box, hiddenPosition);
+    }
+    get styleScrollPosition() {
+        const [x, y,] = this.getScrollPosition || [];
+        return `left: ${x}; top: ${y};`;
+    }
+    /* }}} */
+    /* }}} */
+    /* {{{ watch */
+    onElementBoxChange() {
+        setTimeout(this.refUpdateSize, 10);
+    }
+    /* }}} */
+    /* {{{ methods */
+    updateSize() {
+        const el = this.$refs.modalWindow;
+        const rect = el.getBoundingClientRect();
+        this.elementSize = [rect.width, rect.height];
+    }
+    getPosition(box, realPosition) {
+        const screenHeight = innerHeight;
+        const screenWidth = innerWidth;
         let x;
         let y;
         switch (realPosition) {
@@ -335,26 +460,6 @@ let Window = class Window extends vtyx.Vue {
         }
         return [x, y, realPosition];
     }
-    get stylePosition() {
-        const [x, y,] = this.computePosition;
-        return `left: ${x}; top: ${y};`;
-    }
-    /* XXX: This is only to create a reference to the same function */
-    get refUpdateSize() {
-        return this.updateSize.bind(this);
-    }
-    /* }}} */
-    /* {{{ methods */
-    updateSize() {
-        const el = this.$refs.modalWindow;
-        const rect = el.getBoundingClientRect();
-        this.elementSize = [rect.width, rect.height];
-    }
-    /* }}} */
-    /* {{{ watch */
-    onElementBoxChange() {
-        setTimeout(this.refUpdateSize, 10);
-    }
     /* }}} */
     /* {{{ Life cycle */
     mounted() {
@@ -369,9 +474,14 @@ let Window = class Window extends vtyx.Vue {
         var _a, _b;
         const position = this.computePosition[2];
         return (vtyx.h("div", { class: "vue3-tutorial__window-container" },
-            !this.hasNoPointer && (vtyx.h(SVG$1, { width: "15", height: "15", viewBox: "0 0 30 30", path: "M0,0L0,15L5,5L15,0L0,0L25,30L25,25L30,25Z", style: this.stylePosition, class: [
+            !this.hasNoPointer && (vtyx.h(SVG$1, { width: "15", height: "15", viewBox: "0 0 30 30", path: "M0,0L0,15L5,5L25,30L25,25L30,25L5,5L15,0L0,0Z", style: this.stylePosition, class: [
                     'vue3-tutorial__window-arrow',
                     'position-' + position,
+                    this.arrowAnimation ? 'animation' : '',
+                ] })),
+            !!this.getScrollPosition && (vtyx.h(SVG$1, { width: "30", height: "30", viewBox: "0 0 30 30", path: "M0,0L0,15L7,7L10,30L30,10L7,7L15,0L0,0Z", style: this.styleScrollPosition, class: [
+                    'vue3-tutorial__window-scroll-arrow',
+                    'position-' + this.getScrollPosition[2],
                     this.arrowAnimation ? 'animation' : '',
                 ] })),
             vtyx.h("div", { style: this.stylePosition, class: [
@@ -390,7 +500,7 @@ __decorate$2([
     vtyx.Prop({ default: true })
 ], Window.prototype, "arrowAnimation", void 0);
 __decorate$2([
-    vtyx.Watch('elementBox')
+    vtyx.Watch('elementsBox', { deep: true })
 ], Window.prototype, "onElementBoxChange", null);
 Window = __decorate$2([
     vtyx.Component
@@ -423,6 +533,7 @@ const DEFAULT_STEP_OPTIONS = {
     bindings: DEFAULT_BINDING,
     focus: 'no-focus',
     texts: DEFAULT_DICTIONARY,
+    scroll: 'scroll-to',
     timeout: 3000,
 };
 function mergeStepOptions(...options) {
@@ -642,16 +753,18 @@ var __decorate$1 = (this && this.__decorate) || function (decorators, target, ke
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-const nope = function () { };
+const noop = function () { };
 let VStep = class VStep extends vtyx.Vue {
     constructor() {
         /* {{{ props */
         super(...arguments);
         /* }}} */
         /* {{{ data */
-        this.removeActionListener = nope;
+        this.removeActionListener = noop;
         this.targetElements = new Set();
+        this.parentElements = new Set();
         this.timerSetFocus = 0;
+        this.updateBox = 0;
     }
     /* }}} */
     /* {{{ computed */
@@ -667,9 +780,11 @@ let VStep = class VStep extends vtyx.Vue {
     }
     get elementsBox() {
         const elements = this.elements;
+        /* XXX: only for reactivity, to force to recompute box coordinates */
+        this.updateBox;
+        const memo = new WeakMap();
         return elements.map((element) => {
-            const rect = element.getBoundingClientRect();
-            return [rect.left, rect.top, rect.right, rect.bottom];
+            return getBox(element, memo);
         });
     }
     /* {{{ Next action */
@@ -694,6 +809,8 @@ let VStep = class VStep extends vtyx.Vue {
     get needsNextButton() {
         return this.step.status.isActionNext;
     }
+    /* }}} */
+    /* {{{ listeners */
     get actionListener() {
         return () => {
             const type = this.nextActionType;
@@ -706,6 +823,11 @@ let VStep = class VStep extends vtyx.Vue {
                 }
             }
             this.$emit('next');
+        };
+    }
+    get recomputeBoxListener() {
+        return () => {
+            this.updateBox++;
         };
     }
     /* }}} */
@@ -750,12 +872,77 @@ let VStep = class VStep extends vtyx.Vue {
         if (newElements) {
             this.addClass(newElements);
         }
+        /* Remove events */
+        this.clearScrollListener();
+        /* Add events */
+        const parentElements = this.parentElements;
+        function addParents(el) {
+            let node = el;
+            while (node) {
+                node = node.parentElement;
+                if (node) {
+                    parentElements.add(node);
+                }
+            }
+        }
+        this.elements.forEach(addParents);
+        parentElements.add(window);
+    }
+    onParentElementsChange() {
+        this.addScrollListener();
     }
     onActionTypeChange() {
         this.addActionListener();
     }
     /* XXX: flush: post is needed because some of the variable are related to DOM */
     onStepChange() {
+        this.scroll();
+        this.setFocus();
+    }
+    onStepTargetChange() {
+        this.resetElements();
+    }
+    /* }}} */
+    /* {{{ methods */
+    resetElements() {
+        this.targetElements.clear();
+        this.getElements(performance.now());
+    }
+    getElements(refTimestamp) {
+        const targetElements = this.targetElements;
+        const target = this.step.desc.target;
+        if (!(target === null || target === void 0 ? void 0 : target.length)) {
+            return;
+        }
+        let isNotReadyYet = false;
+        const targets = Array.isArray(target) ? target : [target];
+        targets.forEach((selector) => {
+            try {
+                const elements = document.querySelectorAll(selector);
+                if (elements.length) {
+                    for (const el of Array.from(elements)) {
+                        targetElements.add(el);
+                    }
+                }
+                else {
+                    isNotReadyYet = true;
+                }
+            }
+            catch (err) {
+                error(300, { selector, purpose: 'targets', error: err });
+            }
+        });
+        if (isNotReadyYet) {
+            const timeout = this.fullOptions.timeout;
+            if (performance.now() - refTimestamp < timeout) {
+                setTimeout(() => this.getElements(refTimestamp), 100);
+            }
+            else {
+                error(324, { timeout, selector: targets, purpose: 'targets' });
+            }
+        }
+    }
+    setFocus() {
         const fullOptions = this.fullOptions;
         const focusCfg = fullOptions.focus;
         clearTimeout(this.timerSetFocus++);
@@ -816,47 +1003,30 @@ let VStep = class VStep extends vtyx.Vue {
             }
         }
     }
-    onStepTargetChange() {
-        this.resetElements();
-    }
-    /* }}} */
-    /* {{{ methods */
-    resetElements() {
-        this.targetElements.clear();
-        this.getElements(performance.now());
-    }
-    getElements(refTimestamp) {
-        const targetElements = this.targetElements;
-        const target = this.step.desc.target;
-        if (!(target === null || target === void 0 ? void 0 : target.length)) {
-            return;
+    async scroll() {
+        var _a;
+        const options = this.fullOptions;
+        const scroll = options.scroll;
+        let behavior;
+        let target;
+        if (typeof scroll === 'boolean') {
+            behavior = scroll ? 'scroll-to' : 'no-scroll';
+            target = this.mainElement;
         }
-        let isNotReadyYet = false;
-        const targets = Array.isArray(target) ? target : [target];
-        targets.forEach((selector) => {
-            try {
-                const elements = document.querySelectorAll(selector);
-                if (elements.length) {
-                    for (const el of Array.from(elements)) {
-                        targetElements.add(el);
-                    }
-                }
-                else {
-                    isNotReadyYet = true;
-                }
-            }
-            catch (err) {
-                error(300, { selector, purpose: 'targets', error: err });
-            }
-        });
-        if (isNotReadyYet) {
-            const timeout = this.fullOptions.timeout;
-            if (performance.now() - refTimestamp < timeout) {
-                setTimeout(() => this.getElements(refTimestamp), 100);
-            }
-            else {
-                error(324, { timeout, selector: targets, purpose: 'targets' });
-            }
+        else if (typeof scroll === 'string') {
+            behavior = scroll;
+            target = this.mainElement;
+        }
+        else {
+            behavior = 'scroll-to';
+            target = await getElement(scroll.target, {
+                purpose: 'scroll',
+                timeout: (_a = scroll.timeout) !== null && _a !== void 0 ? _a : options.timeout,
+                errorIsWarning: true,
+            });
+        }
+        if (target && behavior === 'scroll-to') {
+            target.scrollIntoView({ behavior: 'smooth' });
         }
     }
     addClass(newTargets) {
@@ -896,15 +1066,43 @@ let VStep = class VStep extends vtyx.Vue {
         el.addEventListener(eventName, this.actionListener);
         this.removeActionListener = () => {
             el.removeEventListener(eventName, this.actionListener);
-            this.removeActionListener = nope;
+            this.removeActionListener = noop;
         };
+    }
+    addScrollListener() {
+        const callback = this.recomputeBoxListener;
+        const parentElements = this.parentElements;
+        for (const el of parentElements) {
+            el.addEventListener('scroll', callback);
+        }
+    }
+    clearScrollListener() {
+        const callback = this.recomputeBoxListener;
+        const elements = this.parentElements;
+        for (const el of elements) {
+            el.removeEventListener('scroll', callback);
+        }
+        this.parentElements.clear();
+    }
+    addResizeListener() {
+        const callback = this.recomputeBoxListener;
+        window.addEventListener('resize', callback);
+    }
+    removeResizeListener() {
+        const callback = this.recomputeBoxListener;
+        window.removeEventListener('resize', callback);
     }
     /* }}} */
     /* {{{ Life cycle */
     /* }}} */
+    mounted() {
+        this.addResizeListener();
+    }
     unmounted() {
         this.removeClass(this.elements);
         this.removeActionListener();
+        this.clearScrollListener();
+        this.removeResizeListener();
     }
     render() {
         const options = this.fullOptions;
@@ -951,6 +1149,9 @@ __decorate$1([
     vtyx.Watch('elements', { deep: true })
 ], VStep.prototype, "onElementsChange", null);
 __decorate$1([
+    vtyx.Watch('parentElements', { deep: true })
+], VStep.prototype, "onParentElementsChange", null);
+__decorate$1([
     vtyx.Watch('nextActionTarget'),
     vtyx.Watch('nextActionType', { immediate: true })
 ], VStep.prototype, "onActionTypeChange", null);
@@ -995,7 +1196,7 @@ function styleInject(css, ref) {
   }
 }
 
-var css_248z = "/* {{{ variables */\n\n:root {\n    /** Main color used for component */\n    --vue3-tutorial-brand-primary: #42b883;\n\n    /** Secondary color used for contrast */\n    --vue3-tutorial-brand-secondary: #2c3e50;\n\n    /** zIndex used by popup window for the tips. It should be higher than\n     * your other components\n     * The mask will use this value.\n     * The arrow will use this value + 10;\n     * The pop-up window will use this value + 20;\n     */\n    --vue3-tutorial-zindex: 1000;\n\n    /** The background color of the step window */\n    --vue3-tutorial-step-bg-color: var(--vue3-tutorial-brand-primary);\n    /** The text color of step window */\n    --vue3-tutorial-step-text-color: white;\n\n    /** The background color of the header of step window */\n    --vue3-tutorial-step-header-bg-color: var(--vue3-tutorial-brand-secondary);\n    /** The text color of the header of step window */\n    --vue3-tutorial-step-header-text-color: var(--vue3-tutorial-step-text-color);\n\n    /** The shadow style of the popup-window */\n    --vue3-tutorial-window-shadow: 2px 5px 15px black;\n\n    /** The shadow style of the highlighted element */\n    --vue3-tutorial-highlight-shadow: 0 0 10px var(--vue3-tutorial-brand-primary), inset 0 0 10px var(--vue3-tutorial-brand-primary);\n}\n\n/* }}} */\n/* {{{ animations */\n\n@keyframes v3-tutorial-verticalWave {\n    from {margin-top: -2px;}\n    to {margin-top: 2px;}\n}\n\n@keyframes v3-tutorial-horizontalWave {\n    from {margin-left: -2px;}\n    to {margin-left: 2px;}\n}\n\n/* }}} */\n/* {{{ Window */\n\n.vue3-tutorial__window {\n    position: fixed;\n    z-index: calc(var(--vue3-tutorial-zindex) + 20);\n    box-shadow: var(--vue3-tutorial-window-shadow);\n    border-radius: 3px;\n    --vue3-tutorial-priv-window-margin: 20px;\n}\n.vue3-tutorial__window.position-top {\n    transform: translate(-50%, calc(-100% - var(--vue3-tutorial-priv-window-margin)));\n}\n.vue3-tutorial__window.position-bottom {\n    transform: translate(-50%, var(--vue3-tutorial-priv-window-margin));\n}\n.vue3-tutorial__window.position-left {\n    transform: translate(calc(-100% - var(--vue3-tutorial-priv-window-margin)), -50%);\n}\n.vue3-tutorial__window.position-right {\n    transform: translate(var(--vue3-tutorial-priv-window-margin), -50%);\n}\n.vue3-tutorial__window.position-center {\n    transform: translate(-50%, -50%);\n}\n\n.vue3-tutorial__window-arrow {\n    position: fixed;\n    z-index: calc(var(--vue3-tutorial-zindex) + 10);\n    fill: var(--vue3-tutorial-brand-primary);\n    stroke: rgba(250, 250, 250, 0.5);\n}\n.vue3-tutorial__window-arrow.animation {\n    animation-timing-function: ease-in-out;\n    animation-duration: 0.75s;\n    animation-iteration-count: infinite;\n    animation-direction: alternate;\n}\n.vue3-tutorial__window-arrow.position-top {\n    transform: translate(-50%, -100%)  rotate(-135deg);\n    animation-name: v3-tutorial-verticalWave;\n}\n.vue3-tutorial__window-arrow.position-bottom {\n    transform: translate(-50%) rotate(45deg);\n    animation-name: v3-tutorial-verticalWave;\n}\n.vue3-tutorial__window-arrow.position-left {\n    transform: translate(-100%, -50%) rotate(135deg);\n    animation-name: v3-tutorial-horizontalWave;\n}\n.vue3-tutorial__window-arrow.position-right {\n    transform: translate(0, -50%) rotate(-45deg);\n    animation-name: v3-tutorial-horizontalWave;\n}\n.vue3-tutorial__window-arrow.position-center {\n    display: none;\n}\n\n/* }}} */\n/* {{{ Step */\n\n.vue3-tutorial__step {\n    background-color: var(--vue3-tutorial-step-bg-color);\n    color: var(--vue3-tutorial-step-text-color);\n    padding: 1rem;\n    border-radius: 3px;\n}\n\n.vue3-tutorial__step__header {\n    background-color: var(--vue3-tutorial-step-header-bg-color);\n    color: var(--vue3-tutorial-step-header-text-color);\n    text-align: center;\n    padding: 0.5rem;\n    margin-top: -1rem;\n    margin-left: -1rem;\n    margin-right: -1rem;\n    border-radius: 3px;\n}\n\n.vue3-tutorial__step__header__title {\n    font-weight: 300;\n}\n\n.vue3-tutorial__step__header__status {\n    font-size: 0.7em;\n    font-style: italic;\n    opacity: 0.8;\n}\n\n.vue3-tutorial__step__content {\n    margin: 1rem 0 1rem 0;\n}\n\n.vue3-tutorial__step__btn {\n    background: transparent;\n    border: 0.05rem solid var(--vue3-tutorial-step-text-color);\n    border-radius: 0.1rem;\n    color: var(--vue3-tutorial-step-text-color);\n    cursor: pointer;\n    display: inline-block;\n    font-size: 0.8rem;\n    height: 1.8rem;\n    line-height: 1rem;\n    outline: none;\n    margin: 0 0.2rem;\n    padding: 0.35rem 0.4rem;\n    text-align: center;\n    text-decoration: none;\n    transition: all 0.2s ease;\n    vertical-align: middle;\n    white-space: nowrap;\n}\n\n.vue3-tutorial__step__btn-skip {\n    position: absolute;\n    top: 1px;\n    right: 1px;\n    font-size: 32px;\n    width: 32px;\n    height: 32px;\n    border-radius: 32px;\n    padding: 0 3px 0 3px;\n    transform: translate(calc(50% - 5px), calc(-50% + 9px)) scale(0.4);\n    transition: transform 600ms;\n}\n.vue3-tutorial__step__btn-skip:hover {\n    transform: translate(calc(50% - 5px), calc(-50% + 9px)) scale(0.7);\n}\n\n/* }}} */\n/* {{{ External elements */\n\n.vue3-tutorial-highlight {\n    box-shadow: var(--vue3-tutorial-highlight-shadow);\n}\n\n/* }}} */\n";
+var css_248z = "/* {{{ variables */\n\n:root {\n    /** Main color used for component */\n    --vue3-tutorial-brand-primary: #42b883;\n\n    /** Secondary color used for contrast */\n    --vue3-tutorial-brand-secondary: #2c3e50;\n\n    /** zIndex used by popup window for the tips. It should be higher than\n     * your other components\n     * The mask will use this value.\n     * The arrow will use this value + 10;\n     * The pop-up window will use this value + 20;\n     */\n    --vue3-tutorial-zindex: 1000;\n\n    /** The background color of the step window */\n    --vue3-tutorial-step-bg-color: var(--vue3-tutorial-brand-primary);\n    /** The text color of step window */\n    --vue3-tutorial-step-text-color: white;\n\n    /** The background color of the header of step window */\n    --vue3-tutorial-step-header-bg-color: var(--vue3-tutorial-brand-secondary);\n    /** The text color of the header of step window */\n    --vue3-tutorial-step-header-text-color: var(--vue3-tutorial-step-text-color);\n\n    /** The shadow style of the popup-window */\n    --vue3-tutorial-window-shadow: 2px 5px 15px black;\n\n    /** The shadow style of the highlighted element */\n    --vue3-tutorial-highlight-shadow: 0 0 10px var(--vue3-tutorial-brand-primary), inset 0 0 10px var(--vue3-tutorial-brand-primary);\n}\n\n/* }}} */\n/* {{{ animations */\n\n@keyframes v3-tutorial-verticalWave {\n    from {margin-top: -3px;}\n    to {margin-top: 3px;}\n}\n\n@keyframes v3-tutorial-horizontalWave {\n    from {margin-left: -3px;}\n    to {margin-left: 3px;}\n}\n\n/* }}} */\n/* {{{ Window */\n\n.vue3-tutorial__window {\n    position: fixed;\n    z-index: calc(var(--vue3-tutorial-zindex) + 20);\n    box-shadow: var(--vue3-tutorial-window-shadow);\n    border-radius: 3px;\n    --vue3-tutorial-priv-window-margin: 20px;\n}\n.vue3-tutorial__window.position-top {\n    transform: translate(-50%, calc(-100% - var(--vue3-tutorial-priv-window-margin)));\n}\n.vue3-tutorial__window.position-bottom {\n    transform: translate(-50%, var(--vue3-tutorial-priv-window-margin));\n}\n.vue3-tutorial__window.position-left {\n    transform: translate(calc(-100% - var(--vue3-tutorial-priv-window-margin)), -50%);\n}\n.vue3-tutorial__window.position-right {\n    transform: translate(var(--vue3-tutorial-priv-window-margin), -50%);\n}\n.vue3-tutorial__window.position-center {\n    transform: translate(-50%, -50%);\n}\n\n.vue3-tutorial__window-arrow,\n.vue3-tutorial__window-scroll-arrow {\n    position: fixed;\n    z-index: calc(var(--vue3-tutorial-zindex) + 10);\n    fill: var(--vue3-tutorial-brand-primary);\n    stroke: var(--vue3-tutorial-brand-secondary);\n}\n.vue3-tutorial__window-arrow.animation,\n.vue3-tutorial__window-scroll-arrow.animation {\n    animation-timing-function: ease-in-out;\n    animation-duration: 0.75s;\n    animation-iteration-count: infinite;\n    animation-direction: alternate;\n}\n.vue3-tutorial__window-arrow.position-top {\n    transform: translate(-50%, -100%)  rotate(-135deg);\n    animation-name: v3-tutorial-verticalWave;\n}\n.vue3-tutorial__window-arrow.position-bottom {\n    transform: translate(-50%) rotate(45deg);\n    animation-name: v3-tutorial-verticalWave;\n}\n.vue3-tutorial__window-arrow.position-left {\n    transform: translate(-100%, -50%) rotate(135deg);\n    animation-name: v3-tutorial-horizontalWave;\n}\n.vue3-tutorial__window-arrow.position-right {\n    transform: translate(0, -50%) rotate(-45deg);\n    animation-name: v3-tutorial-horizontalWave;\n}\n.vue3-tutorial__window-arrow.position-center {\n    display: none;\n}\n\n.vue3-tutorial__window-scroll-arrow.position-top {\n    transform: translate(-50%) rotate(45deg);\n    animation-name: v3-tutorial-verticalWave;\n}\n.vue3-tutorial__window-scroll-arrow.position-bottom {\n    transform: translate(-50%, -100%)  rotate(-135deg);\n    animation-name: v3-tutorial-verticalWave;\n}\n.vue3-tutorial__window-scroll-arrow.position-left {\n    transform: translate(0, -50%) rotate(-45deg);\n    animation-name: v3-tutorial-horizontalWave;\n}\n.vue3-tutorial__window-scroll-arrow.position-right {\n    transform: translate(-100%, -50%) rotate(135deg);\n    animation-name: v3-tutorial-horizontalWave;\n}\n.vue3-tutorial__window-scroll-arrow.position-center,\n.vue3-tutorial__window-scroll-arrow.position-visible {\n    display: none;\n}\n\n/* }}} */\n/* {{{ Step */\n\n.vue3-tutorial__step {\n    background-color: var(--vue3-tutorial-step-bg-color);\n    color: var(--vue3-tutorial-step-text-color);\n    padding: 1rem;\n    border-radius: 3px;\n}\n\n.vue3-tutorial__step__header {\n    background-color: var(--vue3-tutorial-step-header-bg-color);\n    color: var(--vue3-tutorial-step-header-text-color);\n    text-align: center;\n    padding: 0.5rem;\n    margin-top: -1rem;\n    margin-left: -1rem;\n    margin-right: -1rem;\n    border-radius: 3px;\n}\n\n.vue3-tutorial__step__header__title {\n    font-weight: 300;\n}\n\n.vue3-tutorial__step__header__status {\n    font-size: 0.7em;\n    font-style: italic;\n    opacity: 0.8;\n}\n\n.vue3-tutorial__step__content {\n    margin: 1rem 0 1rem 0;\n}\n\n.vue3-tutorial__step__btn {\n    background: transparent;\n    border: 0.05rem solid var(--vue3-tutorial-step-text-color);\n    border-radius: 0.1rem;\n    color: var(--vue3-tutorial-step-text-color);\n    cursor: pointer;\n    display: inline-block;\n    font-size: 0.8rem;\n    height: 1.8rem;\n    line-height: 1rem;\n    outline: none;\n    margin: 0 0.2rem;\n    padding: 0.35rem 0.4rem;\n    text-align: center;\n    text-decoration: none;\n    transition: all 0.2s ease;\n    vertical-align: middle;\n    white-space: nowrap;\n}\n\n.vue3-tutorial__step__btn-skip {\n    position: absolute;\n    top: 1px;\n    right: 1px;\n    font-size: 32px;\n    width: 32px;\n    height: 32px;\n    border-radius: 32px;\n    padding: 0 3px 0 3px;\n    transform: translate(calc(50% - 5px), calc(-50% + 9px)) scale(0.4);\n    transition: transform 600ms;\n}\n.vue3-tutorial__step__btn-skip:hover {\n    transform: translate(calc(50% - 5px), calc(-50% + 9px)) scale(0.7);\n}\n\n/* }}} */\n/* {{{ External elements */\n\n.vue3-tutorial-highlight {\n    box-shadow: var(--vue3-tutorial-highlight-shadow);\n}\n\n/* }}} */\n";
 styleInject(css_248z);
 
 /* Component Purpose:

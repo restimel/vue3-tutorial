@@ -2,7 +2,7 @@ import { h, Vue } from 'vtyx';
 import '../css/tutorial.css';
 import { Options, Step, Tutorial } from './types.d';
 export { errorStatus, } from './tools/errors';
-export { Action, ActionNext, ActionType, Binding, BindingAction, CheckExpression, Dictionary, ErrorSelectorPurpose, EventAction, ExpressionUnaryOperation, ExpressionValueOperation, FocusBehavior, Options, Placement, StepDescription, StepOptions, Tutorial, TutorialEmittedError, TutorialErrorCodes, TutorialErrorStatus, TutorialInformation, } from './types.d';
+export { Action, ActionNext, ActionType, Binding, BindingAction, CheckExpression, Dictionary, ErrorSelectorPurpose, EventAction, ExpressionUnaryOperation, ExpressionValueOperation, FocusBehavior, Options, Placement, ScrollBehavior, StepDescription, StepOptions, Tutorial, TutorialEmittedError, TutorialErrorCodes, TutorialErrorStatus, TutorialInformation, } from './types.d';
 export interface Props {
     tutorial?: Tutorial | null;
     options?: Options;

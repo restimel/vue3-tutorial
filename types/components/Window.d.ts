@@ -1,8 +1,7 @@
 import { Vue, h } from 'vtyx';
-import { Placement } from '../types.d';
-/** [x1, y1, x2, y2] */
-declare type BoxNotEmpty = [number, number, number, number];
-export declare type Box = BoxNotEmpty | [];
+import { Box, Placement } from '../types.d';
+/** [style X, style Y, orientation] */
+declare type Position = [string, string, Placement];
 export interface Props {
     elementsBox?: Box[];
     position?: Placement;
@@ -13,13 +12,17 @@ export default class Window extends Vue<Props> {
     private position;
     private arrowAnimation;
     private elementSize;
+    get mainElement(): Box;
     get realPosition(): Placement;
     get hasNoPointer(): boolean;
-    get computePosition(): [string, string, Placement];
+    get computePosition(): Position;
     get stylePosition(): string;
     get refUpdateSize(): () => void;
-    private updateSize;
+    get getScrollPosition(): Position | undefined;
+    get styleScrollPosition(): string;
     protected onElementBoxChange(): void;
+    private updateSize;
+    private getPosition;
     mounted(): void;
     unmounted(): void;
     render(): h.JSX.Element;
