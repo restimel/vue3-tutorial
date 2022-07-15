@@ -38,7 +38,7 @@ import {
     getBox,
 } from './tools/tools';
 
-const nope = function() {};
+const noop = function() {};
 
 export interface Props {
     step: Step;
@@ -58,7 +58,7 @@ export default class VStep extends Vue<Props> {
     /* }}} */
     /* {{{ data */
 
-    private removeActionListener: () => void = nope;
+    private removeActionListener: () => void = noop;
     private targetElements: Set<HTMLElement> = new Set();
     private parentElements: Set<HTMLElement> = new Set();
     private timerSetFocus: number = 0;
@@ -437,7 +437,7 @@ export default class VStep extends Vue<Props> {
         el.addEventListener(eventName, this.actionListener);
         this.removeActionListener = () => {
             el.removeEventListener(eventName, this.actionListener);
-            this.removeActionListener = nope;
+            this.removeActionListener = noop;
         };
     }
 
