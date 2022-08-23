@@ -2,9 +2,6 @@
 
 == Target: v1.0 ==
 
-* ~~Create a floating window~~
-    * ~~manage target scrolls~~
-        * ~~adapt window position depending on scroll~~
 * create a mask
     * Deactivate interaction with elements (without mask)
     * global mask
@@ -21,9 +18,6 @@
         → checkExpression should include getElement
 * steps
     * scrollIntoView
-        * ~~scroll into view~~
-        * ~~keep page position~~
-            * ~~and add arrows~~
         * scroll only if element is not visible
     * check that next is ok
         * block next action
@@ -31,6 +25,8 @@
         * enable button
     * Expression
         * check url
+* Errors
+    * Add debug
 * documentation
     * README
         * gif
@@ -61,7 +57,6 @@
 * Pause
     * restart at previous index
 * Step
-    * ~~follow target if they move (actions or scroll)~~
     * interaction action
         * timer
         * "next" when clicking anywhere
