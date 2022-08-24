@@ -5,6 +5,7 @@
 
 import {
     ErrorDetails,
+    Options,
     TutorialError,
     TutorialErrorCodes,
     TutorialErrorStatus,
@@ -15,6 +16,17 @@ type Callback = (err: TutorialError) => void;
 let errorCallback: Callback | null = null;
 
 const errorMap: TutorialErrorCodes = {
+    /* 0xx : debug */
+    0: 'Tutorial mounted',
+    1: 'Tutorial unmounted',
+    2: 'Tutorial started',
+    3: 'Tutorial stopped',
+
+    20: 'Step mounted',
+    21: 'Step unmounted',
+    22: 'Step changed',
+    25: 'Target elements change',
+
     /* 1xx : info */
     /* 2xx : warning */
     200: 'Unknown error code',
@@ -76,6 +88,22 @@ export function errorStatus(code: number): TutorialErrorStatus {
         return 'warning';
     }
     return 'error';
+}
+
+export function debug(code: number, options: Options, details: ErrorDetails = {}) {
+    const debug = options.debug;
+
+    if (!debug) {
+        return;
+    }
+
+    if (debug === true || debug.includes(code)) {
+        const dbgDetails = {
+            options: options,
+            ...details,
+        };
+        error(code, dbgDetails);
+    }
 }
 
 export function registerError(callback: Callback) {

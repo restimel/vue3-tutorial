@@ -2,6 +2,8 @@
  * It handles the display for one step
  */
 
+/* Debug code = [20-29] */
+
 import {
     Component,
     Emits,
@@ -32,7 +34,7 @@ import {
     StepOptions,
     TutorialInformation,
 } from './types';
-import error from './tools/errors';
+import error, { debug } from './tools/errors';
 import {
     getElement,
     getBox,
@@ -244,11 +246,25 @@ export default class VStep extends Vue<Props> {
     protected onStepChange() {
         this.scroll();
         this.setFocus();
+
+        debug(22, this.fullOptions, {
+            step: this.step,
+            tutorialInformation: this.tutorialInformation,
+        });
     }
 
     @Watch('step.desc.target', { immediate: true })
     protected onStepTargetChange() {
         this.resetElements();
+    }
+
+    @Watch('elementsBox')
+    protected onElementsBoxChange() {
+        debug(25, this.fullOptions, {
+            elementsBox: this.elementsBox,
+            elements: this.elements,
+            tutorialInformation: this.tutorialInformation,
+        });
     }
 
     /* }}} */
@@ -477,6 +493,11 @@ export default class VStep extends Vue<Props> {
 
     public mounted() {
         this.addResizeListener();
+
+        debug(20, this.fullOptions, {
+            step: this.step,
+            tutorialInformation: this.tutorialInformation,
+        });
     }
 
     public unmounted() {
@@ -484,6 +505,11 @@ export default class VStep extends Vue<Props> {
         this.removeActionListener();
         this.clearScrollListener();
         this.removeResizeListener();
+
+        debug(21, this.fullOptions, {
+            step: this.step,
+            tutorialInformation: this.tutorialInformation,
+        });
     }
 
     @Emits(['finish', 'next', 'previous', 'skip'])

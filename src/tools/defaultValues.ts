@@ -37,6 +37,7 @@ export const DEFAULT_STEP_OPTIONS: StepOptions = {
     texts: DEFAULT_DICTIONARY,
     scroll: 'scroll-to',
     timeout: 3000,
+    debug: false,
 };
 
 export function mergeStepOptions(...options: Options[]): StepOptions {

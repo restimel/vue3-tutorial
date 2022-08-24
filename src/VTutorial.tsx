@@ -12,6 +12,8 @@
  *   change [value, isExcluded, component]: triggered when the list is closed and a change occurs
  */
 
+/* Debug code = [0-9] */
+
 import {
     Component,
     Emits,
@@ -33,26 +35,23 @@ import {
     stopListening,
 } from './tools/keyBinding';
 import {
-    checkExpression,
     getStep,
     isStepSpecialAction,
 } from './tools/step';
 import error, {
+    debug,
     registerError,
     unRegisterError,
 } from './tools/errors';
 
 import {
     BindingAction,
-    ErrorDetails,
     Options,
     Step,
-    StepDescription,
     Tutorial,
     TutorialEmittedError,
     TutorialError,
 } from './types.d';
-import { getElement } from './tools/tools';
 
 /* Export function helper to know the kind of error which is returned */
 export {
@@ -244,14 +243,16 @@ export default class VTutorial extends Vue<Props> {
             return;
         }
 
-        this.currentIndex = await this.findStep(-1, true);
-        if (this.currentIndex === -1) {
+        const currentIndex = await this.findStep(-1, true);
+        this.currentIndex = currentIndex;
+        if (currentIndex === -1) {
             error(203);
             return;
         }
         this.isRunning = true;
-        this.$emit('start', this.currentIndex);
+        this.$emit('start', currentIndex);
         startListening(this.onKeyEvent.bind(this));
+        debug(2, this.tutorialOptions, {currentIndex});
     }
 
     private async nextStep(forceNext = false) {
@@ -300,6 +301,8 @@ export default class VTutorial extends Vue<Props> {
 
         this.$emit('stop', isFinished);
         stopListening();
+
+        debug(3, this.tutorialOptions, {currentIndex: this.currentIndex});
     }
 
     private skip() {
@@ -337,10 +340,20 @@ export default class VTutorial extends Vue<Props> {
             }, err);
             this.$emit('error', errEmitted);
         });
+
+        debug(0, this.tutorialOptions, {
+            open: this.open,
+            tutorial: this.tutorial,
+        });
     }
 
     public unmounted() {
         unRegisterError();
+
+        debug(1, this.tutorialOptions, {
+            open: this.open,
+            tutorial: this.tutorial,
+        });
     }
 
     /* }}} */

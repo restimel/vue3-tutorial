@@ -1,5 +1,7 @@
 # Errors management
 
+[Back to main page](./main.md)
+
 When the error event is emitted it comes with an argument which explains the
 error.
 
@@ -18,6 +20,10 @@ debug logs. Values from 100 to 199 are related to info logs. Values from 200 to
 299 are related to warning (issues happen but it won't be a big problem to
 continue the steps). Values from 300 to 399 are related to errors (the step
 cannot behave correctly or going to next steps is problematic).
+
+### Log/Debug (0xx)
+
+[Read the dedicated page related to Debug management.](./debug.md)
 
 ### Warning (2xx)
 

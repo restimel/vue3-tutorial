@@ -173,6 +173,9 @@ export interface StepOptions {
 
     /** Timeout (in ms) after that the target is considered as "not found" */
     timeout: number;
+
+    /** Active debug logs. */
+    debug: boolean | number[];
 }
 
 export interface StepDescription {
