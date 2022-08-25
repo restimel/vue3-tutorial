@@ -242,14 +242,19 @@ export default class VTutorial extends Vue<Props> {
             this.stop(false);
             return;
         }
+        if (this.isRunning) {
+            /* The tutorial is already started */
+            return;
+        }
+        this.isRunning = true;
 
         const currentIndex = await this.findStep(-1, true);
         this.currentIndex = currentIndex;
         if (currentIndex === -1) {
             error(203);
+            this.isRunning = false;
             return;
         }
-        this.isRunning = true;
         this.$emit('start', currentIndex);
         startListening(this.onKeyEvent.bind(this));
         debug(2, this.tutorialOptions, {currentIndex});

@@ -30,6 +30,9 @@
 
     /** The shadow style of the highlighted element */
     --vue3-tutorial-highlight-shadow: 0 0 10px var(--vue3-tutorial-brand-primary), inset 0 0 10px var(--vue3-tutorial-brand-primary);
+
+    /** The mask fill color */
+    --vue3-tutorial-mask-color: #c8c8c8bb;
 }
 
 /* }}} */
@@ -124,6 +127,21 @@
 .vue3-tutorial__window-scroll-arrow.position-center,
 .vue3-tutorial__window-scroll-arrow.position-visible {
     display: none;
+}
+
+.vue3-tutorial__svg-mask {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 100%;
+    right: 100%;
+    z-index: var(--vue3-tutorial-zindex);
+    pointer-events: none;
+}
+.vue3-tutorial__mask {
+    fill: var(--vue3-tutorial-mask-color);
+    stroke: none;
+    pointer-events: fill;
 }
 
 /* }}} */

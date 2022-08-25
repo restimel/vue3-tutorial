@@ -2,11 +2,11 @@
 
 == Target: v1.0 ==
 
-* create a mask
-    * Deactivate interaction with elements (without mask)
-    * global mask
-    * simple hole
-    * multi-holes
+* ~~create a mask~~
+    * ~~Deactivate interaction with elements (without mask)~~
+    * ~~global mask~~
+    * ~~simple hole~~
+    * ~~multi-holes~~
 * Options
     * a common API for
         * target (main Element)

@@ -523,6 +523,8 @@ export default class VStep extends Vue<Props> {
                 elementsBox={this.elementsBox}
                 position={options.position}
                 arrowAnimation={options.arrowAnimation}
+                mask={options.mask}
+                maskMargin={options.maskMargin}
             >
                 <aside slot="content"
                     class="vue3-tutorial__step"

@@ -4,6 +4,7 @@
 
 import {Vue, Component, Prop, h, Watch} from 'vtyx';
 import SVG from './SVG';
+import Mask from './SVGmask';
 import {
     minMaxValue,
 } from '../tools/tools';
@@ -20,6 +21,8 @@ export interface Props {
     elementsBox?: Box[];
     position?: Placement;
     arrowAnimation?: boolean;
+    mask?: boolean;
+    maskMargin?: number;
 }
 
 const BOX_MARGIN = 25;
@@ -34,6 +37,10 @@ export default class Window extends Vue<Props> {
     private position: Placement;
     @Prop({ default: true })
     private arrowAnimation: boolean;
+    @Prop({ default: true })
+    private mask: boolean;
+    @Prop({ default: 0 })
+    private maskMargin: number;
 
     /* }}} */
     /* {{{ data */
@@ -221,6 +228,12 @@ export default class Window extends Vue<Props> {
 
         return (
             <div class="vue3-tutorial__window-container">
+                {this.mask && (
+                <Mask
+                    targets={this.elementsBox as BoxNotEmpty[]}
+                    maskMargin={this.maskMargin}
+                />
+                )}
                 {!this.hasNoPointer && (
                 <SVG
                     width="15"

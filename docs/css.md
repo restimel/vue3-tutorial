@@ -37,6 +37,10 @@ feel of vue3-tutorial.
  * `--vue3-tutorial-highlight-shadow`: The shadow style of the highlighted element.
  _Default value: `0 0 10px var(--vue3-tutorial-brand-primary), inset 0 0 10px var(--vue3-tutorial-brand-primary)`_
 
+ * `--vue3-tutorial-mask-color`: The fill color of the mask.
+ _Default value: `#c8c8c8bb`_
+
+
 ### Usage
 
 To override a css variable you only have to redefine it in a more specific
@@ -71,6 +75,7 @@ _It is added on an element or your app._
 current step. It is currently not used by vue3-tutorial, but may help you to
 identify (or style) which elements need interaction for the current step.
 _It is added on an element or your app._
+* `vue3-tutorial__mask`: is the SVG mask to give more focus to important elements.
 
 You can also add your own class to the targeted elements with the option
 `classForTargets`. Read its [documentation](./configuration.md#classForTargets)

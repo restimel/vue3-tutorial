@@ -3,7 +3,7 @@
  */
 
 
-import {Vue, Component, Emits, Prop, h} from 'vtyx';
+import {Vue, Component,  Prop, h} from 'vtyx';
 
 export interface Props {
     path: string;
