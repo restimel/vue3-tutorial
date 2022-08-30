@@ -3,6 +3,7 @@
  */
 
 import {
+    Point,
     Rect,
 } from '../types.d';
 
@@ -49,4 +50,11 @@ export function getRectOverlaps(rects: Rect[]): Rect[] {
     }
 
     return overlaps;
+}
+
+export function getRectCenter(rect: Rect): Point {
+    return [
+        (rect[0] + rect[2])/2,
+        (rect[1] + rect[3])/2,
+    ];
 }

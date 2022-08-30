@@ -31,6 +31,7 @@ export const DEFAULT_STEP_OPTIONS: StepOptions = {
     classForTargets: '',
     arrowAnimation: true,
     mask: true,
+    arrow: true,
     maskMargin: 0,
     bindings: DEFAULT_BINDING,
     focus: 'no-focus',

@@ -58,6 +58,9 @@ It can have one of this values:
  * `'focus'`: When trying to get the element to set focus on.
  * `'scroll'`: When trying to get the element to scroll to.
  * `'skipStep'`: When trying to check if the step should be skipped.
+ * `'mask'`: When trying to get the elements to create holes in the mask.
+ * `'highlight'`: When trying to get the elements to add the highlight class.
+ * `'arrow'`: When trying to get the elements to add an arrow to these elements.
 
 
 ## `errorStatus(code)`

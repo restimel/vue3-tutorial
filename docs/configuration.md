@@ -333,15 +333,24 @@ which have the following properties (each property is optional):
 
 * **position** {`[Placement](#Placement)`}: Position of the step
 window related to the main target element. _default value: `'auto'`_
-* **highlight** {`boolean`}: Highlight the main target. The class
-`'vue3-tutorial-highlight'` is added to this element. _default value: `true`_
+* **highlight** {`boolean | [ElementSelector](#ElementSelector)`}: If `true`,
+highlights the main target. The class `'vue3-tutorial-highlight'` is added to
+this element. If a selector is given, all matching elements will have this class.
+_default value: `true`_
 * **classForTargets** {`string`}: Class added to all targets.
 This can be useful if you want that these elements use one of you own class.
 Default value: `''`_
+* **arrow** {`boolean | [ElementSelector](#ElementSelector)`}: If `true`,
+displays an arrow pointing to the main target. If a selector is given, arrows
+pointing to all matching elements will be added.
+_default value: `true`_
 * **arrowAnimation** {`boolean`}: If true, the arrow is animate.
 _Default value: `true`_
-* **mask** {`boolean`}: If true a mask is added over the page
-except over targets. _Default value: `true`_
+* **mask** {`boolean | [ElementSelector](#ElementSelector)`}: If true, a mask
+is added over the page except over targets. If a selector is given, it uses
+these elements instead of targets to create holes. An empty array (`[]`), adds
+a mask without any holes.
+_Default value: `true`_
 * **maskMargin** {`number`}: Margin (in px) between target
 elements and mask. _Default value: `0`_
 * **bindings** {`[Bindings](#Bindings) | false`}: Define keys the
@@ -379,6 +388,32 @@ center of the screen.
 * **`'top'`**: Over the main target.
 * **`'left'`**: At left of the main target.
 * **`'right'`**: At right of the main target.
+
+Example:
+```javascript
+{
+    position: 'center',
+}
+```
+
+### ElementSelector
+
+This is either a string or an array of string, corresponding to a selector
+(or a list of selector) to the DOM elements. Internally, it uses
+`document.querySelectorAll`.
+
+If the selector is not correct, it generates an error with [code 300](./errors.md#error-3xx).
+If the `querySelectorAll` does not find any elements within the `timeout`
+duration, it will generate an error width [code 324](./errors.md#error-3xx)
+or [code 224](./errors.md#error-2xx) depending on the purpose of the query
+(highlight, arrows, and mask generates warning).
+
+Example:
+```javascript
+{
+    highlight: ['button.primary-action', '#main-action'],
+}
+```
 
 ### Bindings
 
@@ -427,6 +462,8 @@ Arrow is added to show where to scroll in order to see the target element.
  _This is the default value_
 * **`{ ... }`**:
   * **target** `string`: Scroll to this element instead of the main target.
+  * **scrollKind** _optional_: {`'no-scroll' | 'scroll-to'`} Describe if we should automatically scroll to the target or not.
+  _Default value is `'scroll-to'`._
   * **timeout** _optional_: {`number`} Duration in milliseconds to find the
 `target` before the timeout warning is triggered.
 _Default value is the `timeout` defined in [step options](#step_options)._

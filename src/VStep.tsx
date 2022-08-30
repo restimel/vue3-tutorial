@@ -27,8 +27,10 @@ import label, { changeTexts } from './tools/labels';
 import { resetBindings } from './tools/keyBinding';
 import {
     ActionType,
+    ArrowPosition,
     Box,
     EventAction,
+    Rect,
     ScrollKind,
     Step,
     StepOptions,
@@ -38,6 +40,8 @@ import error, { debug } from './tools/errors';
 import {
     getElement,
     getBox,
+    getPosition,
+    getPlacement,
 } from './tools/tools';
 
 const noop = function() {};
@@ -61,13 +65,22 @@ export default class VStep extends Vue<Props> {
     /* {{{ data */
 
     private removeActionListener: () => void = noop;
+    private cacheElements: Map<string, HTMLElement[]> = new Map();
+    private promiseTargetElements: Promise<any> = Promise.resolve();
     private targetElements: Set<HTMLElement> = new Set();
     private parentElements: Set<HTMLElement> = new Set();
+    private highlightElements: Set<HTMLElement> = new Set();
     private timerSetFocus: number = 0;
     private updateBox = 0;
 
     /* }}} */
     /* {{{ computed */
+
+    get fullOptions(): StepOptions {
+        return this.step.options;
+    }
+
+    /* {{{ targets */
 
     get elements(): HTMLElement[] {
         return Array.from(this.targetElements);
@@ -77,10 +90,6 @@ export default class VStep extends Vue<Props> {
         const element = this.elements[0];
 
         return element || null;
-    }
-
-    get fullOptions(): StepOptions {
-        return this.step.options;
     }
 
     get elementsBox(): Box[] {
@@ -95,6 +104,137 @@ export default class VStep extends Vue<Props> {
         });
     }
 
+    get isMainElementHidden(): boolean {
+        const mainBox = this.elementsBox[0];
+        if (mainBox && mainBox[4] !== 'visible') {
+            return true;
+        }
+        return false;
+    }
+
+    /* }}} */
+    /* {{{ mask */
+
+    get masksBox(): Box[] {
+        const { mask } = this.fullOptions;
+
+        if (!mask) {
+            return [];
+        }
+        const elementsBox = this.elementsBox;
+        if (mask === true) {
+            if (this.isMainElementHidden) {
+                /* Add the parent box, if element is not visible. This is to have a
+                * visible box to scroll */
+                return [
+                    ...elementsBox,
+                    getBox(this.mainElement!, new WeakMap(), {getParentBox: true}),
+                ];
+            } else {
+                return elementsBox;
+            }
+        }
+
+        /* XXX: only for reactivity, to force to recompute box coordinates */
+        this.updateBox;
+
+        const cache = this.cacheElements;
+        const selectors = Array.isArray(mask) ? mask : [mask];
+        const memo = new WeakMap();
+
+        const boxes = selectors.reduce((boxList, selector) => {
+            const listElements = getElement(selector, {
+                all: true,
+                purpose: 'mask',
+                cache,
+                errorIsWarning: true,
+            });
+
+            if (listElements) {
+                for (const element of listElements) {
+                    boxList.push(getBox(element, memo));
+                }
+            } else {
+                /* some elements have not been found, search them asynchronously */
+                getElement(selector, {
+                    timeout: this.fullOptions.timeout,
+                    all: true,
+                    purpose: 'mask',
+                    cache,
+                    errorIsWarning: true,
+                }).then((result) => {
+                    if (result) {
+                        /* Recompute the boxes */
+                        this.updateBox++;
+                    }
+                });
+            }
+
+            return boxList;
+        }, [] as Box[]);
+
+        /* Add the parent box, if element is not visible. This is to have a
+         * visible box to scroll */
+        if (this.isMainElementHidden) {
+            boxes.push(getBox(this.mainElement!, new WeakMap(), {getParentBox: true}));
+        }
+        return boxes;
+    }
+
+    /* }}} */
+    /* {{{ arrows */
+
+    get arrowsPosition(): boolean | ArrowPosition[] {
+        const arrow = this.fullOptions.arrow;
+
+        if (typeof arrow === 'boolean') {
+            return arrow;
+        }
+
+        /* XXX: only for reactivity, to force to recompute box coordinates */
+        this.updateBox;
+
+        const cache = this.cacheElements;
+        const selectors = Array.isArray(arrow) ? arrow : [arrow];
+        const memo = new WeakMap();
+
+        const positions = selectors.reduce((positionList, selector) => {
+            const listElements = getElement(selector, {
+                all: true,
+                purpose: 'arrow',
+                cache,
+                errorIsWarning: true,
+            });
+
+            if (listElements) {
+                for (const element of listElements) {
+                    const box = getBox(element, memo);
+                    const placement = getPlacement(box as unknown as Rect);
+                    const [x, y, position] = getPosition(box, placement);
+                    positionList.push({ x, y, position });
+                }
+            } else {
+                /* some elements have not been found, search them asynchronously */
+                getElement(selector, {
+                    timeout: this.fullOptions.timeout,
+                    all: true,
+                    purpose: 'arrow',
+                    cache,
+                    errorIsWarning: true,
+                }).then((result) => {
+                    if (result) {
+                        /* Recompute the boxes (and so arrows) */
+                        this.updateBox++;
+                    }
+                });
+            }
+            return positionList;
+        }, [] as ArrowPosition[]);
+
+        return positions;
+    }
+
+    /* }}} */
     /* {{{ Next action */
 
     get nextActionType(): ActionType {
@@ -230,6 +370,14 @@ export default class VStep extends Vue<Props> {
         parentElements.add(window as any);
     }
 
+    @Watch('elements', { deep: true, flush: 'post' })
+    @Watch('fullOptions.highlight', { deep: true, flush: 'post' })
+    protected onHighlightChange() {
+        this.removeClass(Array.from(this.highlightElements));
+        this.highlightElements.clear();
+        this.addHighlightClass();
+    }
+
     @Watch('parentElements', { deep: true })
     protected onParentElementsChange() {
         this.addScrollListener();
@@ -270,45 +418,46 @@ export default class VStep extends Vue<Props> {
     /* }}} */
     /* {{{ methods */
 
-    private resetElements() {
+    private resetElements(get = true) {
+        this.removeClass(this.elements);
+        this.removeClass(Array.from(this.highlightElements));
+        this.cacheElements.clear();
         this.targetElements.clear();
-        this.getElements(performance.now());
+        this.highlightElements.clear();
+        if (get) {
+            this.getTargetElements();
+        }
     }
 
-    private getElements(refTimestamp: number) {
+    private getTargetElements() {
         const targetElements = this.targetElements;
         const target = this.step.desc.target;
 
         if (!target?.length) {
             return;
         }
-        let isNotReadyYet = false;
+        const timeout = this.fullOptions.timeout;
+        const cache = this.cacheElements;
 
         const targets = Array.isArray(target) ? target : [target];
+        const promises: Array<Promise<any>> = [];
 
-        targets.forEach((selector) => {
-            try {
-                const elements = document.querySelectorAll(selector);
-                if (elements.length) {
-                    for (const el of Array.from(elements)) {
-                        targetElements.add(el as HTMLElement);
-                    }
-                } else {
-                    isNotReadyYet = true;
-                }
-            } catch (err) {
-                error(300, { selector, purpose: 'targets', error: err as Error });
+        targets.forEach(async (selector) => {
+            const promise = getElement(selector, {
+                timeout,
+                all: true,
+                purpose: 'targets',
+                cache,
+            });
+            promises.push(promise);
+            const elements = await promise;
+
+            if (elements?.length) {
+                elements.forEach((el) => targetElements.add(el));
             }
         });
 
-        if (isNotReadyYet) {
-            const timeout = this.fullOptions.timeout;
-            if (performance.now() - refTimestamp < timeout) {
-                setTimeout(() => this.getElements(refTimestamp), 100);
-            } else {
-                error(324, { timeout, selector: targets, purpose: 'targets' });
-            }
-        }
+        this.promiseTargetElements = Promise.all(promises);
     }
 
     private setFocus() {
@@ -384,13 +533,15 @@ export default class VStep extends Vue<Props> {
         let target: HTMLElement | null;
 
         if (typeof scroll === 'boolean') {
+            await this.promiseTargetElements;
             behavior = scroll ? 'scroll-to' : 'no-scroll';
             target = this.mainElement;
         } else if (typeof scroll === 'string') {
+            await this.promiseTargetElements;
             behavior = scroll;
             target = this.mainElement;
         } else {
-            behavior = 'scroll-to';
+            behavior = scroll.scrollKind ?? 'scroll-to';
             target = await getElement(scroll.target, {
                 purpose: 'scroll',
                 timeout: scroll.timeout ?? options.timeout,
@@ -401,6 +552,44 @@ export default class VStep extends Vue<Props> {
         if (target && behavior === 'scroll-to') {
             target.scrollIntoView({ behavior: 'smooth' });
         }
+    }
+
+    private addHighlightClass() {
+        const highlight = this.fullOptions.highlight;
+        if (!highlight) {
+            return;
+        }
+
+        const highlightElements = this.highlightElements;
+
+        if (highlight === true) {
+            const mainElement = this.mainElement;
+            if (mainElement) {
+                mainElement?.classList.add('vue3-tutorial-highlight');
+                highlightElements.add(mainElement);
+            }
+            return;
+        }
+
+        const selectors = Array.isArray(highlight) ? highlight : [highlight];
+        const timeout = this.fullOptions.timeout;
+        const cache = this.cacheElements;
+
+        selectors.forEach(async (selector) => {
+            const elements = await getElement(selector, {
+                all: true,
+                timeout,
+                purpose: 'highlight',
+                cache,
+                errorIsWarning: true,
+            });
+            if (elements) {
+                for (const el of elements) {
+                    el.classList.add('vue3-tutorial-highlight');
+                    highlightElements.add(el);
+                }
+            }
+        });
     }
 
     private addClass(newTargets: HTMLElement[]) {
@@ -415,18 +604,16 @@ export default class VStep extends Vue<Props> {
                 el.classList.add(options.classForTargets);
             }
         });
+        const highlight = options.highlight;
         const mainEl = newTargets[0];
         if (mainEl) {
             mainEl.classList.add('vue3-tutorial__main-target');
-
-            if (options.highlight) {
-                mainEl.classList.add('vue3-tutorial-highlight');
-            }
         }
     }
 
     private removeClass(oldTargets: HTMLElement[]) {
         const options = this.fullOptions;
+        const classForTargets = options.classForTargets;
 
         /* remove previous vue3-tutorial class */
         oldTargets.forEach((el) => {
@@ -435,8 +622,8 @@ export default class VStep extends Vue<Props> {
                 'vue3-tutorial__target',
                 'vue3-tutorial__main-target'
             );
-            if (options.classForTargets) {
-                el.classList.remove(options.classForTargets);
+            if (classForTargets) {
+                el.classList.remove(classForTargets);
             }
         });
     }
@@ -501,7 +688,7 @@ export default class VStep extends Vue<Props> {
     }
 
     public unmounted() {
-        this.removeClass(this.elements);
+        this.resetElements(false);
         this.removeActionListener();
         this.clearScrollListener();
         this.removeResizeListener();
@@ -521,9 +708,11 @@ export default class VStep extends Vue<Props> {
         return (
             <Window
                 elementsBox={this.elementsBox}
+                masksBox={this.masksBox}
                 position={options.position}
+                arrow={this.arrowsPosition}
                 arrowAnimation={options.arrowAnimation}
-                mask={options.mask}
+                mask={!!options.mask}
                 maskMargin={options.maskMargin}
             >
                 <aside slot="content"

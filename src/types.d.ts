@@ -1,6 +1,7 @@
 /* {{{ Not specific to Vue3-tutorial */
 
 export type SelectorElement = HTMLElement | null;
+export type SelectorElements = HTMLElement[] | null;
 
 /* }}} */
 /* {{{ Generic */
@@ -23,11 +24,16 @@ export type Binding = {
 
 export type HiddenPosition = 'visible' | 'top' | 'bottom' | 'left' | 'right';
 
+/* [x, y] */
+export type Point = [number, number];
 /* [x1, y1, x2, y2] */
 export type Rect = [number, number, number, number];
 /** [x1, y1, x2, y2, hiddenPosition] */
 export type BoxNotEmpty = [number, number, number, number, HiddenPosition];
 export type Box = BoxNotEmpty | [];
+
+/** [style X, style Y, orientation] */
+export type Position = [string, string, Placement];
 
 /* {{{ Expression */
 
@@ -98,7 +104,6 @@ export type ActionType = 'next' | SimpleEventName | ValueEventName;
 export type ActionNext = '' | 'next' | SimpleEventName | Action;
 
 /* }}} */
-/* }}} */
 /* {{{ Errors */
 
 export type TutorialError = {
@@ -121,7 +126,8 @@ export type TutorialErrorCodes = {
     [code in number]: string;
 };
 
-export type ErrorSelectorPurpose = 'targets' | 'nextAction' | 'focus' | 'skipStep' | 'scroll';
+export type ErrorSelectorPurpose = 'targets' | 'nextAction' | 'focus' | 'skipStep'
+    | 'scroll' | 'mask' | 'highlight' | 'arrow';
 
 /* }}} */
 /* {{{ Focus */
@@ -136,27 +142,50 @@ export type FocusBehavior = 'no-focus' | 'keep' | 'main-target' | {
 type ScrollKind = 'no-scroll' | 'scroll-to';
 export type ScrollBehavior = ScrollKind | {
     target: string;
+    scrollKind?: ScrollKind;
     timeout?: number;
+};
+
+/* }}} */
+/* {{{ Arrows */
+
+export type ArrowPosition = {
+    x: string; /* style x: may be a unit in px or in % */
+    y: string; /* style y: may be a unit in px or in % */
+    position: Placement;
 };
 
 /* }}} */
 /* {{{ Steps */
 
+export type ElementSelector = string | string[];
+
 export interface StepOptions {
     /** Position of the pop-up window related to the main target element */
     position: Placement;
 
-    /** If true the targets are highlighted */
-    highlight: boolean;
+    /** If true, the main target is highlighted.
+     * If false, no elements are highlighted.
+     * otherwise it highlights given elements.
+     */
+    highlight: boolean | ElementSelector;
 
     /** Class added to the targeted elements */
     classForTargets: string;
 
+    /* If true, it displays an arrow to the main target
+     * If false, it displays no arrows
+     * If an elementSelector, it displays arrows to each given elements */
+    arrow: boolean | ElementSelector;
+
     /** If true, the arrow is animate */
     arrowAnimation: boolean;
 
-    /** If true a mask is added over the page except over targets */
-    mask: boolean;
+    /** If true, a mask is added over the page except over targets.
+     * If false, no mask are displayed.
+     * if it is a list of selector, it displays a mask except other given elements.
+    */
+    mask: boolean | ElementSelector;
 
     /** Margin (in px) between target elements and mask */
     maskMargin: number;
@@ -182,7 +211,7 @@ export interface StepOptions {
 
 export interface StepDescription {
     /** Selector to the main element(s). */
-    target?: string | string[];
+    target?: ElementSelector;
 
     /** Title of the step. */
     title?: string;

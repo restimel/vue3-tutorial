@@ -6,20 +6,22 @@ import {Vue, Component, Prop, h, Watch} from 'vtyx';
 import SVG from './SVG';
 import Mask from './SVGmask';
 import {
+    getPosition,
     minMaxValue,
 } from '../tools/tools';
 import {
+    ArrowPosition,
     Box,
     BoxNotEmpty,
     Placement,
+    Position,
 } from '../types.d';
-
-/** [style X, style Y, orientation] */
-type Position = [string, string, Placement];
 
 export interface Props {
     elementsBox?: Box[];
+    masksBox?: Box[];
     position?: Placement;
+    arrow?: boolean | ArrowPosition[];
     arrowAnimation?: boolean;
     mask?: boolean;
     maskMargin?: number;
@@ -33,8 +35,12 @@ export default class Window extends Vue<Props> {
 
     @Prop({ default: () => [] })
     private elementsBox: Box[];
+    @Prop({ default: () => [] })
+    private masksBox: Box[];
     @Prop({ default: 'auto' })
     private position: Placement;
+    @Prop({ default: true })
+    private arrow: boolean | ArrowPosition[];
     @Prop({ default: true })
     private arrowAnimation: boolean;
     @Prop({ default: true })
@@ -50,7 +56,7 @@ export default class Window extends Vue<Props> {
     /* }}} */
     /* {{{ computed */
 
-    get mainElement(): Box {
+    get mainBoxElement(): Box {
         return this.elementsBox[0];
     }
 
@@ -61,7 +67,7 @@ export default class Window extends Vue<Props> {
             return position;
         }
 
-        const box = this.mainElement;
+        const box = this.mainBoxElement;
         if (!box?.length) {
             return 'center';
         }
@@ -115,15 +121,24 @@ export default class Window extends Vue<Props> {
     }
 
     get hasNoPointer(): boolean {
-        const boxes = this.elementsBox;
-        return !boxes?.length || !boxes[0].length || !!this.getScrollPosition || this.realPosition === 'center';
+        const arrow = this.arrow;
+        if (arrow === false) {
+            return true;
+        }
+
+        if (arrow === true) {
+            const boxes = this.elementsBox;
+            return !boxes?.length || !boxes[0].length || !!this.getScrollPosition || this.realPosition === 'center';
+        }
+
+        return false;
     }
 
     get computePosition(): Position {
-        const box = this.mainElement as BoxNotEmpty;
+        const box = this.mainBoxElement as BoxNotEmpty;
         const realPosition = !box || box[4] !== 'visible' ? 'center' : this.realPosition;
 
-        return this.getPosition(box, realPosition);
+        return getPosition(box, realPosition);
     }
 
     get stylePosition(): string {
@@ -140,20 +155,34 @@ export default class Window extends Vue<Props> {
     /* {{{ scroll */
 
     get getScrollPosition(): Position | undefined {
-        const box = this.mainElement;
+        const box = this.mainBoxElement;
         const hiddenPosition = box?.[4];
 
         if (!hiddenPosition || hiddenPosition === 'visible') {
             return;
         }
 
-        return this.getPosition(box as BoxNotEmpty, hiddenPosition);
+        return getPosition(box as BoxNotEmpty, hiddenPosition);
     }
 
     get styleScrollPosition(): string {
         const [x, y, ] = this.getScrollPosition || [];
 
         return `left: ${x}; top: ${y};`;
+    }
+
+    get arrowsPosition(): ArrowPosition[] {
+        const arrow = this.arrow;
+        if (!arrow || this.hasNoPointer) {
+            return [];
+        }
+
+        if (arrow === true) {
+            const [x, y, position] = this.computePosition;
+            return [{ x, y, position }];
+        }
+
+        return arrow;
     }
 
     /* }}} */
@@ -175,40 +204,6 @@ export default class Window extends Vue<Props> {
         this.elementSize = [rect.width, rect.height];
     }
 
-    private getPosition(box: BoxNotEmpty, realPosition: Placement): Position {
-        const screenHeight = innerHeight;
-        const screenWidth = innerWidth;
-
-        let x: string;
-        let y: string;
-
-        switch (realPosition) {
-            case 'bottom':
-                x = minMaxValue((box[0] + box[2]) / 2, 0, screenWidth) + 'px';
-                y = minMaxValue(box[3], 0, screenHeight) + 'px';
-                break;
-            case 'top':
-                x = minMaxValue((box[0] + box[2]) / 2, 0, screenWidth) + 'px';
-                y = minMaxValue(box[1], 0, screenHeight) + 'px';
-                break;
-            case 'left':
-                x = minMaxValue(box[0], 0, screenWidth) + 'px';
-                y = minMaxValue((box[1] + box[3]) / 2, 0, screenHeight) + 'px';
-                break;
-            case 'right':
-                x = minMaxValue(box[2], 0, screenWidth) + 'px';
-                y = minMaxValue((box[1] + box[3]) / 2, 0, screenHeight) + 'px';
-                break;
-            case 'auto':
-            case 'center':
-                x = '50%';
-                y = '50%';
-                break;
-        }
-
-        return [x, y, realPosition];
-    }
-
     /* }}} */
     /* {{{ Life cycle */
 
@@ -225,29 +220,30 @@ export default class Window extends Vue<Props> {
 
     public render() {
         const position = this.computePosition[2];
+        const arrowAnimation = this.arrowAnimation;
 
         return (
             <div class="vue3-tutorial__window-container">
                 {this.mask && (
                 <Mask
-                    targets={this.elementsBox as BoxNotEmpty[]}
+                    targets={this.masksBox as BoxNotEmpty[]}
                     maskMargin={this.maskMargin}
                 />
                 )}
-                {!this.hasNoPointer && (
+                {this.arrowsPosition.map((arrow) => (
                 <SVG
                     width="15"
                     height="15"
                     viewBox="0 0 30 30"
                     path="M0,0L0,15L5,5L25,30L25,25L30,25L5,5L15,0L0,0Z"
-                    style={this.stylePosition}
+                    style={`left: ${arrow.x}; top: ${arrow.y};`}
                     class={[
                         'vue3-tutorial__window-arrow',
-                        'position-' + position,
-                        this.arrowAnimation ? 'animation' : '',
+                        'position-' + arrow.position,
+                        arrowAnimation ? 'animation' : '',
                     ]}
                 />
-                )}
+                ))}
                 {!!this.getScrollPosition && (
                 <SVG
                     width="30"

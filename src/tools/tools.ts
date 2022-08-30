@@ -8,8 +8,13 @@ import {
     BoxNotEmpty,
     ErrorDetails,
     ErrorSelectorPurpose,
+    Placement,
+    Position,
+    Rect,
     SelectorElement,
+    SelectorElements,
 } from '../types.d';
+import { getRectCenter } from './geometry';
 
 /** merge deeply an object in another one. */
 export function merge<A extends object, B extends object>(target: A, source: B, list = new Map()): A & B {
@@ -68,34 +73,73 @@ export function minMaxValue(value: number, min: number, max: number): number {
     return value;
 }
 
-type GetElementSyncOptions = {
+type SyncOptions = {
     purpose: ErrorSelectorPurpose;
     timeoutError?: (details: ErrorDetails) => void;
     errorIsWarning?: boolean;
 };
 
-type GetElementAsyncOptions = GetElementSyncOptions & {
+type AsyncOptions = SyncOptions & {
     timeout: number;
     refTime?: number;
 };
 
-export type GetElementOptions = GetElementSyncOptions | GetElementAsyncOptions;
+type GetElementSyncOptions = SyncOptions & {
+    all?: false;
+    cache?: Map<string, HTMLElement>;
+};
+
+type GetAllElements = {
+    all: true;
+    cache?: Map<string, HTMLElement[]>;
+};
+
+type GetElementAsyncOptions = GetElementSyncOptions & AsyncOptions;
+
+
+type GetElementsSyncOptions = SyncOptions & GetAllElements
+export type GetElementsAsyncOptions = GetElementsSyncOptions & AsyncOptions
+
+export type GetElementOptions = GetElementSyncOptions | GetElementAsyncOptions
+    | GetElementsSyncOptions | GetElementsAsyncOptions;
 
 export function getElement(query: string, options: GetElementSyncOptions): SelectorElement;
 export function getElement(query: string, options: GetElementAsyncOptions): Promise<SelectorElement>;
-export function getElement(query: string, options: GetElementOptions): SelectorElement | Promise<SelectorElement> {
+export function getElement(query: string, options: GetElementsSyncOptions): SelectorElements;
+export function getElement(query: string, options: GetElementsAsyncOptions): Promise<SelectorElements>;
+export function getElement(query: string, options: GetElementOptions): SelectorElement | SelectorElements | Promise<SelectorElement | SelectorElements> {
     const {
         purpose,
         timeout,
         timeoutError,
         errorIsWarning,
+        cache,
+        all = false,
         refTime = performance.now(),
     } = options as GetElementAsyncOptions;
 
     try {
-        const element = document.querySelector(query) as SelectorElement;
+        let element: SelectorElement | SelectorElements;
+        let isEmpty: boolean = false;
+
+        if (cache?.has(query)) {
+            element = cache.get(query)!;
+        } else if (all) {
+            const elements = document.querySelectorAll(query);
+            element = !elements ? null : Array.from(elements) as SelectorElements;
+            isEmpty = !element?.length;
+        } else {
+            element = document.querySelector(query) as SelectorElement;
+            isEmpty = !element;
+        }
+
+        /* manage cache */
+        if (!isEmpty && cache) {
+            cache.set(query, element as any);
+        }
+
         if (typeof timeout === 'number') {
-            if (element) {
+            if (!isEmpty) {
                 return Promise.resolve(element);
             }
 
@@ -121,7 +165,15 @@ export function getElement(query: string, options: GetElementOptions): SelectorE
             /* If timeout is not reached then search again */
             return new Promise((resolve) => {
                 setTimeout(() => {
-                    resolve(getElement(query, { purpose, timeout, refTime, timeoutError }));
+                    resolve(getElement(query, {
+                        purpose,
+                        timeout,
+                        timeoutError,
+                        errorIsWarning,
+                        cache,
+                        all,
+                        refTime,
+                    }));
                 }, 50);
             });
         }
@@ -136,7 +188,10 @@ export function getElement(query: string, options: GetElementOptions): SelectorE
     return null;
 }
 
-export function getBox(el: HTMLElement, memo: WeakMap<HTMLElement, BoxNotEmpty>, isParent = false): BoxNotEmpty {
+export function getBox(el: HTMLElement, memo: WeakMap<HTMLElement, BoxNotEmpty>, {
+    isParent = false,
+    getParentBox = false,
+} = {}): BoxNotEmpty {
     /* Check if result is already in memory */
     if (isParent && memo.has(el)) {
         return memo.get(el)!;
@@ -153,7 +208,7 @@ export function getBox(el: HTMLElement, memo: WeakMap<HTMLElement, BoxNotEmpty>,
 
     /* Now we want to check if current element is visible in parent element
      * (due to scroll) */
-    const parentBox = getBox(parentEl, memo, true);
+    const parentBox = getBox(parentEl, memo, {isParent: true, getParentBox});
 
     /* parent is itself not visible */
     if (parentBox[4] !== 'visible') {
@@ -184,7 +239,18 @@ export function getBox(el: HTMLElement, memo: WeakMap<HTMLElement, BoxNotEmpty>,
     const max = Math.max;
 
     let box: BoxNotEmpty;
-    if (currentTop > parentBottom) {
+    if (getParentBox && (
+        currentTop > parentBottom || currentBottom < parentTop ||
+        currentLeft > parentRight || currentRight < parentLeft
+    )) {
+        box = [
+            parentLeft,
+            parentTop,
+            parentRight,
+            parentBottom,
+            'visible', // TODO use a better hidden position
+        ];
+    } else if (currentTop > parentBottom) {
         box = [
             max(currentLeft, parentLeft),
             parentBottom,
@@ -228,4 +294,80 @@ export function getBox(el: HTMLElement, memo: WeakMap<HTMLElement, BoxNotEmpty>,
 
     memo.set(el, box);
     return box;
+}
+
+export function getPosition(box: BoxNotEmpty, realPosition: Placement): Position {
+    const screenHeight = innerHeight;
+    const screenWidth = innerWidth;
+
+    let x: string;
+    let y: string;
+
+    switch (realPosition) {
+        case 'bottom':
+            x = minMaxValue((box[0] + box[2]) / 2, 0, screenWidth) + 'px';
+            y = minMaxValue(box[3], 0, screenHeight) + 'px';
+            break;
+        case 'top':
+            x = minMaxValue((box[0] + box[2]) / 2, 0, screenWidth) + 'px';
+            y = minMaxValue(box[1], 0, screenHeight) + 'px';
+            break;
+        case 'left':
+            x = minMaxValue(box[0], 0, screenWidth) + 'px';
+            y = minMaxValue((box[1] + box[3]) / 2, 0, screenHeight) + 'px';
+            break;
+        case 'right':
+            x = minMaxValue(box[2], 0, screenWidth) + 'px';
+            y = minMaxValue((box[1] + box[3]) / 2, 0, screenHeight) + 'px';
+            break;
+        case 'auto':
+        case 'center':
+            x = '50%';
+            y = '50%';
+            break;
+    }
+
+    return [x, y, realPosition];
+}
+
+export function getPlacement(targetBox: Rect, refBox?: Rect): Placement {
+    /* The placement is the direction from the refBox to the targetBox
+     */
+
+    if (!refBox) {
+        refBox = [0, 0, innerWidth, innerHeight];
+    }
+
+    /* Compare center of rects */
+    const [targetX, targetY] = getRectCenter(targetBox);
+    const [refX, refY] = getRectCenter(refBox);
+
+    if (targetX === refX) {
+        if (refY > targetY) {
+            return 'top';
+        } else {
+            /* this is also the case if points are the same (default value) */
+            return 'bottom';
+        }
+    }
+
+    const isRight = refX > targetX;
+    const deviation = (refY - targetY) / (refX - targetX);
+
+    if (isRight) {
+        if (deviation < -1) {
+            return 'top';
+        }
+        if (deviation < 1) {
+            return 'right';
+        }
+        return 'bottom';
+    }
+    if (deviation < -1) {
+        return 'bottom';
+    }
+    if (deviation < 1) {
+        return 'left';
+    }
+    return 'top';
 }

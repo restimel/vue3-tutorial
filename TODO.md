@@ -7,15 +7,13 @@
     * ~~global mask~~
     * ~~simple hole~~
     * ~~multi-holes~~
-* Options
-    * a common API for
-        * target (main Element)
-        * arrow
-        * highlight
-        * scroll
-        * mask
-        * interactivity
-        → checkExpression should include getElement
+* ~~Options~~
+    * ~~a common API for~~
+        * ~~target (main Element)~~
+        * ~~arrow~~
+        * ~~highlight~~
+        * ~~scroll~~
+        * ~~mask~~
 * steps
     * scrollIntoView
         * scroll only if element is not visible
@@ -64,6 +62,10 @@
     * options
         * hidden progress
         * No interaction at all (user cannot click on any elements (should it be the default for "next"?))
+            * Follow common API
+        * highlight in a different style
+        * arrow
+            * Allow to choose arrows direction
     * header
         * status (add icon on the right)
             * working (spinner)
