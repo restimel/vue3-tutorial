@@ -1,5 +1,5 @@
 import { h, Vue } from 'vtyx';
-import { ActionType, Box, Step, StepOptions, TutorialInformation } from './types';
+import { ActionType, ArrowPosition, Box, Step, StepOptions, TutorialInformation } from './types';
 export interface Props {
     step: Step;
     tutorialInformation: TutorialInformation;
@@ -8,14 +8,20 @@ export default class VStep extends Vue<Props> {
     private step;
     private tutorialInformation;
     private removeActionListener;
+    private cacheElements;
+    private promiseTargetElements;
     private targetElements;
     private parentElements;
+    private highlightElements;
     private timerSetFocus;
     private updateBox;
+    get fullOptions(): StepOptions;
     get elements(): HTMLElement[];
     get mainElement(): HTMLElement | null;
-    get fullOptions(): StepOptions;
     get elementsBox(): Box[];
+    get isMainElementHidden(): boolean;
+    get masksBox(): Box[];
+    get arrowsPosition(): boolean | ArrowPosition[];
     get nextActionType(): ActionType;
     get nextActionTarget(): HTMLElement | null;
     get needsNextButton(): boolean;
@@ -28,14 +34,17 @@ export default class VStep extends Vue<Props> {
     protected onTextsChange(): void;
     protected onBindingsChange(): void;
     protected onElementsChange(newElements: HTMLElement[], oldElements: HTMLElement[]): void;
+    protected onHighlightChange(): void;
     protected onParentElementsChange(): void;
     protected onActionTypeChange(): void;
     protected onStepChange(): void;
     protected onStepTargetChange(): void;
+    protected onElementsBoxChange(): void;
     private resetElements;
-    private getElements;
+    private getTargetElements;
     private setFocus;
     private scroll;
+    private addHighlightClass;
     private addClass;
     private removeClass;
     private addActionListener;
