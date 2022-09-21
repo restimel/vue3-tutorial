@@ -142,7 +142,27 @@ export default class Window extends Vue<Props> {
     }
 
     get stylePosition(): string {
-        const [x, y, ] = this.computePosition;
+        let [x, y, placement] = this.computePosition;
+        const [elWidth, elHeight] = this.elementSize;
+
+        switch (placement) {
+            case 'center':
+                break;
+            case 'bottom':
+            case 'top':
+                const valX = parseInt(x, 10);
+                if (valX < elWidth / 2) {
+                    x = elWidth / 2 + 'px';
+                }
+                break;
+            case 'left':
+            case 'right':
+                const valY = parseInt(y, 10);
+                if (valY < elHeight / 2) {
+                    y = elHeight / 2 + 'px';
+                }
+                break;
+        }
 
         return `left: ${x}; top: ${y};`;
     }
