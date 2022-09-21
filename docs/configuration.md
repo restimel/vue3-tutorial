@@ -8,7 +8,7 @@ Properties defines how to use the component.
 
 * **tutorial** {[Tutorial](#Tutorial)}: Describe the tutorial to show. If you
 modify the tutorial when it is running it restarts from first step.
-* **options** {[Options](#Step_options)} _(optional)_: Define the configuration at the _component_ level.
+* **options** {[Options](#Step-options)} _(optional)_: Define the configuration at the _component_ level.
 * **open** {boolean}: If set to `true`, the tutorial starts. If set to `false`,
 the tutorial ends.
 
@@ -36,7 +36,7 @@ Its properties are:
 debugging and to know which tutorial is running.
 * **steps** {array of [Step](#step)}: It describes the step sequence. When a
 step is finished, it displays the next one.
-* **options** {[Options](#Step_options)} _(optional)_: Define the configuration at the _tutorial_ level.
+* **options** {[Options](#Step-options)} _(optional)_: Define the configuration at the _tutorial_ level.
 
 ### tutorial example
 
@@ -136,7 +136,7 @@ Example:
 
 ### options
 
-type: _[Options](#Step_options)_
+type: _[Options](#Step-options)_
 
 defaultValue: `{}`
 
@@ -155,7 +155,7 @@ Example:
 
 ### skipStep
 
-type: _boolean | ((stepIdx: number) => boolean | Promise<boolean>) | VerificationDescription_
+type: _boolean | ((stepIdx: number) => boolean | Promise<boolean>) | CheckDescription_
 
 defaultValue: `false`
 
@@ -166,7 +166,7 @@ example, if you need to change page first).
 
 If the value is set to `true`, the step will always be skipped. It can be useful to disable a step.
 
-It is possible to declare a [check expression](#check_expression). For more complex
+It is possible to declare a [check expression](#check-expression). For more complex
 action, it is possible to use a function (which could return either a boolean
 or a promise which should return a boolean).
 
@@ -197,7 +197,7 @@ defaultValue: `'next'`
 Instead of displaying a next button, it is possible to force user to interact
 with the GUI interface.
 
-For more complex action, it is possible to declare an [Action expression](#action_expression).
+For more complex action, it is possible to declare an [Action expression](#action-expression).
 
 Example:
 ```javascript
@@ -238,7 +238,7 @@ Describe a condition check with properties.
 
 * **timeout** _optional_: {`number`} Duration in milliseconds to find the
 `target` before the timeout warning is triggered.
-_Default value is the `timeout` defined in [step options](#step_options)._
+_Default value is the `timeout` defined in [step options](#step-options)._
 
 And properties from [Expression](#expression) in order to explain expected
 condition.
@@ -256,7 +256,7 @@ listen to. If not defined it listens to the _main target_ of the step.
 
 * **timeout** _optional_: {`number`} Duration in milliseconds to find the
 `target` before the timeout warning is triggered.
-_Default value is the `timeout` defined in [step options](#step_options)._
+_Default value is the `timeout` defined in [step options](#step-options)._
 
 For actions `'input'` and `'change'`, it is needed to be completed with an
 [Expression](#expression) about expected value.
@@ -276,6 +276,7 @@ The **Expression** is composed with 3 properties:
 the operation to do to check the condition.
 
 * **value**: {`string`} The value to compare.
+_Needed only with ExpressionValueOperation._
 
 * **property** _(optional)_: Define which property to read on the element to
 get the value (note: this is the JavaScript name that should be used, for
@@ -299,7 +300,7 @@ attribute `checked`)
 * **`'is rendered'`**: the element should be available in DOM
 * **`'is not rendered'`**: the element should not be available in DOM
 
-#### ExpressionUnaryOperation
+#### ExpressionValueOperation
 
 * **`'is'`**: the value of the element should be strictly equal to the given
 value.
@@ -466,7 +467,7 @@ Arrow is added to show where to scroll in order to see the target element.
   _Default value is `'scroll-to'`._
   * **timeout** _optional_: {`number`} Duration in milliseconds to find the
 `target` before the timeout warning is triggered.
-_Default value is the `timeout` defined in [step options](#step_options)._
+_Default value is the `timeout` defined in [step options](#step-options)._
 
 ### Dictionary
 
