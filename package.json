@@ -36,7 +36,7 @@
         "build": "npm run build:ts && npm run build:bundle",
         "build:ts": "tsc -p .",
         "build:bundle": "rollup -c",
-        "pack": "npm run build && npm pack",
+        "pack": "cp ./src/types.d.ts ./types && npm run build && npm pack",
         "test": "npm run build && tape test/**/*.spec.js"
     },
     "dependencies": {
