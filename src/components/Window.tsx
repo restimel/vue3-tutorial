@@ -6,6 +6,7 @@ import {Vue, Component, Prop, h, Watch} from 'vtyx';
 import SVG from './SVG';
 import Mask from './SVGmask';
 import {
+    emptyArray,
     getPosition,
     minMaxValue,
 } from '../tools/tools';
@@ -194,7 +195,7 @@ export default class Window extends Vue<Props> {
     get arrowsPosition(): ArrowPosition[] {
         const arrow = this.arrow;
         if (!arrow || this.hasNoPointer) {
-            return [];
+            return emptyArray;
         }
 
         if (arrow === true) {

@@ -38,6 +38,7 @@ import {
 } from './types';
 import error, { debug } from './tools/errors';
 import {
+    emptyArray,
     getElement,
     getBox,
     getPosition,
@@ -119,7 +120,7 @@ export default class VStep extends Vue<Props> {
         const { mask } = this.fullOptions;
 
         if (!mask) {
-            return [];
+            return emptyArray;
         }
         const elementsBox = this.elementsBox;
         if (mask === true) {

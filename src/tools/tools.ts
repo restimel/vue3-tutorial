@@ -94,8 +94,11 @@ type GetAllElements = {
     cache?: Map<string, HTMLElement[]>;
 };
 
-type GetElementAsyncOptions = GetElementSyncOptions & AsyncOptions;
+/* This reference is only to return a common reference for an empty array.
+ * This should avoid triggering changes when only providing a new empty array */
+export const emptyArray: any[] = [];
 
+type GetElementAsyncOptions = GetElementSyncOptions & AsyncOptions;
 
 type GetElementsSyncOptions = SyncOptions & GetAllElements
 export type GetElementsAsyncOptions = GetElementsSyncOptions & AsyncOptions

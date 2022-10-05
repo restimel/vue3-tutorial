@@ -36,13 +36,15 @@ import {
 } from './tools/keyBinding';
 import {
     getStep,
-    isStepSpecialAction,
 } from './tools/step';
 import error, {
     debug,
     registerError,
     unRegisterError,
 } from './tools/errors';
+import {
+    emptyArray,
+} from './tools/tools';
 
 import {
     BindingAction,
@@ -113,9 +115,15 @@ export default class VTutorial extends Vue<Props> {
     /* {{{ computed */
 
     get steps(): Step[] {
-        const steps = this.tutorial?.steps ?? [];
+        const steps = this.tutorial?.steps;
+
+        if (!steps) {
+            return emptyArray;
+        }
+
         const tutorialOptions = this.tutorialOptions;
         const length = steps.length;
+
 
         return steps.map((step, index) => {
             return getStep(step, tutorialOptions, {
@@ -186,6 +194,10 @@ export default class VTutorial extends Vue<Props> {
 
     @Watch('steps')
     protected onStepsChange() {
+        if (!this.tutorial) {
+            this.stop();
+            return;
+        }
         this.start();
     }
 
