@@ -20,6 +20,7 @@ declare type GetAllElements = {
     all: true;
     cache?: Map<string, HTMLElement[]>;
 };
+export declare const emptyArray: any[];
 declare type GetElementAsyncOptions = GetElementSyncOptions & AsyncOptions;
 declare type GetElementsSyncOptions = SyncOptions & GetAllElements;
 export declare type GetElementsAsyncOptions = GetElementsSyncOptions & AsyncOptions;
