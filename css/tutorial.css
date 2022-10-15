@@ -57,6 +57,11 @@
     box-shadow: var(--vue3-tutorial-window-shadow);
     border-radius: 3px;
     --vue3-tutorial-priv-window-margin: 20px;
+
+    min-width: 150px;
+
+    transition-property: top, left;
+    transition-duration: 250ms;
 }
 .vue3-tutorial__window.position-top {
     transform: translate(-50%, calc(-100% - var(--vue3-tutorial-priv-window-margin)));
