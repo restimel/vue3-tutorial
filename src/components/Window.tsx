@@ -52,6 +52,7 @@ export default class Window extends Vue<Props> {
     /* {{{ data */
 
     private elementSize: [number, number] = [0, 0];
+    private timerSizeRefresh = 0;
 
     /* }}} */
     /* {{{ computed */
@@ -219,9 +220,16 @@ export default class Window extends Vue<Props> {
 
     private updateSize() {
         const el = this.$refs.modalWindow as HTMLElement;
+        if (!el) {
+            // it could be because the component has been removed (async call)
+            return;
+        }
         const rect = el.getBoundingClientRect();
 
-        this.elementSize = [rect.width, rect.height];
+        // XXX: Avoid this.elementSize = [rect.width, rect.height];
+        // because it creates a new reference (and so it renders continually)
+        this.elementSize[0] = rect.width;
+        this.elementSize[1] = rect.height;
     }
 
     /* }}} */
@@ -230,6 +238,12 @@ export default class Window extends Vue<Props> {
     public mounted() {
         this.updateSize();
         addEventListener('resize', this.refUpdateSize);
+    }
+
+    public updated() {
+        // call updateSize after all changes in render (debounce)
+        clearTimeout(this.timerSizeRefresh);
+        this.timerSizeRefresh = setTimeout(this.updateSize.bind(this), 50);
     }
 
     public unmounted() {
