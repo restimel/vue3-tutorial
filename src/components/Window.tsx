@@ -8,7 +8,6 @@ import Mask from './SVGmask';
 import {
     emptyArray,
     getPosition,
-    minMaxValue,
 } from '../tools/tools';
 import {
     ArrowPosition,

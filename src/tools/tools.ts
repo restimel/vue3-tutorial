@@ -60,7 +60,7 @@ export function merge<A extends object, B extends object>(target: A, source: B, 
 }
 
 /** Return a value which should be included between min and max */
-export function minMaxValue(value: number, min: number, max: number): number {
+function minMaxValue(value: number, min: number, max: number): number {
     if (min > max) {
         return min;
     }
