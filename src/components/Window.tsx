@@ -25,6 +25,7 @@ export interface Props {
     arrowAnimation?: boolean;
     mask?: boolean;
     maskMargin?: number;
+    teleport?: HTMLElement | boolean
 }
 
 const BOX_MARGIN = 25;
@@ -47,6 +48,8 @@ export default class Window extends Vue<Props> {
     private mask: boolean;
     @Prop({ default: 0 })
     private maskMargin: number;
+    @Prop({ default: true })
+    private teleport: HTMLElement | boolean;
 
     /* }}} */
     /* {{{ data */
@@ -173,6 +176,17 @@ export default class Window extends Vue<Props> {
         return this.updateSize.bind(this);
     }
 
+    get teleportContainer(): HTMLElement | null {
+        let el = this.teleport;
+        if (typeof el === 'boolean') {
+            if (el) {
+                return document.body;
+            }
+            return null;
+        }
+        return el;
+    }
+
     /* {{{ scroll */
 
     get getScrollPosition(): Position | undefined {
@@ -215,6 +229,11 @@ export default class Window extends Vue<Props> {
         setTimeout(this.refUpdateSize, 10);
     }
 
+    @Watch('teleport')
+    protected onTeleportChange() {
+        this.useTeleport();
+    }
+
     /* }}} */
     /* {{{ methods */
 
@@ -232,10 +251,26 @@ export default class Window extends Vue<Props> {
         this.elementSize[1] = rect.height;
     }
 
+    private useTeleport() {
+        const containerElement = this.teleportContainer;
+        const el = this.$el;
+        if (containerElement && el) {
+            containerElement.appendChild(el);
+        }
+    }
+
+    private removeTeleport() {
+        const el = this.$el;
+        const containerElement = el?.parentNode;
+
+        containerElement?.removeChild(this.$el);
+    }
+
     /* }}} */
     /* {{{ Life cycle */
 
     public mounted() {
+        this.useTeleport();
         this.updateSize();
         addEventListener('resize', this.refUpdateSize);
     }
@@ -248,6 +283,7 @@ export default class Window extends Vue<Props> {
 
     public unmounted() {
         removeEventListener('resize', this.refUpdateSize);
+        this.removeTeleport();
     }
 
     /* }}} */

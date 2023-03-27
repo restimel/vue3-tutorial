@@ -35,6 +35,7 @@ export type Box = BoxNotEmpty | [];
 /** [style X, style Y, orientation] */
 export type Position = [string, string, Placement];
 
+/* }}} */
 /* {{{ Expression */
 
 export type ExpressionValueOperation = 'is' | 'is not' | 'contains' |
@@ -204,6 +205,12 @@ export interface StepOptions {
 
     /** Timeout (in ms) after that the target is considered as "not found" */
     timeout: number;
+
+    /** Container where the window should be set.
+     * If true, it is moved to document.body.
+     * If false, it is not moved.
+     */
+    teleport: boolean | HTMLElement;
 
     /** Active debug logs. */
     debug: boolean | number[];

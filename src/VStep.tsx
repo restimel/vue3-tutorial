@@ -715,6 +715,7 @@ export default class VStep extends Vue<Props> {
                 arrowAnimation={options.arrowAnimation}
                 mask={!!options.mask}
                 maskMargin={options.maskMargin}
+                teleport={options.teleport}
             >
                 <aside slot="content"
                     class="vue3-tutorial__step"

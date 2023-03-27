@@ -373,6 +373,9 @@ timeout error is triggered. During this period, it will continually analyze
 DOM in order to find all targets. It continues until all targets are found
 or the timeout is reached. A value of 0 means that all targets should be
 already in DOM when the step is displayed. _Default value: `3000`_
+* **teleport** {`boolean | HTMLElement`}: The container where the window should be displayed.
+If the value is `true`, the window is displayed inside `document.body`. If `false`, the window is not moved.
+_Default value: `true`_
 * **debug** {`boolean|number[]`}: If true, it logs in console and emits error
 at some key features in the library. If the value is a number array, it only
 logs when given error codes are prompted. _Default value: `false`_
