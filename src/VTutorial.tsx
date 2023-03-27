@@ -216,7 +216,7 @@ export default class VTutorial extends Vue<Props> {
             do {
                 if (upDirection) {
                     if (newIndex >= nbTotalSteps - 1) {
-                        this.stop(true);
+                        this.stop(nbTotalSteps > 0);
                         return -1;
                     }
                     newIndex++;
@@ -310,6 +310,7 @@ export default class VTutorial extends Vue<Props> {
         }
     }
 
+    /** isFinished is true if the tutorial is completed */
     private stop(isFinished = false) {
         if (!this.isRunning) {
             return;

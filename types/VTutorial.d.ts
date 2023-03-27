@@ -26,6 +26,7 @@ export default class VTutorial extends Vue<Props> {
     private start;
     private nextStep;
     private previousStep;
+    /** isFinished is true if the tutorial is completed */
     private stop;
     private skip;
     private onKeyEvent;
