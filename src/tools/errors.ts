@@ -26,6 +26,8 @@ const errorMap: TutorialErrorCodes = {
     21: 'Step unmounted',
     22: 'Step changed',
     25: 'Target elements change',
+    26: 'DOM elements targeted',
+    27: 'No elements found',
 
     /* 1xx : info */
     /* 2xx : warning */
@@ -35,6 +37,7 @@ const errorMap: TutorialErrorCodes = {
     203: 'Tutorial has no active steps',
     204: 'There are no previous step',
     224: 'Timeout: some targets have not been found in the allowing time',
+    225: 'Timeout: some target elements are still hidden in the allowing time',
 
     /* 3xx : error */
     300: 'Selector is not valid',
@@ -42,6 +45,7 @@ const errorMap: TutorialErrorCodes = {
     302: 'Step not found',
     303: 'Tutorial is not defined',
     324: 'Timeout: some targets have not been found in the allowing time',
+    325: 'Timeout: some target elements are still hidden in the allowing time',
 };
 
 const MESSAGE_LOG = 'vue3-tutorial [%d]: %s';

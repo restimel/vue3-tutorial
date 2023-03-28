@@ -146,7 +146,7 @@ export function getElement(query: string, options: GetElementOptions): SelectorE
                 return Promise.resolve(element);
             }
 
-            /* Timeout have ben reached */
+            /* Timeout have been reached */
             if (performance.now() - refTime > timeout) {
                 const details = {
                     timeout,
@@ -191,6 +191,15 @@ export function getElement(query: string, options: GetElementOptions): SelectorE
     return null;
 }
 
+function isHidden(rect: DOMRect): 'visible' | 'hidden' {
+    const {x, y, width, height} = rect;
+
+    if (!x && !y && !width && !height) {
+        return 'hidden';
+    }
+    return 'visible';
+}
+
 export function getBox(el: HTMLElement, memo: WeakMap<HTMLElement, BoxNotEmpty>, {
     isParent = false,
     getParentBox = false,
@@ -204,7 +213,7 @@ export function getBox(el: HTMLElement, memo: WeakMap<HTMLElement, BoxNotEmpty>,
     const parentEl = el.parentElement;
     if (!parentEl) {
         const rect = el.getBoundingClientRect();
-        const box: BoxNotEmpty = [rect.left, rect.top, rect.right, rect.bottom, 'visible'];
+        const box: BoxNotEmpty = [rect.left, rect.top, rect.right, rect.bottom, isHidden(rect)];
         memo.set(el, box);
         return box;
     }
@@ -231,6 +240,10 @@ export function getBox(el: HTMLElement, memo: WeakMap<HTMLElement, BoxNotEmpty>,
 
     /* compare position with the parent scroll status */
     const rect = el.getBoundingClientRect();
+    if (isHidden(rect) === 'hidden') {
+        // the element is hidden (like display:none)
+        return [0, 0, 0, 0, 'hidden'];
+    }
     const [parentLeft, parentTop, parentRight, parentBottom] = parentBox;
     const {
         left: currentLeft,
@@ -246,6 +259,7 @@ export function getBox(el: HTMLElement, memo: WeakMap<HTMLElement, BoxNotEmpty>,
         currentTop > parentBottom || currentBottom < parentTop ||
         currentLeft > parentRight || currentRight < parentLeft
     )) {
+        // element is not visible inside parent
         box = [
             parentLeft,
             parentTop,
@@ -254,6 +268,7 @@ export function getBox(el: HTMLElement, memo: WeakMap<HTMLElement, BoxNotEmpty>,
             'visible', // TODO use a better hidden position
         ];
     } else if (currentTop > parentBottom) {
+        // element is at bottom
         box = [
             max(currentLeft, parentLeft),
             parentBottom,
@@ -262,6 +277,7 @@ export function getBox(el: HTMLElement, memo: WeakMap<HTMLElement, BoxNotEmpty>,
             'bottom',
         ];
     } else if (currentBottom < parentTop) {
+        // element is at top
         box = [
             max(currentLeft, parentLeft),
             parentTop,
@@ -270,6 +286,7 @@ export function getBox(el: HTMLElement, memo: WeakMap<HTMLElement, BoxNotEmpty>,
             'top',
         ];
     } else if (currentLeft > parentRight) {
+        // element is at right
         box = [
             parentRight,
             max(currentTop, parentTop),
@@ -278,6 +295,7 @@ export function getBox(el: HTMLElement, memo: WeakMap<HTMLElement, BoxNotEmpty>,
             'right',
         ];
     } else if (currentRight < parentLeft) {
+        // element is at left
         box = [
             parentLeft,
             max(currentTop, parentTop),
@@ -286,6 +304,7 @@ export function getBox(el: HTMLElement, memo: WeakMap<HTMLElement, BoxNotEmpty>,
             'left',
         ];
     } else {
+        // element is visible (at least partially)
         box = [
             max(currentLeft, parentLeft),
             max(currentTop, parentTop),

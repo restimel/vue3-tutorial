@@ -6,3 +6,6 @@
 * [Emitted values](./emits.md)
 * [Errors management](./errors.md)
   * [Debug management](./debug.md)
+
+Code documentation :wrench:
+* [Box update](./technical-box-update.md)

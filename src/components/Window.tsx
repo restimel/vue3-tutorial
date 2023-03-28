@@ -193,7 +193,7 @@ export default class Window extends Vue<Props> {
         const box = this.mainBoxElement;
         const hiddenPosition = box?.[4];
 
-        if (!hiddenPosition || hiddenPosition === 'visible') {
+        if (!hiddenPosition || hiddenPosition === 'visible' || hiddenPosition === 'hidden') {
             return;
         }
 

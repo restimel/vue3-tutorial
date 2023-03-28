@@ -22,7 +22,7 @@ export type Binding = {
     [key in BindingAction]: string | string[];
 }
 
-export type HiddenPosition = 'visible' | 'top' | 'bottom' | 'left' | 'right';
+export type HiddenPosition = 'visible' | 'top' | 'bottom' | 'left' | 'right' | 'hidden';
 
 /* [x, y] */
 export type Point = [number, number];

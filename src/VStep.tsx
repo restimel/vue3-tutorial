@@ -72,6 +72,7 @@ export default class VStep extends Vue<Props> {
     private parentElements: Set<HTMLElement> = new Set();
     private highlightElements: Set<HTMLElement> = new Set();
     private timerSetFocus: number = 0;
+    private startTime: number = 0;
     private updateBox = 0;
 
     /* }}} */
@@ -409,11 +410,44 @@ export default class VStep extends Vue<Props> {
 
     @Watch('elementsBox')
     protected onElementsBoxChange() {
+        const hasHiddenElement = this.elementsBox.some((box) => box[4] === 'hidden');
+
         debug(25, this.fullOptions, {
             elementsBox: this.elementsBox,
             elements: this.elements,
             tutorialInformation: this.tutorialInformation,
+            hasHiddenElement,
         });
+
+        if (hasHiddenElement) {
+            const currentTime = performance.now();
+            const timeout = this.fullOptions.timeout;
+            const endTime = this.startTime + timeout;
+            if (currentTime > endTime) {
+                const elements = this.elements;
+                const hiddenElements = this.elementsBox.reduce<HTMLElement[]>((list, box, idx) => {
+                    if (box[4] === 'hidden') {
+                        list.push(elements[idx]);
+                    }
+                    return list;
+                }, []);
+                const hasVisibleElement = hiddenElements.length < this.elementsBox.length;
+                const details = {
+                    timeout,
+                    elements: hiddenElements,
+                    purpose: 'targets',
+                };
+
+                if (hasVisibleElement) {
+                    error(225, details);
+                } else {
+                    error(325, details);
+                }
+                return;
+            }
+            // force updateBox to recompute
+            setTimeout(() => this.updateBox++, 50);
+        }
     }
 
     /* }}} */
@@ -433,6 +467,7 @@ export default class VStep extends Vue<Props> {
     private getTargetElements() {
         const targetElements = this.targetElements;
         const target = this.step.desc.target;
+        this.startTime = performance.now();
 
         if (!target?.length) {
             return;
@@ -454,7 +489,15 @@ export default class VStep extends Vue<Props> {
             const elements = await promise;
 
             if (elements?.length) {
+                debug(26, this.fullOptions, {
+                    elements,
+                    selector,
+                });
                 elements.forEach((el) => targetElements.add(el));
+            } else {
+                debug(27, this.fullOptions, {
+                    selector,
+                });
             }
         });
 
