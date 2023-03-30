@@ -154,6 +154,7 @@
 
 .vue3-tutorial__step {
     background-color: var(--vue3-tutorial-step-bg-color);
+    background-image: radial-gradient( 70% 50% at 50% 42px, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 100% );
     color: var(--vue3-tutorial-step-text-color);
     padding: 1rem;
     border-radius: 3px;
@@ -162,6 +163,7 @@
 .vue3-tutorial__step__header {
     background-color: var(--vue3-tutorial-step-header-bg-color);
     color: var(--vue3-tutorial-step-header-text-color);
+    background-image: radial-gradient( 70% 50% at 50% 100%, rgba(255, 255, 255, 0.2) 0%, rgba(200, 200, 200, 0) 100% );
     text-align: center;
     padding: 0.5rem;
     margin-top: -1rem;
