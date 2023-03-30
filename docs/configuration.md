@@ -6,9 +6,9 @@
 
 Properties defines how to use the component.
 
-* **tutorial** {[Tutorial](#Tutorial)}: Describe the tutorial to show. If you
+* **tutorial** {[`Tutorial`](#Tutorial)}: Describe the tutorial to show. If you
 modify the tutorial when it is running it restarts from first step.
-* **options** {[Options](#Step-options)} _(optional)_: Define the configuration at the _component_ level.
+* **options** {[`Options`](#Step-options)} _(optional)_: Define the configuration at the _component_ level.
 * **open** {boolean}: If set to `true`, the tutorial starts. If set to `false`,
 the tutorial ends.
 
@@ -34,9 +34,9 @@ This object describes the current tutorial.
 Its properties are:
 * **name** {string} _(optional)_: The name of the tutorial, mainly used for
 debugging and to know which tutorial is running.
-* **steps** {array of [Step](#step)}: It describes the step sequence. When a
+* **steps** {array of [`Step`](#step)}: It describes the step sequence. When a
 step is finished, it displays the next one.
-* **options** {[Options](#Step-options)} _(optional)_: Define the configuration at the _tutorial_ level.
+* **options** {[`Options`](#Step-options)} _(optional)_: Define the configuration at the _tutorial_ level.
 
 ### tutorial example
 
@@ -136,7 +136,7 @@ Example:
 
 ### options
 
-type: _[Options](#Step-options)_
+type: _[`Options`](#Step-options)_
 
 defaultValue: `{}`
 
@@ -240,8 +240,8 @@ Describe a condition check with properties.
 `target` before the timeout warning is triggered.
 _Default value is the `timeout` defined in [step options](#step-options)._
 
-And properties from [Expression](#expression) in order to explain expected
-condition.
+And all properties from [`Expression`](#expression) in order to explain
+expected condition.
 
 
 ### Action expression
@@ -259,7 +259,7 @@ listen to. If not defined it listens to the _main target_ of the step.
 _Default value is the `timeout` defined in [step options](#step-options)._
 
 For actions `'input'` and `'change'`, it is needed to be completed with an
-[Expression](#expression) about expected value.
+[`Expression`](#expression) about expected value.
 
 It goes to next step when the listened element fulfill the condition detailed
 by the expression.
@@ -332,41 +332,41 @@ to keep the more global configuration).
 **Options** are used to define a different step behavior. This is an object
 which have the following properties (each property is optional):
 
-* **position** {`[Placement](#Placement)`}: Position of the step
+* **position** {[`Placement`](#Placement)}: Position of the step
 window related to the main target element. _default value: `'auto'`_
-* **highlight** {`boolean | [ElementSelector](#ElementSelector)`}: If `true`,
+* **highlight** {`boolean | `[`ElementSelector`](#ElementSelector)}: If `true`,
 highlights the main target. The class `'vue3-tutorial-highlight'` is added to
 this element. If a selector is given, all matching elements will have this class.
 _default value: `true`_
 * **classForTargets** {`string`}: Class added to all targets.
 This can be useful if you want that these elements use one of you own class.
 Default value: `''`_
-* **arrow** {`boolean | [ElementSelector](#ElementSelector)`}: If `true`,
+* **arrow** {`boolean | `[`ElementSelector`](#ElementSelector)}: If `true`,
 displays an arrow pointing to the main target. If a selector is given, arrows
 pointing to all matching elements will be added.
 _default value: `true`_
 * **arrowAnimation** {`boolean`}: If true, the arrow is animate.
 _Default value: `true`_
-* **mask** {`boolean | [ElementSelector](#ElementSelector)`}: If true, a mask
+* **mask** {`boolean | `[`ElementSelector`](#ElementSelector)}: If true, a mask
 is added over the page except over targets. If a selector is given, it uses
 these elements instead of targets to create holes. An empty array (`[]`), adds
 a mask without any holes.
 _Default value: `true`_
 * **maskMargin** {`number`}: Margin (in px) between target
 elements and mask. _Default value: `0`_
-* **bindings** {`[Bindings](#Bindings) | false`}: Define keys the
+* **bindings** {[`Bindings`](#Bindings)` | false`}: Define keys the
 user can type for different actions (next, previous, skip). If `false` then no
 keys will triggers these actions.
-* **focus** {`boolean | [FocusBehavior](#FocusBehavior)`}: Define what element
+* **focus** {`boolean | `[`FocusBehavior`](#FocusBehavior)}: Define what element
 to focus when changing step. `true` is equivalent to `'main-target'`. `false`
 is equivalent to `'no-focus'`. Note that setting focus to some elements may
 break the key binding which is only active if no elements are focused.
 _Default value: `'no-focus'`_.
-* **scroll** {`boolean | [ScrollBehavior](#ScrollBehavior)`}: Define how to
+* **scroll** {`boolean | `[`ScrollBehavior`](#ScrollBehavior)}: Define how to
 behave when main target element is not visible in the page (due to scroll).
 `true` is equivalent to `'scroll-to'`. `false` is equivalent to `'no-scroll'`.
 _Default value: `'scroll-to'` on main target element_.
-* **texts** {`[Dictionary](#Dictionary)`}: Allow to change texts which are displayed in vue3-tutorial. This can be used for translations or to
+* **texts** {[`Dictionary`](#Dictionary)}: Allow to change texts which are displayed in vue3-tutorial. This can be used for translations or to
 display your own texts.
 * **timeout** {`number`}: Duration in milliseconds before the
 timeout error is triggered. During this period, it will continually analyze
@@ -376,7 +376,7 @@ already in DOM when the step is displayed. _Default value: `3000`_
 * **teleport** {`boolean | HTMLElement`}: The container where the window should be displayed.
 If the value is `true`, the window is displayed inside `document.body`. If `false`, the window is not moved.
 _Default value: `true`_
-* **debug** {`boolean|number[]`}: If true, it logs in console and emits error
+* **debug** {`boolean | number[]`}: If true, it logs in console and emits error
 at some key features in the library. If the value is a number array, it only
 logs when given error codes are prompted. _Default value: `false`_
 
@@ -426,7 +426,7 @@ trigger the action.
 
 All properties accept either a string or an array of string (in such case any
 of these keys will trigger the action).
-The string should be the expected key (it can be any value return by
+The string should be the expected key (it can be any value returned by
 [event.key](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key)
 ).
 

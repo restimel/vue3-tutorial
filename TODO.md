@@ -51,7 +51,7 @@
         * hidden progress
         * No interaction at all (user cannot click on any elements (should it be the default for "next"?))
             * Follow common API
-        * highlight in a different style
+        * highlight in a different styles
         * arrow
             * Allow to choose arrows direction
     * header
