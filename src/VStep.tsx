@@ -46,6 +46,7 @@ import {
 } from './tools/tools';
 
 const noop = function() {};
+const mutationConfig = { childList: true, subtree: true };
 
 export interface Props {
     step: Step;
@@ -72,6 +73,7 @@ export default class VStep extends Vue<Props> {
     private parentElements: Set<HTMLElement> = new Set();
     private highlightElements: Set<HTMLElement> = new Set();
     private timerSetFocus: number = 0;
+    private timerResetElements: number = 0;
     private startTime: number = 0;
     private updateBox = 0;
 
@@ -84,6 +86,12 @@ export default class VStep extends Vue<Props> {
 
     /* {{{ targets */
 
+    /** list of target elements.
+     *
+     * Convert the Set in Array.
+     * The Set is used to avoid duplications.
+     * The Array is used to keep elements in the same order as boxes.
+     */
     get elements(): HTMLElement[] {
         return Array.from(this.targetElements);
     }
@@ -260,6 +268,9 @@ export default class VStep extends Vue<Props> {
             return this.mainElement;
         }
 
+        /* XXX: only for reactivity, to force to get the correct element */
+        this.targetElements;
+
         return getElement(target, { purpose: 'nextAction' });
     }
 
@@ -292,6 +303,23 @@ export default class VStep extends Vue<Props> {
         return () => {
             this.updateBox++;
         };
+    }
+
+    get mutationObserver() {
+        return new MutationObserver((mutationList) => {
+            const el = this.nextActionTarget;
+            if (!el) {
+                return;
+            }
+            for (const mutation of mutationList) {
+                if (mutation.type === 'childList'
+                && mutation.removedNodes.length
+                && el.getRootNode() !== document
+                ) {
+                    this.resetElementsDebounced(true);
+                }
+            }
+        });
     }
 
     /* }}} */
@@ -453,7 +481,15 @@ export default class VStep extends Vue<Props> {
     /* }}} */
     /* {{{ methods */
 
+    private resetElementsDebounced(get = true) {
+        clearTimeout(this.timerResetElements);
+        this.timerResetElements = setTimeout(() => {
+            this.resetElements(get)
+        }, 10);
+    }
+
     private resetElements(get = true) {
+        clearTimeout(this.timerResetElements);
         this.removeClass(this.elements);
         this.removeClass(Array.from(this.highlightElements));
         this.cacheElements.clear();
@@ -648,7 +684,6 @@ export default class VStep extends Vue<Props> {
                 el.classList.add(options.classForTargets);
             }
         });
-        const highlight = options.highlight;
         const mainEl = newTargets[0];
         if (mainEl) {
             mainEl.classList.add('vue3-tutorial__main-target');
@@ -676,14 +711,21 @@ export default class VStep extends Vue<Props> {
         const eventName = this.nextActionType;
         const el = this.nextActionTarget;
 
+        this.mutationObserver.disconnect();
         this.removeActionListener();
+
         if (!el || eventName === 'next') {
             return;
         }
 
-        el.addEventListener(eventName, this.actionListener);
+        if (el.getRootNode() === document) {
+            this.mutationObserver.observe(document.body, mutationConfig);
+        }
+
+        const listener = this.actionListener;
+        el.addEventListener(eventName, listener, { capture: true });
         this.removeActionListener = () => {
-            el.removeEventListener(eventName, this.actionListener);
+            el.removeEventListener(eventName, listener, { capture: true });
             this.removeActionListener = noop;
         };
     }
@@ -736,6 +778,7 @@ export default class VStep extends Vue<Props> {
         this.removeActionListener();
         this.clearScrollListener();
         this.removeResizeListener();
+        this.mutationObserver.disconnect();
 
         debug(21, this.fullOptions, {
             step: this.step,
