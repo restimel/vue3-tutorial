@@ -229,4 +229,8 @@
     box-shadow: var(--vue3-tutorial-highlight-shadow);
 }
 
+.vue3-tutorial-muted {
+    pointer-events: none;
+}
+
 /* }}} */

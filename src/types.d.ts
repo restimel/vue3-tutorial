@@ -128,7 +128,7 @@ export type TutorialErrorCodes = {
 };
 
 export type ErrorSelectorPurpose = 'targets' | 'nextAction' | 'focus' | 'skipStep'
-    | 'scroll' | 'mask' | 'highlight' | 'arrow';
+    | 'scroll' | 'mask' | 'highlight' | 'arrow' | 'mute';
 
 /* }}} */
 /* {{{ Focus */
@@ -196,6 +196,11 @@ export interface StepOptions {
 
     /** Manage how to set focus when step is changing */
     focus: boolean | FocusBehavior;
+
+    /** Stop propagation of all events of given elements.
+     * If false, no elements are muted.
+     */
+    muteElements: false | ElementSelector;
 
     /** Manage how to scroll when target is not in view */
     scroll: boolean | ScrollBehavior;

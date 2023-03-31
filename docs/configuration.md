@@ -362,6 +362,9 @@ to focus when changing step. `true` is equivalent to `'main-target'`. `false`
 is equivalent to `'no-focus'`. Note that setting focus to some elements may
 break the key binding which is only active if no elements are focused.
 _Default value: `'no-focus'`_.
+* **muteElements** {`false | `[`ElementSelector`](#ElementSelector)}: Avoid interaction on these elements. This option should be used to keep user inside the step and to not allow different actions.
+If `false`, no elements are muted.
+_Default value: `false`_.
 * **scroll** {`boolean | `[`ScrollBehavior`](#ScrollBehavior)}: Define how to
 behave when main target element is not visible in the page (due to scroll).
 `true` is equivalent to `'scroll-to'`. `false` is equivalent to `'no-scroll'`.
@@ -410,7 +413,7 @@ If the selector is not correct, it generates an error with [code 300](./errors.m
 If the `querySelectorAll` does not find any elements within the `timeout`
 duration, it will generate an error width [code 324](./errors.md#error-3xx)
 or [code 224](./errors.md#error-2xx) depending on the purpose of the query
-(highlight, arrows, and mask generates warning).
+(highlight, arrows, mute, and mask generates warning).
 
 Example:
 ```javascript

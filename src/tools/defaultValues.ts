@@ -35,6 +35,7 @@ export const DEFAULT_STEP_OPTIONS: StepOptions = {
     maskMargin: 0,
     bindings: DEFAULT_BINDING,
     focus: 'no-focus',
+    muteElements: false,
     texts: DEFAULT_DICTIONARY,
     scroll: 'scroll-to',
     timeout: 3000,

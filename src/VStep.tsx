@@ -71,6 +71,7 @@ export default class VStep extends Vue<Props> {
     private promiseTargetElements: Promise<any> = Promise.resolve();
     private targetElements: Set<HTMLElement> = new Set();
     private parentElements: Set<HTMLElement> = new Set();
+    private mutedElements: Map<HTMLElement, number> = new Map();
     private highlightElements: Set<HTMLElement> = new Set();
     private timerSetFocus: number = 0;
     private timerResetElements: number = 0;
@@ -495,8 +496,10 @@ export default class VStep extends Vue<Props> {
         this.cacheElements.clear();
         this.targetElements.clear();
         this.highlightElements.clear();
+        this.resetMutedElements();
         if (get) {
             this.getTargetElements();
+            this.muteElements();
         }
     }
 
@@ -705,6 +708,68 @@ export default class VStep extends Vue<Props> {
                 el.classList.remove(classForTargets);
             }
         });
+    }
+
+    // private muted(event: Event) {
+    //     event.stopPropagation();
+    // }
+
+    private resetMutedElements() {
+        const elements = this.mutedElements;
+        for (const [element, tabindex] of elements) {
+            element.tabIndex = tabindex;
+            element.classList.remove('vue3-tutorial-muted');
+        }
+        elements.clear();
+    }
+
+    private muteElements() {
+        const mutedElements = this.mutedElements;
+        const muteSelectors = this.fullOptions.muteElements;
+
+        this.resetMutedElements();
+        if (muteSelectors === false) {
+            return false;
+        }
+
+        const cache = this.cacheElements;
+        const selectors = Array.isArray(muteSelectors) ? muteSelectors : [muteSelectors];
+
+        selectors.forEach((selector) => {
+            const listElements = getElement(selector, {
+                all: true,
+                purpose: 'mute',
+                cache,
+                errorIsWarning: true,
+            });
+
+            if (listElements) {
+                for (const element of listElements) {
+                    mutedElements.set(element, element.tabIndex);
+                    element.classList.add('vue3-tutorial-muted');
+                    element.tabIndex = -1;
+                }
+            } else {
+                /* some elements have not been found, search them asynchronously */
+                getElement(selector, {
+                    timeout: this.fullOptions.timeout,
+                    all: true,
+                    purpose: 'mute',
+                    cache,
+                    errorIsWarning: true,
+                }).then((result) => {
+                    if (result) {
+                        for (const element of result) {
+                            mutedElements.set(element, element.tabIndex);
+                            element.classList.add('vue3-tutorial-muted');
+                            element.tabIndex = -1;
+                        }
+                    }
+                });
+            }
+        });
+
+        return true;
     }
 
     private addActionListener() {

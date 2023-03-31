@@ -63,6 +63,7 @@ It can have one of this values:
  * `'mask'`: When trying to get the elements to create holes in the mask.
  * `'highlight'`: When trying to get the elements to add the highlight class.
  * `'arrow'`: When trying to get the elements to add an arrow to these elements.
+ * `'mute'`: When trying to get elements to be muted.
 
 
 ## `errorStatus(code)`
