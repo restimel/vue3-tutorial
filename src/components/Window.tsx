@@ -67,7 +67,7 @@ export default class Window extends Vue<Props> {
     get realPosition(): Placement {
         const position = this.position;
 
-        if (position !== 'auto') {
+        if (position !== 'auto' && position !== 'hidden') {
             return position;
         }
 
@@ -140,9 +140,17 @@ export default class Window extends Vue<Props> {
 
     get computePosition(): Position {
         const box = this.mainBoxElement as BoxNotEmpty;
-        const realPosition = !box || box[4] !== 'visible' ? 'center' : this.realPosition;
+        const realPosition = this.realPosition;
+        const preferredPosition = !box || box[4] !== 'visible' ? 'center' : realPosition;
 
-        return getPosition(box, realPosition);
+        return getPosition(box, preferredPosition);
+    }
+
+    get realWindowPosition(): Placement {
+        if (this.position === 'hidden') {
+            return 'hidden';
+        }
+        return this.computePosition[2];
     }
 
     get stylePosition(): string {
@@ -151,6 +159,7 @@ export default class Window extends Vue<Props> {
 
         switch (placement) {
             case 'center':
+            case 'hidden':
                 break;
             case 'bottom':
             case 'top':
@@ -168,7 +177,7 @@ export default class Window extends Vue<Props> {
                 break;
         }
 
-        return `left: ${x}; top: ${y};`;
+        return `--vue3-tutorial-x: ${x}; --vue3-tutorial-y: ${y};`;
     }
 
     /* XXX: This is only to create a reference to the same function */
@@ -289,7 +298,6 @@ export default class Window extends Vue<Props> {
     /* }}} */
 
     public render() {
-        const position = this.computePosition[2];
         const arrowAnimation = this.arrowAnimation;
 
         return (
@@ -333,7 +341,7 @@ export default class Window extends Vue<Props> {
                     style={this.stylePosition}
                     class={[
                         'vue3-tutorial__window',
-                        'position-' + position,
+                        'position-' + this.realWindowPosition,
                     ]}
                     ref="modalWindow"
                 >

@@ -15,7 +15,7 @@ export type Dictionary = {
     stepState: string;
 }
 
-export type Placement = 'auto' | 'top' | 'bottom' | 'left' | 'right' | 'center';
+export type Placement = 'auto' | 'top' | 'bottom' | 'left' | 'right' | 'center' | 'hidden';
 
 export type BindingAction = 'next' | 'previous' | 'skip';
 export type Binding = {

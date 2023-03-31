@@ -344,6 +344,8 @@ export function getPosition(box: BoxNotEmpty, realPosition: Placement): Position
             break;
         case 'auto':
         case 'center':
+        case 'hidden':
+        default:
             x = '50%';
             y = '50%';
             break;

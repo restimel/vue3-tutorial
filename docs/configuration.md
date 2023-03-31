@@ -395,6 +395,7 @@ center of the screen.
 * **`'top'`**: Over the main target.
 * **`'left'`**: At left of the main target.
 * **`'right'`**: At right of the main target.
+* **`'hidden'`**: Do not display the step window.
 
 Example:
 ```javascript

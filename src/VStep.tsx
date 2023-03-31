@@ -82,7 +82,18 @@ export default class VStep extends Vue<Props> {
     /* {{{ computed */
 
     get fullOptions(): StepOptions {
-        return this.step.options;
+        const options = this.step.options;
+
+        if (options.position === 'hidden') {
+            if (this.needsNextButton) {
+                /* If there are no other possibility to go to "next" action
+                 * then redisplay the step.
+                 */
+                return {...options, position: 'center'};
+            }
+        }
+
+        return options;
     }
 
     /* {{{ targets */

@@ -53,6 +53,8 @@
 
 .vue3-tutorial__window {
     position: fixed;
+    left: var(--vue3-tutorial-x, 50%);
+    top: var(--vue3-tutorial-y, 50%);
     z-index: calc(var(--vue3-tutorial-zindex) + 20);
     box-shadow: var(--vue3-tutorial-window-shadow);
     border-radius: 3px;
@@ -77,6 +79,9 @@
 }
 .vue3-tutorial__window.position-center {
     transform: translate(-50%, -50%);
+}
+.vue3-tutorial__window.position-hidden {
+    display: none;
 }
 
 .vue3-tutorial__window-arrow,
