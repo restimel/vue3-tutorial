@@ -2,6 +2,7 @@
 
 * [Installation](./installation.md)
 * [Configuration](./configuration.md)
+  * [Markdown](./markdown.md)
 * [CSS configuration](./css.md)
 * [Emitted values](./emits.md)
 * [Errors management](./errors.md)

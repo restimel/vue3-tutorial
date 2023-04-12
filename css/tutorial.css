@@ -33,6 +33,33 @@
 
     /** The mask fill color */
     --vue3-tutorial-mask-color: #c8c8c8bb;
+
+    /** Text color of the "info" quote */
+    --vue3-tutorial-info-text-color: #000000;
+
+    /** Border color of the "info" quote */
+    --vue3-tutorial-info-border-color: #759fcd;
+
+    /** Background color of the "info" quote */
+    --vue3-tutorial-info-bg-color: #b4c8ed;
+
+    /** Text color of the "warning" quote */
+    --vue3-tutorial-warning-text-color: #000000;
+
+    /** Border color of the "warning" quote */
+    --vue3-tutorial-warning-border-color: #f5b95c;
+
+    /** Background color of the "warning" quote */
+    --vue3-tutorial-warning-bg-color: #fff7e6;
+
+    /** Text color of the "danger" quote */
+    --vue3-tutorial-danger-text-color: #000000;
+
+    /** Border color of the "danger" quote */
+    --vue3-tutorial-danger-border-color: #ff4949;
+
+    /** Background color of the "danger" quote */
+    --vue3-tutorial-danger-bg-color: #fde2e2;
 }
 
 /* }}} */
@@ -227,6 +254,104 @@
     transform: translate(calc(50% - 5px), calc(-50% + 9px)) scale(0.7);
 }
 
+/* }}} */
+/* {{{ Markdown */
+
+.vue3-tutorial-md-bold {
+    font-weight: bold;
+}
+.vue3-tutorial-md-italic {
+    font-style: italic;
+}
+.vue3-tutorial-md-strike {
+    text-decoration: line-through;
+}
+
+.vue3-tutorial-md-multiline-code {
+    background-color: var(--vue3-tutorial-brand-secondary);
+    color:white;
+    padding: 0.5em;
+}
+
+.vue3-tutorial-md-indent {
+    display: inline-block;
+    width: 2em;
+}
+
+.vue3-tutorial-md-color {
+    color: var(--color);
+}
+
+/* {{{ Quotes */
+
+.vue3-tutorial-md-quote {
+    border-left: 2px solid;
+    padding-left: 1em;
+    margin-left: 0;
+}
+
+.vue3-tutorial-md-quote.danger,
+.vue3-tutorial-md-quote.warning,
+.vue3-tutorial-md-quote.info {
+    position: relative;
+    /* XXX: colors will be overridden by next rules */
+    border: 1px solid #000000;
+    border-left: 8px solid #000000;
+    color: var(--vue3-tutorial-step-text-color);
+    padding: 0.5em;
+    padding-left: 2em;
+}
+.vue3-tutorial-md-quote.danger:before,
+.vue3-tutorial-md-quote.warning:before,
+.vue3-tutorial-md-quote.info:before {
+    position: absolute;
+    left: 0.5em;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.vue3-tutorial-md-quote.info {
+    color: var(--vue3-tutorial-info-text-color, inherit);
+    border-color: var(--vue3-tutorial-info-border-color);
+    background-color: var(--vue3-tutorial-info-bg-color);
+}
+.vue3-tutorial-md-quote.info:before {
+    content: '💡';
+}
+.vue3-tutorial-md-quote.warning {
+    color: var(--vue3-tutorial-warning-text-color, inherit);
+    border-color: var(--vue3-tutorial-warning-border-color);
+    background-color: var(--vue3-tutorial-warning-bg-color);
+}
+.vue3-tutorial-md-quote.warning:before {
+    content: '⚠️';
+}
+.vue3-tutorial-md-quote.danger {
+    color: var(--vue3-tutorial-danger-text-color, inherit);
+    border-color: var(--vue3-tutorial-danger-border-color);
+    background-color: var(--vue3-tutorial-danger-bg-color);
+}
+.vue3-tutorial-md-quote.danger:before {
+    content: '⛔';
+}
+
+/* }}} */
+/* {{{ Table */
+
+.vue3-tutorial-md-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.vue3-tutorial-md-th {
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+    text-align: start;
+}
+.vue3-tutorial-md-td {
+    text-align: start;
+}
+
+/* }}} */
 /* }}} */
 /* {{{ External elements */
 

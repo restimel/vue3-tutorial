@@ -38,6 +38,7 @@ const errorMap: TutorialErrorCodes = {
     204: 'There are no previous step',
     224: 'Timeout: some targets have not been found in the allowing time',
     225: 'Timeout: some target elements are still hidden in the allowing time',
+    230: 'RegExp for Markdown is not supported by this browser',
 
     /* 3xx : error */
     300: 'Selector is not valid',

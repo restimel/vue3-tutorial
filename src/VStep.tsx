@@ -16,8 +16,8 @@ import {
     watch,
 } from 'vue';
 
+import Markdown from './components/Markdown';
 import Window from './components/Window';
-import Markdown from 'vue3-markdown-it';
 
 import {
     checkExpression,

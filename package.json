@@ -40,8 +40,7 @@
         "test": "npm run build && tape test/**/*.spec.js"
     },
     "dependencies": {
-        "vtyx": "^4.0.5",
-        "vue3-markdown-it": "^1.0.10"
+        "vtyx": "^4.0.5"
     },
     "devDependencies": {
         "@babel/types": "^7.19.3",

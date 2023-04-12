@@ -36,6 +36,7 @@ cannot behave correctly or going to next steps is problematic).
 |204 | There are no previous step | | The tutorial has no steps or they are all skipped. |
 |224 | Timeout: some targets have not been found in the allowing time | - **timeout**: the timeout duration<br> - **selector**: the selector which has expired<br> - **purpose** - explain the purpose of this selector (is of type [`ErrorSelectorPurpose`](#ErrorSelectorPurpose)) | Some elements have not been found during the elapsed time. |
 |225 | Timeout: some target elements are still hidden in the allowing time | - **timeout**: the timeout duration<br> - **elements**: the list of hidden elements.<br> - **purpose** - explain the purpose of this selector (is of type [`ErrorSelectorPurpose`](#ErrorSelectorPurpose)) | Some elements have been found but are still hidden during the elapsed time. |
+|230 | RegExp for Markdown is not supported by this browser | **error**: The JS error. | This is probably because the browser does not support look behind assertion `(?<=)`. A simpler Regexp will be used but many rules won't work. |
 
 ### Error (3xx)
 

@@ -11,6 +11,8 @@
         * enable button
     * Expression
         * check url
+    * Window
+        * Position when target is too big and there is not enough space outside
 * Errors
     * Add debug
 * documentation
@@ -25,8 +27,6 @@
         * create simple tutorial
         * change highlight color in order to see it on background main color
             → this may be a common pbl
-* Clean up
-    * Change code error, in order to have a logic between 2xy and 3xy
 * Compare with vue-tour
     * missing feature
     * How to migrate → documentation
@@ -60,13 +60,6 @@
             * Error (danger sign)
             * custom
         * progress status with progress bar (and/or %)
-    * Content
-        * Add sections (extend markdown ?)
-            * Tips
-            * info
-            * warning
-            * error/danger
-            * success
     * button section
         * When interactive, add a text to tell what is expected
 * Window

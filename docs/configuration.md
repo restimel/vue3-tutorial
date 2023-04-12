@@ -65,9 +65,9 @@ Its properties are:
 * [title](#title)
 * [content](#content)
 * [options](#options)
-* [skipStep](#skipStep)
-* [actionNext](#actionNext)
-* [checkBeforeNext](#checkBeforeNext)
+* [skipStep](#skipstep)
+* [actionNext](#actionnext)
+* [checkBeforeNext](#checkbeforenext)
 
 ### target
 
@@ -124,15 +124,14 @@ to user what to do.
 It supports markdown. So to display a text on a new line, 2 line feeds (`\n`)
 should be added.
 
-It is possible to display some text in bold with `**` or in italic with `_`.
-
-
 Example:
 ```javascript
 {
     content: 'After filling your **name** and your **phone number**, submit the _form_.',
 }
 ```
+
+[Read the document related to markdown to know the supported syntax.](./markdown.md)
 
 ### options
 
