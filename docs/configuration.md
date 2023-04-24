@@ -457,7 +457,11 @@ Define what to do about focus when step is changing.
 * **`'no-focus'`**: Remove focus on any elements. _This is the default value_
 * **`'keep'`**: Keep the focus on the current active element.
 * **`'main-target'`**: Set focus to the main target of the step.
-* **`{ target: string }`**: set focus to the given target element.
+* **`{ ... }`**:
+    * **target** `string`: set focus to the given target element.
+    * **timeout** _optional_: {`number`} Duration in milliseconds to find the
+`target` before the timeout warning is triggered.
+_Default value is the `timeout` defined in [step options](#step-options)._
 
 ### ScrollBehavior
 

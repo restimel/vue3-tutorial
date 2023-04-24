@@ -133,19 +133,16 @@ export type ErrorSelectorPurpose = 'targets' | 'nextAction' | 'focus' | 'skipSte
 /* }}} */
 /* {{{ Focus */
 
-export type FocusBehavior = 'no-focus' | 'keep' | 'main-target' | {
-    target: string;
-};
+type FocusKind = 'no-focus' | 'keep' | 'main-target' | 'true' | 'false';
+export type FocusBehavior = FocusKind | TargetExpression;
 
 /* }}} */
 /* {{{ scroll */
 
-type ScrollKind = 'no-scroll' | 'scroll-to';
+type ScrollKind = 'no-scroll' | 'scroll-to' | 'true' | 'false';
 export type ScrollBehavior = ScrollKind | {
-    target: string;
     scrollKind?: ScrollKind;
-    timeout?: number;
-};
+} & TargetExpression;
 
 /* }}} */
 /* {{{ Arrows */

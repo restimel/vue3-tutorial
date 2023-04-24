@@ -29,6 +29,8 @@ import {
     ActionType,
     ArrowPosition,
     Box,
+    ElementSelector,
+    ErrorSelectorPurpose,
     EventAction,
     Rect,
     ScrollKind,
@@ -38,15 +40,27 @@ import {
 } from './types';
 import error, { debug } from './tools/errors';
 import {
+    addParents,
     emptyArray,
     getElement,
     getBox,
     getPosition,
     getPlacement,
+    shallowSetCopy,
 } from './tools/tools';
 
 const noop = function() {};
 const mutationConfig = { childList: true, subtree: true };
+
+type MainElementList = [HTMLElement | null, ...HTMLElement[]];
+
+type AllElementsInfo = {
+    ref: number;
+    timeout: number;
+    purpose: ErrorSelectorPurpose;
+    elements: HTMLElement[];
+    error: boolean;
+};
 
 export interface Props {
     step: Step;
@@ -66,22 +80,12 @@ export default class VStep extends Vue<Props> {
     /* }}} */
     /* {{{ data */
 
-    private removeActionListener: () => void = noop;
-    private cacheElements: Map<string, HTMLElement[]> = new Map();
-    private promiseTargetElements: Promise<any> = Promise.resolve();
-    private targetElements: Set<HTMLElement> = new Set();
-    private parentElements: Set<HTMLElement> = new Set();
-    private mutedElements: Map<HTMLElement, number> = new Map();
-    private highlightElements: Set<HTMLElement> = new Set();
-    private timerSetFocus: number = 0;
-    private timerResetElements: number = 0;
-    private startTime: number = 0;
-    private updateBox = 0;
+    /* XXX: some data are configured in elements Workflow */
 
     /* }}} */
     /* {{{ computed */
 
-    get fullOptions(): StepOptions {
+    private get fullOptions(): StepOptions {
         const options = this.step.options;
 
         if (options.position === 'hidden') {
@@ -96,174 +100,67 @@ export default class VStep extends Vue<Props> {
         return options;
     }
 
-    /* {{{ targets */
+    /* {{{ buttons */
 
-    /** list of target elements.
-     *
-     * Convert the Set in Array.
-     * The Set is used to avoid duplications.
-     * The Array is used to keep elements in the same order as boxes.
-     */
-    get elements(): HTMLElement[] {
-        return Array.from(this.targetElements);
+    private get displayPreviousButton(): boolean {
+        const info = this.tutorialInformation;
+
+        if (info.previousStepIsSpecial || info.currentIndex <= 0) {
+            return false;
+        }
+
+        return true;
     }
 
-    get mainElement(): HTMLElement | null {
-        const element = this.elements[0];
+    private get displayNextButton(): boolean {
+        const info = this.tutorialInformation;
 
-        return element || null;
+        if (info.currentIndex >= info.nbTotalSteps - 1) {
+            return false;
+        }
+        return this.needsNextButton;
     }
 
-    get elementsBox(): Box[] {
-        const elements = this.elements;
+    private get displayFinishButton(): boolean {
+        const info = this.tutorialInformation;
 
-        /* XXX: only for reactivity, to force to recompute box coordinates */
-        this.updateBox;
-
-        const memo = new WeakMap();
-        return elements.map((element) => {
-            return getBox(element, memo);
-        });
-    }
-
-    get isMainElementHidden(): boolean {
-        const mainBox = this.elementsBox[0];
-        if (mainBox && mainBox[4] !== 'visible') {
-            return true;
+        if (info.currentIndex >= info.nbTotalSteps - 1) {
+            return this.needsNextButton;
         }
         return false;
     }
 
-    /* }}} */
-    /* {{{ mask */
-
-    get masksBox(): Box[] {
-        const { mask } = this.fullOptions;
-
-        if (!mask) {
-            return emptyArray;
-        }
-        const elementsBox = this.elementsBox;
-        if (mask === true) {
-            if (this.isMainElementHidden) {
-                /* Add the parent box, if element is not visible. This is to have a
-                * visible box to scroll */
-                return [
-                    ...elementsBox,
-                    getBox(this.mainElement!, new WeakMap(), {getParentBox: true}),
-                ];
-            } else {
-                return elementsBox;
-            }
-        }
-
-        /* XXX: only for reactivity, to force to recompute box coordinates */
-        this.updateBox;
-
-        const cache = this.cacheElements;
-        const selectors = Array.isArray(mask) ? mask : [mask];
-        const memo = new WeakMap();
-
-        const boxes = selectors.reduce((boxList, selector) => {
-            const listElements = getElement(selector, {
-                all: true,
-                purpose: 'mask',
-                cache,
-                errorIsWarning: true,
-            });
-
-            if (listElements) {
-                for (const element of listElements) {
-                    boxList.push(getBox(element, memo));
-                }
-            } else {
-                /* some elements have not been found, search them asynchronously */
-                getElement(selector, {
-                    timeout: this.fullOptions.timeout,
-                    all: true,
-                    purpose: 'mask',
-                    cache,
-                    errorIsWarning: true,
-                }).then((result) => {
-                    if (result) {
-                        /* Recompute the boxes */
-                        this.updateBox++;
-                    }
-                });
-            }
-
-            return boxList;
-        }, [] as Box[]);
-
-        /* Add the parent box, if element is not visible. This is to have a
-         * visible box to scroll */
-        if (this.isMainElementHidden) {
-            boxes.push(getBox(this.mainElement!, new WeakMap(), {getParentBox: true}));
-        }
-        return boxes;
+    private get displaySkipButton(): boolean {
+        return true;
     }
 
     /* }}} */
-    /* {{{ arrows */
+    /* }}} */
+    /* {{{ watch */
 
-    get arrowsPosition(): boolean | ArrowPosition[] {
-        const arrow = this.fullOptions.arrow;
+    @Watch('fullOptions.texts')
+    protected onTextsChange() {
+        /* Update labels */
+        changeTexts(this.fullOptions.texts);
+    }
 
-        if (typeof arrow === 'boolean') {
-            return arrow;
-        }
-
-        /* XXX: only for reactivity, to force to recompute box coordinates */
-        this.updateBox;
-
-        const cache = this.cacheElements;
-        const selectors = Array.isArray(arrow) ? arrow : [arrow];
-        const memo = new WeakMap();
-
-        const positions = selectors.reduce((positionList, selector) => {
-            const listElements = getElement(selector, {
-                all: true,
-                purpose: 'arrow',
-                cache,
-                errorIsWarning: true,
-            });
-
-            if (listElements) {
-                for (const element of listElements) {
-                    const box = getBox(element, memo);
-                    const placement = getPlacement(box as unknown as Rect);
-                    const [x, y, position] = getPosition(box, placement);
-                    positionList.push({ x, y, position });
-                }
-            } else {
-                /* some elements have not been found, search them asynchronously */
-                getElement(selector, {
-                    timeout: this.fullOptions.timeout,
-                    all: true,
-                    purpose: 'arrow',
-                    cache,
-                    errorIsWarning: true,
-                }).then((result) => {
-                    if (result) {
-                        /* Recompute the boxes (and so arrows) */
-                        this.updateBox++;
-                    }
-                });
-            }
-            return positionList;
-        }, [] as ArrowPosition[]);
-
-        return positions;
+    @Watch('fullOptions.bindings', { immediate: true, deep: true })
+    protected onBindingsChange() {
+        /* update key bindings */
+        resetBindings(this.fullOptions.bindings);
     }
 
     /* }}} */
     /* {{{ Next action */
 
-    get nextActionType(): ActionType {
+    private removeActionListener: () => void = noop;
+
+    private get nextActionType(): ActionType {
         return getActionType(this.step.desc);
     }
 
-    get nextActionTarget(): HTMLElement | null {
+    /* Target the element where we expect user to interact with */
+    private get nextActionTarget(): HTMLElement | null {
         const type = this.nextActionType;
 
         if (type === 'next') {
@@ -286,516 +183,34 @@ export default class VStep extends Vue<Props> {
         return getElement(target, { purpose: 'nextAction' });
     }
 
-    get needsNextButton(): boolean {
+    private get needsNextButton(): boolean {
         return this.step.status.isActionNext;
     }
 
-    /* }}} */
-    /* {{{ listeners */
+    private actionListener() {
+        const type = this.nextActionType;
+        const valueEventName = ['input', 'change'];
 
-    get actionListener() {
-        return () => {
-            const type = this.nextActionType;
-            const valueEventName = ['input', 'change'];
+        if (valueEventName.includes(type)) {
+            const action = this.step.desc.actionNext as EventAction;
+            const targetElement = this.nextActionTarget!;
 
-            if (valueEventName.includes(type)) {
-                const action = this.step.desc.actionNext as EventAction;
-                const targetElement = this.nextActionTarget!;
-
-                if (!checkExpression(action, targetElement, 'nextAction')) {
-                    return;
-                }
-            }
-
-            this.$emit('next');
-        };
-    }
-
-    get recomputeBoxListener() {
-        return () => {
-            this.updateBox++;
-        };
-    }
-
-    get mutationObserver() {
-        return new MutationObserver((mutationList) => {
-            const el = this.nextActionTarget;
-            if (!el) {
+            if (!checkExpression(action, targetElement, 'nextAction')) {
                 return;
             }
-            for (const mutation of mutationList) {
-                if (mutation.type === 'childList'
-                && mutation.removedNodes.length
-                && el.getRootNode() !== document
-                ) {
-                    this.resetElementsDebounced(true);
-                }
-            }
-        });
-    }
-
-    /* }}} */
-    /* {{{ buttons */
-
-    get displayPreviousButton(): boolean {
-        const info = this.tutorialInformation;
-
-        if (info.previousStepIsSpecial || info.currentIndex <= 0) {
-            return false;
         }
 
-        return true;
-    }
-
-    get displayNextButton(): boolean {
-        const info = this.tutorialInformation;
-
-        if (info.currentIndex >= info.nbTotalSteps - 1) {
-            return false;
-        }
-        return this.needsNextButton;
-    }
-
-    get displayFinishButton(): boolean {
-        const info = this.tutorialInformation;
-
-        if (info.currentIndex >= info.nbTotalSteps - 1) {
-            return this.needsNextButton;
-        }
-        return false;
-    }
-
-    get displaySkipButton(): boolean {
-        return true;
-    }
-
-    /* }}} */
-    /* }}} */
-    /* {{{ watch */
-
-    @Watch('fullOptions.texts')
-    protected onTextsChange() {
-        changeTexts(this.fullOptions.texts);
-    }
-
-    @Watch('fullOptions.bindings', { immediate: true, deep: true })
-    protected onBindingsChange() {
-        resetBindings(this.fullOptions.bindings);
-    }
-
-    @Watch('elements', { deep: true })
-    protected onElementsChange(newElements: HTMLElement[], oldElements: HTMLElement[]) {
-        if (oldElements) {
-            this.removeClass(oldElements);
-        }
-        if (newElements) {
-            this.addClass(newElements);
-        }
-
-        /* Remove events */
-        this.clearScrollListener();
-
-        /* Add events */
-        const parentElements = this.parentElements;
-
-        function addParents(el: HTMLElement) {
-            let node: HTMLElement | null = el;
-            while (node) {
-                node = node.parentElement;
-                if (node) {
-                    parentElements.add(node);
-                }
-            }
-        }
-        this.elements.forEach(addParents);
-
-        parentElements.add(window as any);
-    }
-
-    @Watch('elements', { deep: true, flush: 'post' })
-    @Watch('fullOptions.highlight', { deep: true, flush: 'post' })
-    protected onHighlightChange() {
-        this.removeClass(Array.from(this.highlightElements));
-        this.highlightElements.clear();
-        this.addHighlightClass();
-    }
-
-    @Watch('parentElements', { deep: true })
-    protected onParentElementsChange() {
-        this.addScrollListener();
-    }
-
-    @Watch('nextActionTarget')
-    @Watch('nextActionType', { immediate: true })
-    protected onActionTypeChange() {
-        this.addActionListener();
-    }
-
-    /* XXX: flush: post is needed because some of the variable are related to DOM */
-    @Watch('step.desc', { immediate: true, deep: false, flush: 'post' })
-    protected onStepChange() {
-        this.scroll();
-        this.setFocus();
-
-        debug(22, this.fullOptions, {
-            step: this.step,
-            tutorialInformation: this.tutorialInformation,
-        });
-    }
-
-    @Watch('step.desc.target', { immediate: true })
-    protected onStepTargetChange() {
-        this.resetElements();
-    }
-
-    @Watch('elementsBox')
-    protected onElementsBoxChange() {
-        const hasHiddenElement = this.elementsBox.some((box) => box[4] === 'hidden');
-
-        debug(25, this.fullOptions, {
-            elementsBox: this.elementsBox,
-            elements: this.elements,
-            tutorialInformation: this.tutorialInformation,
-            hasHiddenElement,
-        });
-
-        if (hasHiddenElement) {
-            const currentTime = performance.now();
-            const timeout = this.fullOptions.timeout;
-            const endTime = this.startTime + timeout;
-            if (currentTime > endTime) {
-                const elements = this.elements;
-                const hiddenElements = this.elementsBox.reduce<HTMLElement[]>((list, box, idx) => {
-                    if (box[4] === 'hidden') {
-                        list.push(elements[idx]);
-                    }
-                    return list;
-                }, []);
-                const hasVisibleElement = hiddenElements.length < this.elementsBox.length;
-                const details = {
-                    timeout,
-                    elements: hiddenElements,
-                    purpose: 'targets',
-                };
-
-                if (hasVisibleElement) {
-                    error(225, details);
-                } else {
-                    error(325, details);
-                }
-                return;
-            }
-            // force updateBox to recompute
-            setTimeout(() => this.updateBox++, 50);
-        }
-    }
-
-    /* }}} */
-    /* {{{ methods */
-
-    private resetElementsDebounced(get = true) {
-        clearTimeout(this.timerResetElements);
-        this.timerResetElements = setTimeout(() => {
-            this.resetElements(get)
-        }, 10);
-    }
-
-    private resetElements(get = true) {
-        clearTimeout(this.timerResetElements);
-        this.removeClass(this.elements);
-        this.removeClass(Array.from(this.highlightElements));
-        this.cacheElements.clear();
-        this.targetElements.clear();
-        this.highlightElements.clear();
-        this.resetMutedElements();
-        if (get) {
-            this.getTargetElements();
-            this.muteElements();
-        }
-    }
-
-    private getTargetElements() {
-        const targetElements = this.targetElements;
-        const target = this.step.desc.target;
-        this.startTime = performance.now();
-
-        if (!target?.length) {
-            return;
-        }
-        const timeout = this.fullOptions.timeout;
-        const cache = this.cacheElements;
-
-        const targets = Array.isArray(target) ? target : [target];
-        const promises: Array<Promise<any>> = [];
-
-        targets.forEach(async (selector) => {
-            const promise = getElement(selector, {
-                timeout,
-                all: true,
-                purpose: 'targets',
-                cache,
-            });
-            promises.push(promise);
-            const elements = await promise;
-
-            if (elements?.length) {
-                debug(26, this.fullOptions, {
-                    elements,
-                    selector,
-                });
-                elements.forEach((el) => targetElements.add(el));
-            } else {
-                debug(27, this.fullOptions, {
-                    selector,
-                });
-            }
-        });
-
-        this.promiseTargetElements = Promise.all(promises);
-    }
-
-    private setFocus() {
-        const fullOptions = this.fullOptions;
-        const focusCfg = fullOptions.focus;
-        clearTimeout(this.timerSetFocus++);
-
-        switch (focusCfg) {
-            case false:
-            case 'no-focus': {
-                /* Remove focus from any element */
-                const el = document.activeElement as HTMLElement | null;
-                el?.blur();
-                break;
-            }
-            case 'keep':
-                /* Do not change any focus */
-                return;
-            case true:
-            case 'main-target': {
-                /* set focus to the main target */
-                const timeout = fullOptions.timeout;
-
-                /* Timer is to stop the watch after timeout. */
-                this.timerSetFocus = setTimeout(() => {
-                    stopWatch();
-                    error(324, { timeout, selector: '{main-target}', purpose: 'focus' });
-                }, timeout || 10);
-                const refTimer = this.timerSetFocus;
-
-                const stopWatch = watch(() => this.mainElement, () => {
-                    const timerSetFocus = this.timerSetFocus;
-                    /* check that function is not outdated */
-                    if (refTimer !== timerSetFocus) {
-                        clearTimeout(timerSetFocus);
-                        stopWatch();
-                        return;
-                    }
-
-                    /* Check if mainElement is defined in order to set focus */
-                    const mainElement = this.mainElement;
-                    if (mainElement) {
-                        mainElement.focus();
-                        clearTimeout(timerSetFocus);
-                        /* defer stopWatch in order to be sure that the value exists (due to immediate option) */
-                        setTimeout(() => stopWatch(), 0);
-                        return;
-                    }
-                }, { immediate: true });
-                break;
-            }
-            default: {
-                /* Set focus to given target */
-                const target = focusCfg.target;
-                const refTimer = this.timerSetFocus;
-                getElement(target, {
-                    purpose: 'focus',
-                    timeout: fullOptions.timeout,
-                }).then((el) => {
-                    if (el && refTimer === this.timerSetFocus) {
-                        el.focus();
-                    }
-                });
-                break;
-            }
-        }
-    }
-
-    private async scroll() {
-        const options = this.fullOptions;
-        const scroll = options.scroll;
-        let behavior: ScrollKind;
-        let target: HTMLElement | null;
-
-        if (typeof scroll === 'boolean') {
-            await this.promiseTargetElements;
-            behavior = scroll ? 'scroll-to' : 'no-scroll';
-            target = this.mainElement;
-        } else if (typeof scroll === 'string') {
-            await this.promiseTargetElements;
-            behavior = scroll;
-            target = this.mainElement;
-        } else {
-            behavior = scroll.scrollKind ?? 'scroll-to';
-            target = await getElement(scroll.target, {
-                purpose: 'scroll',
-                timeout: scroll.timeout ?? options.timeout,
-                errorIsWarning: true,
-            });
-        }
-
-        if (target && behavior === 'scroll-to') {
-            target.scrollIntoView({ behavior: 'smooth' });
-        }
-    }
-
-    private addHighlightClass() {
-        const highlight = this.fullOptions.highlight;
-        if (!highlight) {
-            return;
-        }
-
-        const highlightElements = this.highlightElements;
-
-        if (highlight === true) {
-            const mainElement = this.mainElement;
-            if (mainElement) {
-                mainElement?.classList.add('vue3-tutorial-highlight');
-                highlightElements.add(mainElement);
-            }
-            return;
-        }
-
-        const selectors = Array.isArray(highlight) ? highlight : [highlight];
-        const timeout = this.fullOptions.timeout;
-        const cache = this.cacheElements;
-
-        selectors.forEach(async (selector) => {
-            const elements = await getElement(selector, {
-                all: true,
-                timeout,
-                purpose: 'highlight',
-                cache,
-                errorIsWarning: true,
-            });
-            if (elements) {
-                for (const el of elements) {
-                    el.classList.add('vue3-tutorial-highlight');
-                    highlightElements.add(el);
-                }
-            }
-        });
-    }
-
-    private addClass(newTargets: HTMLElement[]) {
-        const options = this.fullOptions;
-
-        /* add vue3-tutorial class */
-        newTargets.forEach((el) => {
-            el.classList.add(
-                'vue3-tutorial__target',
-            );
-            if (options.classForTargets) {
-                el.classList.add(options.classForTargets);
-            }
-        });
-        const mainEl = newTargets[0];
-        if (mainEl) {
-            mainEl.classList.add('vue3-tutorial__main-target');
-        }
-    }
-
-    private removeClass(oldTargets: HTMLElement[]) {
-        const options = this.fullOptions;
-        const classForTargets = options.classForTargets;
-
-        /* remove previous vue3-tutorial class */
-        oldTargets.forEach((el) => {
-            el.classList.remove(
-                'vue3-tutorial-highlight',
-                'vue3-tutorial__target',
-                'vue3-tutorial__main-target'
-            );
-            if (classForTargets) {
-                el.classList.remove(classForTargets);
-            }
-        });
-    }
-
-    // private muted(event: Event) {
-    //     event.stopPropagation();
-    // }
-
-    private resetMutedElements() {
-        const elements = this.mutedElements;
-        for (const [element, tabindex] of elements) {
-            element.tabIndex = tabindex;
-            element.classList.remove('vue3-tutorial-muted');
-        }
-        elements.clear();
-    }
-
-    private muteElements() {
-        const mutedElements = this.mutedElements;
-        const muteSelectors = this.fullOptions.muteElements;
-
-        this.resetMutedElements();
-        if (muteSelectors === false) {
-            return false;
-        }
-
-        const cache = this.cacheElements;
-        const selectors = Array.isArray(muteSelectors) ? muteSelectors : [muteSelectors];
-
-        selectors.forEach((selector) => {
-            const listElements = getElement(selector, {
-                all: true,
-                purpose: 'mute',
-                cache,
-                errorIsWarning: true,
-            });
-
-            if (listElements) {
-                for (const element of listElements) {
-                    mutedElements.set(element, element.tabIndex);
-                    element.classList.add('vue3-tutorial-muted');
-                    element.tabIndex = -1;
-                }
-            } else {
-                /* some elements have not been found, search them asynchronously */
-                getElement(selector, {
-                    timeout: this.fullOptions.timeout,
-                    all: true,
-                    purpose: 'mute',
-                    cache,
-                    errorIsWarning: true,
-                }).then((result) => {
-                    if (result) {
-                        for (const element of result) {
-                            mutedElements.set(element, element.tabIndex);
-                            element.classList.add('vue3-tutorial-muted');
-                            element.tabIndex = -1;
-                        }
-                    }
-                });
-            }
-        });
-
-        return true;
+        this.$emit('next');
     }
 
     private addActionListener() {
         const eventName = this.nextActionType;
         const el = this.nextActionTarget;
 
-        this.mutationObserver.disconnect();
         this.removeActionListener();
 
         if (!el || eventName === 'next') {
             return;
-        }
-
-        if (el.getRootNode() === document) {
-            this.mutationObserver.observe(document.body, mutationConfig);
         }
 
         const listener = this.actionListener;
@@ -806,36 +221,818 @@ export default class VStep extends Vue<Props> {
         };
     }
 
-    private addScrollListener() {
-        const callback = this.recomputeBoxListener;
-        const parentElements = this.parentElements;
-
-        for (const el of parentElements) {
-            el.addEventListener('scroll', callback);
-        }
+    @Watch('nextActionTarget')
+    @Watch('nextActionType', { immediate: true })
+    protected onActionTypeChange() {
+        this.addActionListener();
     }
 
-    private clearScrollListener() {
-        const callback = this.recomputeBoxListener;
-        const elements = this.parentElements;
+    /* }}} */
+    /* {{{ Events */
+        /* {{{ Resize */
 
-        for (const el of elements) {
-            el.removeEventListener('scroll', callback);
+        private addResizeListener() {
+            const callback = this.recomputeBox;
+            window.addEventListener('resize', callback);
         }
 
-        this.parentElements.clear();
-    }
+        private removeResizeListener() {
+            const callback = this.recomputeBox;
+            window.removeEventListener('resize', callback);
+        }
 
-    private addResizeListener() {
-        const callback = this.recomputeBoxListener;
-        window.addEventListener('resize', callback);
-    }
+        /* }}} */
+        /* {{{ Scroll */
 
-    private removeResizeListener() {
-        const callback = this.recomputeBoxListener;
-        window.removeEventListener('resize', callback);
-    }
+        private scrollElements = new Set<HTMLElement>();
 
+        private addScrollListener() {
+            const callback = this.recomputeBox;
+            const scrollElements = this.scrollElements;
+
+            for (const el of scrollElements) {
+                el.addEventListener('scroll', callback);
+            }
+        }
+
+        private clearScrollListener() {
+            const callback = this.recomputeBox;
+            const elements = this.scrollElements;
+
+            for (const el of elements) {
+                el.removeEventListener('scroll', callback);
+            }
+
+            this.scrollElements.clear();
+        }
+
+        @Watch('targetElements', {deep: true})
+        @Watch('maskElements', {deep: true})
+        @Watch('arrowElements', {deep: true})
+        protected onPositionElementsChange() {
+            const scrollElements = this.scrollElements;
+
+            this.clearScrollListener();
+            scrollElements.add(window as any);
+            for (const el of this.targetElements) {
+                addParents(el, scrollElements);
+            }
+            for (const el of this.maskElements) {
+                addParents(el, scrollElements);
+            }
+            for (const el of this.arrowElements) {
+                addParents(el, scrollElements);
+            }
+            this.addScrollListener();
+        }
+
+        /* }}} */
+        /* {{{ Mutation */
+
+        private get mutationObserver() {
+            return new MutationObserver((mutationList) => {
+                const el = this.nextActionTarget;
+                if (!el) {
+                    return;
+                }
+                for (const mutation of mutationList) {
+                    if (mutation.type === 'childList'
+                    && mutation.removedNodes.length
+                    && el.getRootNode() !== document
+                    ) {
+                        /* On DOM change refetch all elements */
+                        this.debounceGetAllElement();
+                    }
+                }
+            });
+        }
+
+        /* }}} */
+        /* }}} */
+    /* {{{ Elements workflow */
+
+    private cacheElements: Map<string, HTMLElement[]> = new Map();
+    private boxCache = new WeakMap();
+    private startTime: number = 0;
+    private timerGetAllElements: number = 0;
+    private working = new Map<ErrorSelectorPurpose, false | Promise<boolean>>();
+    /* This property is updated anytime elements are refetch. It helps to show
+     *  when an asynchronous request is deprecated. */
+    private requestRef = 0;
+    /* This property is only to force recompute Boxes and re-rendering */
+    private updateBox = 0;
+
+        /* {{{ Targets */
+
+        private mainElement: HTMLElement | null = null;
+        private targetElements = new Set<HTMLElement>();
+
+        /** list of target elements.
+         *
+         * Convert the Set in Array.
+         * The Set is used to avoid duplications.
+         * The Array is used to keep elements in the same order as boxes.
+         */
+        private get targetElementsOrdered(): MainElementList {
+            const list: MainElementList = Array.from(this.targetElements) as any;
+            const mainElement = this.mainElement;
+            const index = list.indexOf(mainElement!);
+
+            if (index === -1) {
+                list.unshift(mainElement);
+            } else if (index > 0) {
+                list.splice(index, 1);
+                list.unshift(mainElement);
+            }
+
+            return list;
+        }
+
+        private get isMainElementHidden(): boolean {
+            const mainBox = this.targetBoxes[0];
+            if (mainBox && mainBox[4] !== 'visible') {
+                return true;
+            }
+            return false;
+        }
+
+        private get targetBoxes(): Box[] {
+            const elements = this.targetElements;
+
+            /* XXX: only for reactivity, to force to recompute box coordinates */
+            this.updateBox;
+
+            const memo = this.boxCache;
+            return Array.from(elements, (element) => {
+                if (element) {
+                    return getBox(element, memo);
+                }
+                return [0, 0, 0, 0, 'hidden'];
+            });
+        }
+
+        private getTargetElements() {
+            const targetElements = this.targetElements;
+            this.getElements({
+                selectors: this.step.desc.target,
+                elements: targetElements,
+                timeout: this.fullOptions.timeout,
+                purpose: 'targets',
+                errorIsWarning: false,
+                thenCb: (elements, selector, index) => {
+                    if (elements?.length) {
+                        debug(26, this.fullOptions, {
+                            elements,
+                            selector,
+                        });
+                        if (index === 1) {
+                            this.mainElement = elements[0];
+                        }
+                        elements.forEach((el) => targetElements.add(el));
+                    } else {
+                        /* No elements have been found */
+                        debug(27, this.fullOptions, {
+                            selector,
+                        });
+                    }
+                },
+            });
+        }
+
+        @Watch('targetBoxes')
+        protected onElementsBoxChange() {
+            const boxes = this.targetBoxes;
+            const hasHiddenElement = boxes.some((box) => box[4] === 'hidden');
+
+            const elements = this.targetElementsOrdered;
+            debug(25, this.fullOptions, {
+                elementsBox: boxes,
+                elements: elements,
+                tutorialInformation: this.tutorialInformation,
+                hasHiddenElement,
+            });
+
+            if (hasHiddenElement) {
+                const timeout = this.fullOptions.timeout;
+                const endTime = this.startTime + timeout;
+
+                const hiddenElements = boxes.reduce<HTMLElement[]>((list, box, idx) => {
+                    if (box[4] === 'hidden') {
+                        list.push(elements[idx]!);
+                    }
+                    return list;
+                }, []);
+                const hasVisibleElement = hiddenElements.length < boxes.length;
+
+                /* force to recompute */
+                const ref = this.requestRef;
+                setTimeout(() => this.getAllElements({
+                    ref,
+                    timeout,
+                    purpose: 'targets',
+                    elements: hiddenElements,
+                    error: !hasVisibleElement,
+                }), 50);
+            }
+        }
+
+        /* }}} */
+        /* {{{ Highlight & class */
+
+        private highlightElements = new Set<HTMLElement>();
+        private oldHighlightElements = new Set<HTMLElement>();
+
+        private getHighlightElements() {
+            const highlight = this.fullOptions.highlight;
+            const highlightElements = this.highlightElements;
+            highlightElements.clear();
+
+            if (!highlight || highlight === true) {
+                return;
+            }
+
+            this.getElements({
+                selectors: highlight,
+                elements: highlightElements,
+                timeout: this.fullOptions.timeout,
+                purpose: 'highlight',
+                errorIsWarning: true,
+                thenCb: (elements) => {
+                    if (elements) {
+                        elements.forEach((el) => highlightElements.add(el));
+                    }
+                },
+            });
+        }
+
+        private addHighlightClass() {
+            const highlight = this.fullOptions.highlight;
+            if (!highlight) {
+                return;
+            }
+
+            const highlightElements = this.highlightElements;
+
+            for (const el of highlightElements) {
+                el.classList.add('vue3-tutorial-highlight');
+            }
+        }
+
+        private addClass(newTargets: MainElementList) {
+            const options = this.fullOptions;
+            const classForTargets = options.classForTargets;
+
+            /* add vue3-tutorial class */
+            newTargets.forEach((el) => {
+                if (!el) {
+                    return;
+                }
+
+                el.classList.add(
+                    'vue3-tutorial__target'
+                );
+                if (classForTargets) {
+                    el.classList.add(classForTargets);
+                }
+            });
+            const mainEl = newTargets[0];
+            if (mainEl) {
+                mainEl.classList.add('vue3-tutorial__main-target');
+            }
+        }
+
+        private removeClass(elements: MainElementList | Set<HTMLElement>) {
+            const options = this.fullOptions;
+            const classForTargets = options.classForTargets;
+
+            /* remove previous vue3-tutorial class */
+            elements.forEach((el) => {
+                if (!el) {
+                    return;
+                }
+
+                el.classList.remove(
+                    'vue3-tutorial-highlight',
+                    'vue3-tutorial__target',
+                    'vue3-tutorial__main-target'
+                );
+                if (classForTargets) {
+                    el.classList.remove(classForTargets);
+                }
+            });
+            if (elements instanceof Set) {
+                elements.clear();
+            }
+        }
+
+        @Watch('targetElementsOrdered')
+        protected onElementsChange(oldList: MainElementList) {
+            /* cleanup previous elements */
+            this.removeClass(oldList);
+
+            /* add class to elements */
+            const newList = this.targetElementsOrdered;
+            this.addClass(newList);
+            this.addHighlightClass();
+        }
+        @Watch('highlightElements', { deep: true })
+        protected onHighlightElementsChange() {
+            const oldList = this.oldHighlightElements;
+
+            /* cleanup previous elements */
+            this.removeClass(oldList);
+
+            shallowSetCopy(this.highlightElements, oldList);
+
+            /* add class to elements */
+            this.addHighlightClass();
+        }
+        @Watch('mainElement')
+        protected onMainElementChange() {
+            const highlight = this.fullOptions.highlight;
+
+            if (highlight === true) {
+                const highlightElements = this.highlightElements;
+                const mainElement = this.mainElement;
+                if (mainElement) {
+                    highlightElements.clear();
+                    highlightElements.add(mainElement);
+                }
+            }
+        }
+
+        /* }}} */
+        /* {{{ Mask */
+
+        private maskElements = new Set<HTMLElement>();
+
+        private get masksBox(): Box[] {
+            const { mask } = this.fullOptions;
+
+            if (!mask) {
+                return emptyArray;
+            }
+            const cache = this.boxCache;
+            const mainElement = this.mainElement;
+
+            if (mask === true) {
+                const elementsBox = this.targetBoxes;
+                if (mainElement && this.isMainElementHidden) {
+                    /* Add the parent box, if element is not visible. This is
+                    * to have a visible box to scroll */
+                    return [
+                        ...elementsBox,
+                        getBox(mainElement, cache, {getParentBox: true}),
+                    ];
+                } else {
+                    return elementsBox;
+                }
+            }
+
+            /* XXX: only for reactivity, to force to recompute box coordinates */
+            this.updateBox;
+
+            const listElements = this.maskElements;
+            const boxList: Box[] = [];
+
+            for (const element of listElements) {
+                boxList.push(getBox(element, cache));
+            }
+
+            /* Add the parent box, if element is not visible. This is to have a
+            * visible box to scroll */
+            if (mainElement && this.isMainElementHidden) {
+                boxList.push(getBox(mainElement, cache, {getParentBox: true}));
+            }
+
+            return boxList;
+        }
+
+        private getMaskElements() {
+            const mask = this.fullOptions.mask;
+
+            if (typeof mask === 'boolean') {
+                this.working.set('mask', false);
+                return;
+            }
+            const maskElements = this.maskElements;
+            this.getElements({
+                selectors: mask,
+                elements: maskElements,
+                timeout: this.fullOptions.timeout,
+                purpose: 'mask',
+                errorIsWarning: true,
+                thenCb: (elements) => {
+                    if (elements?.length) {
+                        elements.forEach((el) => maskElements.add(el));
+                    }
+                },
+            });
+        }
+
+        /* }}} */
+        /* {{{ Arrows */
+
+        private arrowElements = new Set<HTMLElement>();
+
+        private get arrowsPosition(): boolean | ArrowPosition[] {
+            const arrow = this.fullOptions.arrow;
+
+            if (typeof arrow === 'boolean') {
+                return arrow;
+            }
+
+            /* XXX: only for reactivity, to force to recompute box coordinates */
+            this.updateBox;
+
+            const memo = this.boxCache;
+            const listElements = this.arrowElements;
+            const positionList: ArrowPosition[] = [];
+
+            for (const element of listElements) {
+                const box = getBox(element, memo);
+                const placement = getPlacement(box as unknown as Rect);
+                const [x, y, position] = getPosition(box, placement);
+                positionList.push({ x, y, position });
+            }
+
+            return positionList;
+        }
+
+        private getArrowElements() {
+            const arrow = this.fullOptions.arrow;
+
+            if (typeof arrow === 'boolean') {
+                this.working.set('arrow', false);
+                return;
+            }
+
+            const arrowElements = this.arrowElements;
+            this.getElements({
+                selectors: arrow,
+                elements: arrowElements,
+                timeout: this.fullOptions.timeout,
+                purpose: 'arrow',
+                errorIsWarning: true,
+                thenCb: (elements) => {
+                    if (elements?.length) {
+                        elements.forEach((el) => arrowElements.add(el));
+                    }
+                },
+            });
+        }
+
+        /* }}} */
+        /* {{{ Muted */
+
+        /* [Element, tabIndex it had before mute ] */
+        private mutedElements: Map<HTMLElement, number> = new Map();
+
+        private getMutedElements() {
+            this.resetMutedElements();
+            const mutedSelectors = this.fullOptions.muteElements;
+            const mutedElements = this.mutedElements;
+
+            if (!mutedSelectors) {
+                return;
+            }
+
+            this.getElements({
+                selectors: mutedSelectors,
+                elements: mutedElements,
+                timeout: this.fullOptions.timeout,
+                purpose: 'mute',
+                errorIsWarning: true,
+                thenCb: (elements) => {
+                    if (elements) {
+                        elements.forEach((el) => {
+                            if (!mutedElements.has(el)) {
+                                mutedElements.set(el, el.tabIndex);
+                                el.classList.add('vue3-tutorial-muted');
+                                el.tabIndex = -1;
+                            }
+                        });
+                    }
+                },
+            });
+        }
+
+        private resetMutedElements() {
+            const elements = this.mutedElements;
+            for (const [element, tabindex] of elements) {
+                element.tabIndex = tabindex;
+                element.classList.remove('vue3-tutorial-muted');
+            }
+            elements.clear();
+        }
+
+        /* }}} */
+        /* {{{ Focus */
+
+        private timerSetFocus = 0;
+        private stopWatchForFocus: () => void = noop;
+
+        private setFocus() {
+            const fullOptions = this.fullOptions;
+            const focusCfg = fullOptions.focus;
+            this.stopWatchForFocus();
+            this.timerSetFocus++
+
+            switch (focusCfg) {
+                case false:
+                case 'false':
+                case 'no-focus': {
+                    /* Remove focus from any element */
+                    const el = document.activeElement as HTMLElement | null;
+                    el?.blur();
+                    break;
+                }
+                case 'keep':
+                    /* Do not change any focus */
+                    return;
+                case true:
+                case 'true':
+                case 'main-target': {
+                    /* set focus to the main target */
+                    const timeout = fullOptions.timeout;
+
+                    /* Timer is to stop the watch after timeout. */
+                    this.timerSetFocus = setTimeout(() => {
+                        stopWatch();
+                        error(324, { timeout, selector: '{main-target}', purpose: 'focus' });
+                    }, timeout || 10);
+                    const refTimer = this.timerSetFocus;
+
+                    const stopWatch = watch(() => this.mainElement, () => {
+                        const timerSetFocus = this.timerSetFocus;
+                        /* check that function is not outdated */
+                        if (refTimer !== timerSetFocus) {
+                            clearTimeout(timerSetFocus);
+                            stopWatch();
+                            return;
+                        }
+
+                        /* Check if mainElement is defined in order to set focus */
+                        const mainElement = this.mainElement;
+                        if (mainElement) {
+                            mainElement.focus();
+                            clearTimeout(timerSetFocus);
+                            /* defer stopWatch in order to be sure that the value exists (due to immediate option) */
+                            setTimeout(() => stopWatch(), 0);
+                            return;
+                        }
+                    }, { immediate: true });
+
+                    this.stopWatchForFocus = () => {
+                        stopWatch();
+                        clearTimeout(this.timerSetFocus);
+                        this.stopWatchForFocus = noop;
+                    };
+                    break;
+                }
+                default: {
+                    /* Set focus to given target */
+                    const target = focusCfg.target;
+                    const refTimer = this.timerSetFocus;
+                    const timeout = focusCfg.timeout ?? fullOptions.timeout;
+
+                    getElement(target, {
+                        purpose: 'focus',
+                        timeout: timeout,
+                    }).then((el) => {
+                        if (el && refTimer === this.timerSetFocus) {
+                            el.focus();
+                        }
+                    });
+                    break;
+                }
+            }
+        }
+
+        /* }}} */
+        /* {{{ Scroll To */
+
+        private async scrollTo() {
+            const options = this.fullOptions;
+            let scroll = options.scroll;
+            let behavior: ScrollKind;
+            let target: HTMLElement | null;
+
+            if (typeof scroll === 'boolean') {
+                const targetWorking = this.working.get('targets');
+                if (targetWorking instanceof Promise) {
+                    await targetWorking;
+                }
+                behavior = scroll ? 'scroll-to' : 'no-scroll';
+                target = this.mainElement;
+            } else if (typeof scroll === 'string') {
+                if (scroll === 'true') {
+                    scroll = 'scroll-to';
+                } else if (scroll === 'false') {
+                    scroll = 'no-scroll';
+                }
+
+                const targetWorking = this.working.get('targets');
+                if (targetWorking instanceof Promise) {
+                    await targetWorking;
+                }
+                behavior = scroll;
+                target = this.mainElement;
+            } else {
+                behavior = scroll.scrollKind ?? 'scroll-to';
+                target = await getElement(scroll.target, {
+                    purpose: 'scroll',
+                    timeout: scroll.timeout ?? options.timeout,
+                    errorIsWarning: true,
+                });
+            }
+
+            if (target && behavior === 'scroll-to') {
+                target.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        /* }}} */
+        /* {{{ global */
+
+        private get isStepReady(): boolean {
+            const working = this.working;
+            if (working.size === 0) {
+                return false;
+            }
+            for (const isWorking of working.values()) {
+                if (isWorking) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private recomputeBox() {
+            this.updateBox++;
+            this.boxCache = new WeakMap();
+        }
+
+        private debounceGetAllElement(info?: AllElementsInfo, timer = 10) {
+            this.timerGetAllElements = setTimeout(() => {
+                this.getAllElements(info);
+            }, timer);
+        }
+
+        /** Fetch all elements needed for the step.
+         *
+         * @param ref {number} this is to check if the query is deprecated.
+         *                     if 0, a new query is done.
+         */
+        private getAllElements(info?: AllElementsInfo) {
+            const {
+                ref = 0,
+                timeout = this.fullOptions.timeout,
+                purpose,
+                elements,
+                error: sendError,
+            } = info ?? {};
+            const currentTime = performance.now();
+
+            /* Check if timeout is reached */
+            if (ref) {
+                if (ref !== this.requestRef) {
+                    /* A newer query has already been requested */
+                    return;
+                }
+
+                const duration = currentTime - this.startTime;
+
+                if (duration > timeout) {
+                    const details = {
+                        timeout,
+                        elements,
+                        purpose,
+                    };
+
+                    if (sendError) {
+                        error(325, details);
+                    } else {
+                        error(225, details);
+                    }
+                    return;
+                }
+            }
+
+            /* Reinitialize */
+            this.requestRef++;
+            this.cacheElements.clear();
+            this.boxCache = new WeakMap();
+            if (!ref) {
+                this.startTime = currentTime;
+            }
+
+            /* fetch elements */
+            this.getTargetElements();
+            this.getMaskElements();
+            this.getArrowElements();
+            this.getHighlightElements();
+            this.getMutedElements();
+
+            /* Apply effects */
+            this.scrollTo();
+            this.setFocus();
+
+
+            debug(24, this.fullOptions, {
+                ref: this.requestRef,
+                startTime: this.startTime,
+                currentTime,
+            });
+            /* TODO: check that it is ok (no hidden element) */
+        }
+
+        private getElements(arg: {
+            selectors?: ElementSelector;
+            elements: Set<HTMLElement> | Map<HTMLElement, any>;
+            timeout: number;
+
+            purpose: ErrorSelectorPurpose;
+            errorIsWarning: boolean;
+
+            thenCb: (elements: HTMLElement[] | null, selector: string, index: number) => void;
+        }) {
+            const {
+                selectors,
+                elements,
+                timeout,
+                purpose,
+                errorIsWarning,
+                thenCb,
+            } = arg;
+            const ref = this.requestRef;
+
+            elements.clear();
+            const querySelectors: string[] = Array.isArray(selectors) ? selectors : [selectors] as [string];
+
+            if (!selectors || !querySelectors.length) {
+                this.working.set(purpose, false);
+                return;
+            }
+
+            const isDeprecated = this.isDeprecated;
+            const cache = this.cacheElements;
+
+            const promises: Array<Promise<any>> = [];
+
+            querySelectors.forEach(async (selector) => {
+                const promise = getElement(selector, {
+                    timeout,
+                    all: true,
+                    purpose,
+                    cache,
+                    errorIsWarning,
+                });
+                const index = promises.push(promise);
+                const elements = await promise;
+
+                if (isDeprecated(ref)) {
+                    return;
+                }
+
+                thenCb(elements, selector, index);
+            });
+
+            const allPromises = Promise.all(promises).then(() => {
+                if (isDeprecated(ref)) {
+                    return false;
+                }
+                this.working.set(purpose, false);
+                return true;
+            });
+            this.working.set(purpose, allPromises);
+        }
+
+        private isDeprecated(ref: number) {
+            return ref !== this.requestRef;
+        }
+
+        @Watch('step.desc.target', { immediate: true, deep: true })
+        protected onStepTargetChange() {
+             /* Step changed */
+             debug(22, this.fullOptions, {
+                step: this.step,
+                tutorialInformation: this.tutorialInformation,
+            });
+
+            /* Fetch elements for this step */
+            this.getAllElements();
+        }
+
+        @Watch('isStepReady')
+        protected onReadyChange() {
+            this.mutationObserver.disconnect();
+            if (this.isStepReady) {
+                this.mutationObserver.observe(document.body, mutationConfig);
+            }
+        }
+
+        /* }}} */
     /* }}} */
     /* {{{ Life cycle */
     /* }}} */
@@ -850,11 +1047,19 @@ export default class VStep extends Vue<Props> {
     }
 
     public unmounted() {
-        this.resetElements(false);
+        this.removeClass(this.targetElements);
+        this.removeClass(this.oldHighlightElements);
+        this.removeClass(this.highlightElements);
+        this.resetMutedElements();
+        this.stopWatchForFocus();
         this.removeActionListener();
         this.clearScrollListener();
         this.removeResizeListener();
         this.mutationObserver.disconnect();
+
+        this.cacheElements.clear();
+        /* Ensure that all asynchronous request will be deprecated */
+        this.requestRef++;
 
         debug(21, this.fullOptions, {
             step: this.step,
@@ -870,7 +1075,7 @@ export default class VStep extends Vue<Props> {
 
         return (
             <Window
-                elementsBox={this.elementsBox}
+                elementsBox={this.targetBoxes}
                 masksBox={this.masksBox}
                 position={options.position}
                 arrow={this.arrowsPosition}

@@ -5,16 +5,8 @@
 * steps
     * scrollIntoView
         * scroll only if element is not visible
-    * check that next is ok
-        * block next action
-        * disable button
-        * enable button
-    * Expression
-        * check url
     * Window
         * Position when target is too big and there is not enough space outside
-* Errors
-    * Add debug
 * documentation
     * README
         * gif
@@ -22,7 +14,7 @@
     * how to configure
         * step
             * checkNext
-        * split file to avoid having a big big file
+        * split file to avoid having a big file
     * Live example
         * create simple tutorial
         * change highlight color in order to see it on background main color
@@ -43,6 +35,12 @@
 * Pause
     * restart at previous index
 * Step
+    * check that next is ok
+        * block next action
+        * disable button
+        * enable button
+    * Expression
+        * check url
     * interaction action
         * timer
         * "next" when clicking anywhere
@@ -62,12 +60,15 @@
         * progress status with progress bar (and/or %)
     * button section
         * When interactive, add a text to tell what is expected
+    * Workflow
+        * Go to step X (instead of next step), which should help to manage errors
 * Window
     * Allow user to move the window
     * improve auto placement
         * to avoid to be over secondary targets
         * to prefer left/right when target is at sides
     * allow to change HTML
+    * update position of all targets (when scroll or DOM change)
 * Skip
     * replace confirm dialog by modal dialog
 * Options
@@ -75,3 +76,11 @@
 * Global
     * allow to have several instance of vue3-tutorial on the same page
         * do not return a singleton (labels, keyBinding)
+* documentation
+    * how to configure
+        * step
+            * checkNext
+    * Configuration example (for some usage)
+
+* Bugs
+    - window position with big element which takes all the screen

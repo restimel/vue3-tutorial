@@ -59,6 +59,17 @@ export function merge<A extends object, B extends object>(target: A, source: B, 
     return target as A & B;
 }
 
+/** Copy Set values into another Set */
+export function shallowSetCopy<T = any>(origin: Set<T>, copy?: Set<T>): Set<T> {
+    const clone = copy ?? new Set<T>();
+    clone.clear();
+    for (const item of origin) {
+        clone.add(item);
+    }
+
+    return clone;
+}
+
 /** Return a value which should be included between min and max */
 function minMaxValue(value: number, min: number, max: number): number {
     if (min > max) {
@@ -394,4 +405,21 @@ export function getPlacement(targetBox: Rect, refBox?: Rect): Placement {
         return 'left';
     }
     return 'top';
+}
+
+/** Add all Parent nodes of an element into a Set.
+ *
+ * The element itself is also added.
+ * If a parent node is already in the Set, stop the loop because we expect
+ * that all its parent are already in the Set.
+ */
+export function addParents(el: HTMLElement, list: Set<HTMLElement>) {
+    let node: HTMLElement | null = el;
+    while (node) {
+        if (list.has(node)) {
+            break;
+        }
+        list.add(node);
+        node = node.parentElement;
+    }
 }
