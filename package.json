@@ -1,6 +1,6 @@
 {
     "name": "vue3-tutorial",
-    "version": "0.11.0",
+    "version": "0.12.0",
     "description": "Interactive tutorial component for Vue3 which help users to understand your application",
     "main": "dist/vue3-tutorial.common.js",
     "module": "dist/vue3-tutorial.esm.js",

@@ -8,6 +8,7 @@ export interface Props {
     arrowAnimation?: boolean;
     mask?: boolean;
     maskMargin?: number;
+    teleport?: HTMLElement | boolean;
 }
 export default class Window extends Vue<Props> {
     private elementsBox;
@@ -17,19 +18,27 @@ export default class Window extends Vue<Props> {
     private arrowAnimation;
     private mask;
     private maskMargin;
+    private teleport;
     private elementSize;
+    private timerSizeRefresh;
     get mainBoxElement(): Box;
     get realPosition(): Placement;
     get hasNoPointer(): boolean;
     get computePosition(): Position;
+    get realWindowPosition(): Placement;
     get stylePosition(): string;
     get refUpdateSize(): () => void;
+    get teleportContainer(): HTMLElement | null;
     get getScrollPosition(): Position | undefined;
     get styleScrollPosition(): string;
     get arrowsPosition(): ArrowPosition[];
     protected onElementBoxChange(): void;
+    protected onTeleportChange(): void;
     private updateSize;
+    private useTeleport;
+    private removeTeleport;
     mounted(): void;
+    updated(): void;
     unmounted(): void;
     render(): h.JSX.Element;
 }

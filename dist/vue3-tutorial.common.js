@@ -4,11 +4,618 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 var vtyx = require('vtyx');
 var vue = require('vue');
-var Markdown = require('vue3-markdown-it');
 
-function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
+/** File purpose:
+ * Manage errors that can happens anywhere in the library
+ */
+let errorCallback = null;
+const errorMap = {
+    /* 0xx : debug */
+    0: 'Tutorial mounted',
+    1: 'Tutorial unmounted',
+    2: 'Tutorial started',
+    3: 'Tutorial stopped',
+    20: 'Step mounted',
+    21: 'Step unmounted',
+    22: 'Step changed',
+    25: 'Target elements change',
+    26: 'DOM elements targeted',
+    27: 'No elements found',
+    /* 1xx : info */
+    /* 2xx : warning */
+    200: 'Unknown error code',
+    201: 'Unknown label',
+    202: 'Not able to check if step can be skipped',
+    203: 'Tutorial has no active steps',
+    204: 'There are no previous step',
+    224: 'Timeout: some targets have not been found in the allowing time',
+    225: 'Timeout: some target elements are still hidden in the allowing time',
+    230: 'RegExp for Markdown is not supported by this browser',
+    /* 3xx : error */
+    300: 'Selector is not valid',
+    301: 'Unknown operation',
+    302: 'Step not found',
+    303: 'Tutorial is not defined',
+    324: 'Timeout: some targets have not been found in the allowing time',
+    325: 'Timeout: some target elements are still hidden in the allowing time',
+};
+const MESSAGE_LOG = 'vue3-tutorial [%d]: %s';
+function error(code, details) {
+    const message = errorMap[code];
+    if (!message) {
+        error(200, { code: code, details: details });
+    }
+    switch (errorStatus(code)) {
+        case 'log':
+            console.log(MESSAGE_LOG, code, message, details);
+            break;
+        case 'info':
+            console.log(MESSAGE_LOG, code, message, details);
+            break;
+        case 'warning':
+            console.warn(MESSAGE_LOG, code, message, details);
+            break;
+        case 'error':
+            console.error(MESSAGE_LOG, code, message, details);
+            break;
+    }
+    if (errorCallback) {
+        errorCallback({
+            code,
+            message,
+            details,
+        });
+    }
+}
+function errorStatus(code) {
+    if (code < 100) {
+        return 'log';
+    }
+    if (code < 200) {
+        return 'info';
+    }
+    if (code < 300) {
+        return 'warning';
+    }
+    return 'error';
+}
+function debug(code, options, details = {}) {
+    const debug = options.debug;
+    if (!debug) {
+        return;
+    }
+    if (debug === true || debug.includes(code)) {
+        const dbgDetails = Object.assign({ options: options }, details);
+        error(code, dbgDetails);
+    }
+}
+function registerError(callback) {
+    errorCallback = callback;
+}
+function unRegisterError() {
+    errorCallback = null;
+}
 
-var Markdown__default = /*#__PURE__*/_interopDefaultLegacy(Markdown);
+/* File Purpose:
+ * Display a modal box on the screen depending on a position.
+ */
+var __decorate$5 = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var Markdown_1;
+/* {{{ Regexp to extract Markdown tags */
+/** Detect any characters (non greedy) */
+const anyChar = '[\\s\\S]*?';
+/** Detect characters that can follow or precede bold or italic style */
+const isTxtChar = (char) => `[^\\s${char}]`;
+/** Text inside link */
+const txtLink = '[^\\n\\]]*';
+/** url inside link */
+const urlLink = '[^\\n)]+';
+/** Detect the start of a line */
+const lineStart = '(?<=^|\n) *';
+/** Detect the end of a line */
+const lineEnd = ' *(?=\n|$)';
+/** Retrieve all chars until the end of line */
+const untilEnd = '[^\n]*(?:\n|$)';
+const newLine = '\\n+';
+const italic1 = `_${isTxtChar('_')}${anyChar}(?<=${isTxtChar('_')})_`;
+const italic2 = `\\*${isTxtChar('*')}${anyChar}(?<=${isTxtChar('*')})\\*`;
+const bold1 = `__${isTxtChar('_')}${anyChar}(?<=${isTxtChar('_')})__`;
+const bold2 = `\\*{2}${isTxtChar('*')}${anyChar}(?<=${isTxtChar('*')})\\*{2}`;
+const strike = `~{2}${isTxtChar('~')}${anyChar}(?<=${isTxtChar('~')})~{2}`;
+const sub = `~${isTxtChar('~')}${anyChar}(?<=${isTxtChar('~')})~`;
+const sup = `\\^${isTxtChar('^')}${anyChar}(?<=${isTxtChar('^')})\\^`;
+const linkImage = `!?\\[${txtLink}\\]\\(${urlLink}\\)`;
+const linkImageCapture = `!?\\[(?<txt>${txtLink})\\]\\((?<url>${urlLink})\\)`;
+const header = `${lineStart}#+[^\\n]+${lineEnd}`;
+const horizontalLine = `${lineStart}(?:-{3,}|_{3,})${lineEnd}`;
+const inlineCode1 = '(?<!\\\\)`(?:[^`\\n]|\\\\`)+`';
+const inlineCode2 = '(?<!\\\\)``[^`\\n].*``';
+const multilineCode1 = `${lineStart}\`{3,}.*\\n[\\s\\S]*?\`{3,}${lineEnd}`;
+const multilineCode2 = `${lineStart}~{3,}.*\\n[\\s\\S]*?~{3,}${lineEnd}`;
+const quote = `(?:${lineStart}>${untilEnd})+`;
+const list1 = `(?:${lineStart}\\* ${untilEnd})+`;
+const list2 = `(?:${lineStart}- ${untilEnd})+`;
+const list3 = `(?:${lineStart}\\d+\\. ${untilEnd})+`;
+const spanClass = ':\\w[\\w ]*:';
+const color = '\\{[#\\w(),]+:[^}\\n]+\\}';
+const special = '@[^ @]+@';
+const table = `${lineStart}.*\\|.*\\n[- \t]+\\|[- \t|]+\n(?:.*\\|${untilEnd})*`;
+const mdRules = [
+    newLine,
+    italic1,
+    italic2,
+    bold1,
+    bold2,
+    linkImage,
+    header,
+    horizontalLine,
+    strike,
+    sub,
+    sup,
+    inlineCode1,
+    inlineCode2,
+    multilineCode1,
+    multilineCode2,
+    quote,
+    list1,
+    list2,
+    list3,
+    spanClass,
+    color,
+    special,
+    table,
+];
+const mdSimpleRules = [
+    newLine,
+    linkImage,
+    spanClass,
+    color,
+    special,
+];
+let mdRegExp;
+let linkImageRegExp;
+try {
+    linkImageRegExp = new RegExp(linkImageCapture);
+    mdRegExp = new RegExp(`(${mdRules.join('|')})`);
+}
+catch (err) {
+    /* The issue is probably due to look behind assertion.
+     * So fallback to simpler rules (format will not be correct)
+     */
+    error(230, { error: err });
+    mdRegExp = new RegExp(`(${mdSimpleRules.join('|')})`);
+}
+/* }}} */
+function addTableChunk(text) {
+    const rows = text.split('\n');
+    if (rows.length < 2) {
+        return {
+            type: 'text',
+            value: text,
+        };
+    }
+    return {
+        type: 'table',
+        value: text,
+    };
+}
+let Markdown = Markdown_1 = class Markdown extends vtyx.Vue {
+    /* }}} */
+    /* {{{ computed */
+    get chunkedSource() {
+        const source = this.source;
+        const splitSource = source.split(mdRegExp);
+        const chunks = [];
+        function addText(text) {
+            if (/^.*\|/.test(text)) {
+                chunks.push(addTableChunk(text));
+                return;
+            }
+            chunks.push({
+                type: 'text',
+                value: text,
+            });
+        }
+        splitSource.forEach((chunk) => {
+            var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+            const chunkTrim = chunk === null || chunk === void 0 ? void 0 : chunk.replace(/^[ \t]+|[ \t]+$/g, '');
+            if (!chunkTrim) {
+                /* Remove empty strings and undefined values */
+                return;
+            }
+            switch (chunkTrim[0]) {
+                case '\n':
+                    if (chunk.length === 1) {
+                        addText(' ');
+                    }
+                    else {
+                        chunks.push({
+                            type: 'lineFeed',
+                            value: '',
+                        });
+                    }
+                    break;
+                case '*':
+                    if (chunkTrim.endsWith('*')) {
+                        if (chunkTrim[1] === '*') {
+                            chunks.push({
+                                type: 'bold',
+                                value: chunkTrim.slice(2, -2),
+                            });
+                        }
+                        else {
+                            chunks.push({
+                                type: 'italic',
+                                value: chunkTrim.slice(1, -1),
+                            });
+                        }
+                    }
+                    else if (chunkTrim[1] === ' ') {
+                        chunks.push({
+                            type: 'ulist',
+                            value: chunk,
+                        });
+                    }
+                    else {
+                        addText(chunk);
+                    }
+                    break;
+                case '_':
+                    if (/^_+$/.test(chunkTrim)) {
+                        chunks.push({
+                            type: 'hr',
+                            value: '',
+                        });
+                    }
+                    else if (chunkTrim.endsWith('_')) {
+                        if (chunkTrim[1] === '_') {
+                            chunks.push({
+                                type: 'bold',
+                                value: chunkTrim.slice(2, -2),
+                            });
+                        }
+                        else {
+                            chunks.push({
+                                type: 'italic',
+                                value: chunkTrim.slice(1, -1),
+                            });
+                        }
+                    }
+                    else {
+                        addText(chunk);
+                    }
+                    break;
+                case '-':
+                    if (/^-+$/.test(chunkTrim)) {
+                        chunks.push({
+                            type: 'hr',
+                            value: '',
+                        });
+                    }
+                    else if (chunkTrim[1] === ' ') {
+                        chunks.push({
+                            type: 'ulist',
+                            value: chunk,
+                        });
+                    }
+                    else {
+                        addText(chunk);
+                    }
+                    break;
+                case '[': {
+                    const extract = chunkTrim.match(linkImageRegExp);
+                    const { txt, url } = (_a = extract === null || extract === void 0 ? void 0 : extract.groups) !== null && _a !== void 0 ? _a : {};
+                    if (url) {
+                        chunks.push({
+                            type: 'link',
+                            value: url,
+                            extra: txt !== null && txt !== void 0 ? txt : '',
+                        });
+                    }
+                    else {
+                        addText(chunk);
+                    }
+                    break;
+                }
+                case '!': {
+                    const extract = chunkTrim.match(linkImageRegExp);
+                    const { txt, url } = (_b = extract === null || extract === void 0 ? void 0 : extract.groups) !== null && _b !== void 0 ? _b : {};
+                    if (url) {
+                        chunks.push({
+                            type: 'image',
+                            value: url,
+                            extra: txt,
+                        });
+                    }
+                    else {
+                        addText(chunk);
+                    }
+                    break;
+                }
+                case '#': {
+                    let level = 0;
+                    while (chunkTrim[level] === '#') {
+                        level++;
+                    }
+                    if (level > 0 && level < 7) {
+                        const title = chunkTrim.slice(level).trimStart();
+                        chunks.push({
+                            type: 'header',
+                            value: title,
+                            extra: level.toString(10),
+                        });
+                    }
+                    else {
+                        addText(chunk);
+                    }
+                    break;
+                }
+                case '~': {
+                    if (chunkTrim[1] === '~') { // ~~
+                        if (chunkTrim[2] === '~') { // ~~~
+                            const rslt = chunkTrim.match(/^~+(?<type>[^\n]*)\n(?<code>[\s\S]*?)~+$/);
+                            if (rslt) {
+                                chunks.push({
+                                    type: 'multilineCode',
+                                    value: ((_c = rslt.groups) === null || _c === void 0 ? void 0 : _c.code) || '',
+                                    extra: (_d = rslt.groups) === null || _d === void 0 ? void 0 : _d.type,
+                                });
+                            }
+                            else {
+                                chunks.push({
+                                    type: 'strike',
+                                    value: chunkTrim.slice(2, -2),
+                                });
+                            }
+                        }
+                        else {
+                            chunks.push({
+                                type: 'strike',
+                                value: chunkTrim.slice(2, -2),
+                            });
+                        }
+                    }
+                    else { // ~
+                        chunks.push({
+                            type: 'sub',
+                            value: chunkTrim.slice(1, -1),
+                        });
+                    }
+                    break;
+                }
+                case '`': {
+                    if (chunkTrim.slice(0, 3) === '```') {
+                        const rslt = chunkTrim.match(/^`+(?<type>[^\n]*)\n(?<code>[\s\S]*?)`+$/);
+                        if (rslt) {
+                            chunks.push({
+                                type: 'multilineCode',
+                                value: ((_e = rslt.groups) === null || _e === void 0 ? void 0 : _e.code) || '',
+                                extra: (_f = rslt.groups) === null || _f === void 0 ? void 0 : _f.type,
+                            });
+                        }
+                        else {
+                            addText(chunk);
+                        }
+                    }
+                    else if (chunkTrim.endsWith('`')) {
+                        const value = chunkTrim.replace(/^`+|`+$/g, '');
+                        chunks.push({
+                            type: 'inlineCode',
+                            value: value,
+                        });
+                    }
+                    else {
+                        addText(chunk);
+                    }
+                    break;
+                }
+                case '^':
+                    chunks.push({
+                        type: 'sup',
+                        value: chunkTrim.slice(1, -1),
+                    });
+                    break;
+                case '>': {
+                    const classNames = (_h = (_g = chunkTrim.match(/^>:([^\n:]+):/)) === null || _g === void 0 ? void 0 : _g[1]) !== null && _h !== void 0 ? _h : '';
+                    const nbSlice = classNames.length ? classNames.length + 3 : 1;
+                    const lines = chunkTrim.slice(nbSlice).split(/\n *>/);
+                    chunks.push({
+                        type: 'quote',
+                        value: lines.join('@\n@').trim(),
+                        extra: classNames,
+                    });
+                    break;
+                }
+                case '@': {
+                    const pattern = (_j = chunkTrim.match(/@([^@]+)@/)) === null || _j === void 0 ? void 0 : _j[1];
+                    switch (pattern) {
+                        case '\\n':
+                        case '\n':
+                            chunks.push({
+                                type: 'newLine',
+                                value: pattern,
+                            });
+                            break;
+                        case '\\t':
+                        case '\t':
+                            chunks.push({
+                                type: 'indentation',
+                                value: pattern,
+                            });
+                            break;
+                        default:
+                            addText(chunk);
+                    }
+                    break;
+                }
+                case ':': {
+                    const className = (_k = chunkTrim.match(/^:(\w[\w ]*):$/)) === null || _k === void 0 ? void 0 : _k[1];
+                    if (className) {
+                        chunks.push({
+                            type: 'icon',
+                            value: className,
+                        });
+                    }
+                    else {
+                        addText(chunk);
+                    }
+                    break;
+                }
+                case '{': {
+                    const rslt = chunkTrim.match(/^\{(?<color>[^:\n;]*):(?<text>[^}\n]+)\}$/);
+                    if (rslt === null || rslt === void 0 ? void 0 : rslt.groups) {
+                        chunks.push({
+                            type: 'color',
+                            value: rslt.groups.text,
+                            /* XXX: ; is forbidden to avoid escaping style */
+                            extra: rslt.groups.color,
+                        });
+                    }
+                    else {
+                        addText(chunk);
+                    }
+                    break;
+                }
+                default:
+                    if (/^\d+\. /.test(chunkTrim)) {
+                        chunks.push({
+                            type: 'olist',
+                            value: chunk,
+                        });
+                    }
+                    else {
+                        addText(chunk);
+                    }
+            }
+        });
+        return chunks;
+    }
+    /* }}} */
+    /* {{{ methods */
+    renderChunks() {
+        return this.chunkedSource.map((chunk) => {
+            var _a, _b, _c;
+            switch (chunk.type) {
+                case 'text':
+                    return (chunk.value);
+                case 'bold':
+                    return (vtyx.h("span", { class: "vue3-tutorial-md-bold" },
+                        vtyx.h(Markdown_1, { source: chunk.value })));
+                case 'header': {
+                    const level = chunk.extra;
+                    return vtyx.h('h' + level, {
+                        class: `vue3-tutorial-md-h${level}`
+                    }, [chunk.value]);
+                }
+                case 'hr': {
+                    return (vtyx.h("hr", { class: "vue3-tutorial-md-hr" }));
+                }
+                case 'image':
+                    return (vtyx.h("img", { class: "vue3-tutorial-md-image", src: chunk.value, alt: chunk.extra }));
+                case 'italic':
+                    return (vtyx.h("span", { class: "vue3-tutorial-md-italic" },
+                        vtyx.h(Markdown_1, { source: chunk.value })));
+                case 'lineFeed':
+                    return ([vtyx.h("br", null), vtyx.h("br", null)]);
+                case 'newLine':
+                    return (vtyx.h("br", null));
+                case 'link':
+                    return (vtyx.h("a", { class: "vue3-tutorial-md-link", href: chunk.value, target: "_blank" },
+                        vtyx.h(Markdown_1, { source: chunk.extra })));
+                case 'strike':
+                    return (vtyx.h("span", { class: "vue3-tutorial-md-strike" },
+                        vtyx.h(Markdown_1, { source: chunk.value })));
+                case 'inlineCode':
+                    return (vtyx.h("code", { class: "vue3-tutorial-md-inline-code" }, chunk.value));
+                case 'multilineCode':
+                    return (vtyx.h("pre", { class: "vue3-tutorial-md-multiline-code" },
+                        vtyx.h("code", { class: {
+                                ['language-' + chunk.extra]: !!chunk.extra,
+                            }, "data-language": chunk.extra }, chunk.value)));
+                case 'sup':
+                    return (vtyx.h("sup", { class: "vue3-tutorial-md-sup" },
+                        vtyx.h(Markdown_1, { source: chunk.value })));
+                case 'sub':
+                    return (vtyx.h("sub", { class: "vue3-tutorial-md-sub" },
+                        vtyx.h(Markdown_1, { source: chunk.value })));
+                case 'quote':
+                    return (vtyx.h("blockquote", { class: ['vue3-tutorial-md-quote', (_a = chunk.extra) !== null && _a !== void 0 ? _a : ''] },
+                        vtyx.h(Markdown_1, { source: chunk.value })));
+                case 'olist': {
+                    const search = /^( *)\d+\. /.exec(chunk.value);
+                    if (!search) {
+                        //invalid markdown
+                        return;
+                    }
+                    const [pattern, indent] = search;
+                    const items = chunk.value.slice(pattern.length).split(new RegExp(`\n${indent}\\d+\\. `));
+                    return (vtyx.h("ol", { class: "vue3-tutorial-md-ol" }, items.map((item) => {
+                        if (item) {
+                            return (vtyx.h("li", { class: "vue3-tutorial-md-li" },
+                                vtyx.h(Markdown_1, { source: item })));
+                        }
+                        return;
+                    })));
+                }
+                case 'ulist': {
+                    const itemMarker = (_b = /^ *[*-] /.exec(chunk.value)) === null || _b === void 0 ? void 0 : _b[0];
+                    if (!itemMarker) {
+                        //invalid markdown
+                        return;
+                    }
+                    const items = chunk.value.slice(itemMarker.length).split('\n' + itemMarker);
+                    return (vtyx.h("ul", { class: "vue3-tutorial-md-ul" }, items.map((item) => {
+                        if (item) {
+                            return (vtyx.h("li", { class: "vue3-tutorial-md-li" },
+                                vtyx.h(Markdown_1, { source: item })));
+                        }
+                        return;
+                    })));
+                }
+                case 'indentation': {
+                    return (vtyx.h("span", { class: "vue3-tutorial-md-indent" }));
+                }
+                case 'icon': {
+                    return (vtyx.h("span", { class: chunk.value }));
+                }
+                case 'color': {
+                    return (vtyx.h("span", { style: `--color: ${(_c = chunk.extra) === null || _c === void 0 ? void 0 : _c.replaceAll(';', '')}`, class: "vue3-tutorial-md-color" },
+                        vtyx.h(Markdown_1, { source: chunk.value })));
+                }
+                case 'table': {
+                    const rows = chunk.value.split('\n');
+                    const nbColumns = rows[1].split('|').length;
+                    const headers = rows[0].split('|').slice(0, nbColumns);
+                    const data = rows.slice(2).map((row) => {
+                        return row.split('|').slice(0, nbColumns);
+                    });
+                    return (vtyx.h("table", { class: "vue3-tutorial-md-table" },
+                        vtyx.h("thead", null,
+                            vtyx.h("tr", { class: "vue3-tutorial-md-tr" }, headers.map((header) => (vtyx.h("th", { class: "vue3-tutorial-md-th" },
+                                vtyx.h(Markdown_1, { source: header })))))),
+                        vtyx.h("tbody", null, data.map((row) => (vtyx.h("tr", { class: "vue3-tutorial-md-tr" }, row.map((item) => (vtyx.h("td", { class: "vue3-tutorial-md-td" },
+                            vtyx.h(Markdown_1, { source: item }))))))))));
+                }
+            }
+        });
+    }
+    /* }}} */
+    render() {
+        return (vtyx.h("span", { class: "vue3-tutorial-md-chunk" }, this.renderChunks()));
+    }
+};
+__decorate$5([
+    vtyx.Prop({ default: () => '' })
+], Markdown.prototype, "source", void 0);
+Markdown = Markdown_1 = __decorate$5([
+    vtyx.Component
+], Markdown);
+var Markdown$1 = Markdown;
 
 /* File Purpose:
  * It displays an SVG content
@@ -216,92 +823,6 @@ SVG = __decorate$3([
 ], SVG);
 var Mask = SVG;
 
-/** File purpose:
- * Manage errors that can happens anywhere in the library
- */
-let errorCallback = null;
-const errorMap = {
-    /* 0xx : debug */
-    0: 'Tutorial mounted',
-    1: 'Tutorial unmounted',
-    2: 'Tutorial started',
-    3: 'Tutorial stopped',
-    20: 'Step mounted',
-    21: 'Step unmounted',
-    22: 'Step changed',
-    25: 'Target elements change',
-    /* 1xx : info */
-    /* 2xx : warning */
-    200: 'Unknown error code',
-    201: 'Unknown label',
-    202: 'Not able to check if step can be skipped',
-    203: 'Tutorial has no active steps',
-    204: 'There are no previous step',
-    224: 'Timeout: some targets have not been found in the allowing time',
-    /* 3xx : error */
-    300: 'Selector is not valid',
-    301: 'Unknown operation',
-    302: 'Step not found',
-    303: 'Tutorial is not defined',
-    324: 'Timeout: some targets have not been found in the allowing time',
-};
-const MESSAGE_LOG = 'vue3-tutorial [%d]: %s';
-function error(code, details) {
-    const message = errorMap[code];
-    if (!message) {
-        error(200, { code: code, details: details });
-    }
-    switch (errorStatus(code)) {
-        case 'log':
-            console.log(MESSAGE_LOG, code, message, details);
-            break;
-        case 'info':
-            console.log(MESSAGE_LOG, code, message, details);
-            break;
-        case 'warning':
-            console.warn(MESSAGE_LOG, code, message, details);
-            break;
-        case 'error':
-            console.error(MESSAGE_LOG, code, message, details);
-            break;
-    }
-    if (errorCallback) {
-        errorCallback({
-            code,
-            message,
-            details,
-        });
-    }
-}
-function errorStatus(code) {
-    if (code < 100) {
-        return 'log';
-    }
-    if (code < 200) {
-        return 'info';
-    }
-    if (code < 300) {
-        return 'warning';
-    }
-    return 'error';
-}
-function debug(code, options, details = {}) {
-    const debug = options.debug;
-    if (!debug) {
-        return;
-    }
-    if (debug === true || debug.includes(code)) {
-        const dbgDetails = Object.assign({ options: options }, details);
-        error(code, dbgDetails);
-    }
-}
-function registerError(callback) {
-    errorCallback = callback;
-}
-function unRegisterError() {
-    errorCallback = null;
-}
-
 /* File Purpose:
  * Propose different common tools to help other components
  */
@@ -345,6 +866,15 @@ function merge(target, source, list = new Map()) {
     }
     return target;
 }
+/** Copy Set values into another Set */
+function shallowSetCopy(origin, copy) {
+    const clone = copy !== null && copy !== void 0 ? copy : new Set();
+    clone.clear();
+    for (const item of origin) {
+        clone.add(item);
+    }
+    return clone;
+}
 /** Return a value which should be included between min and max */
 function minMaxValue(value, min, max) {
     if (min > max) {
@@ -386,7 +916,7 @@ function getElement(query, options) {
             if (!isEmpty) {
                 return Promise.resolve(element);
             }
-            /* Timeout have ben reached */
+            /* Timeout have been reached */
             if (performance.now() - refTime > timeout) {
                 const details = {
                     timeout,
@@ -429,6 +959,13 @@ function getElement(query, options) {
     }
     return null;
 }
+function isHidden(rect) {
+    const { x, y, width, height } = rect;
+    if (!x && !y && !width && !height) {
+        return 'hidden';
+    }
+    return 'visible';
+}
 function getBox(el, memo, { isParent = false, getParentBox = false, } = {}) {
     /* Check if result is already in memory */
     if (isParent && memo.has(el)) {
@@ -438,7 +975,7 @@ function getBox(el, memo, { isParent = false, getParentBox = false, } = {}) {
     const parentEl = el.parentElement;
     if (!parentEl) {
         const rect = el.getBoundingClientRect();
-        const box = [rect.left, rect.top, rect.right, rect.bottom, 'visible'];
+        const box = [rect.left, rect.top, rect.right, rect.bottom, isHidden(rect)];
         memo.set(el, box);
         return box;
     }
@@ -461,6 +998,10 @@ function getBox(el, memo, { isParent = false, getParentBox = false, } = {}) {
     }
     /* compare position with the parent scroll status */
     const rect = el.getBoundingClientRect();
+    if (isHidden(rect) === 'hidden') {
+        // the element is hidden (like display:none)
+        return [0, 0, 0, 0, 'hidden'];
+    }
     const [parentLeft, parentTop, parentRight, parentBottom] = parentBox;
     const { left: currentLeft, top: currentTop, right: currentRight, bottom: currentBottom, } = rect;
     const min = Math.min;
@@ -468,6 +1009,7 @@ function getBox(el, memo, { isParent = false, getParentBox = false, } = {}) {
     let box;
     if (getParentBox && (currentTop > parentBottom || currentBottom < parentTop ||
         currentLeft > parentRight || currentRight < parentLeft)) {
+        // element is not visible inside parent
         box = [
             parentLeft,
             parentTop,
@@ -477,6 +1019,7 @@ function getBox(el, memo, { isParent = false, getParentBox = false, } = {}) {
         ];
     }
     else if (currentTop > parentBottom) {
+        // element is at bottom
         box = [
             max(currentLeft, parentLeft),
             parentBottom,
@@ -486,6 +1029,7 @@ function getBox(el, memo, { isParent = false, getParentBox = false, } = {}) {
         ];
     }
     else if (currentBottom < parentTop) {
+        // element is at top
         box = [
             max(currentLeft, parentLeft),
             parentTop,
@@ -495,6 +1039,7 @@ function getBox(el, memo, { isParent = false, getParentBox = false, } = {}) {
         ];
     }
     else if (currentLeft > parentRight) {
+        // element is at right
         box = [
             parentRight,
             max(currentTop, parentTop),
@@ -504,6 +1049,7 @@ function getBox(el, memo, { isParent = false, getParentBox = false, } = {}) {
         ];
     }
     else if (currentRight < parentLeft) {
+        // element is at left
         box = [
             parentLeft,
             max(currentTop, parentTop),
@@ -513,6 +1059,7 @@ function getBox(el, memo, { isParent = false, getParentBox = false, } = {}) {
         ];
     }
     else {
+        // element is visible (at least partially)
         box = [
             max(currentLeft, parentLeft),
             max(currentTop, parentTop),
@@ -548,6 +1095,8 @@ function getPosition(box, realPosition) {
             break;
         case 'auto':
         case 'center':
+        case 'hidden':
+        default:
             x = '50%';
             y = '50%';
             break;
@@ -591,6 +1140,22 @@ function getPlacement(targetBox, refBox) {
     }
     return 'top';
 }
+/** Add all Parent nodes of an element into a Set.
+ *
+ * The element itself is also added.
+ * If a parent node is already in the Set, stop the loop because we expect
+ * that all its parent are already in the Set.
+ */
+function addParents(el, list) {
+    let node = el;
+    while (node) {
+        if (list.has(node)) {
+            break;
+        }
+        list.add(node);
+        node = node.parentElement;
+    }
+}
 
 /* File Purpose:
  * Display a modal box on the screen depending on a position.
@@ -609,6 +1174,7 @@ let Window = class Window extends vtyx.Vue {
         /* }}} */
         /* {{{ data */
         this.elementSize = [0, 0];
+        this.timerSizeRefresh = 0;
     }
     /* }}} */
     /* {{{ computed */
@@ -617,7 +1183,7 @@ let Window = class Window extends vtyx.Vue {
     }
     get realPosition() {
         const position = this.position;
-        if (position !== 'auto') {
+        if (position !== 'auto' && position !== 'hidden') {
             return position;
         }
         const box = this.mainBoxElement;
@@ -676,14 +1242,22 @@ let Window = class Window extends vtyx.Vue {
     }
     get computePosition() {
         const box = this.mainBoxElement;
-        const realPosition = !box || box[4] !== 'visible' ? 'center' : this.realPosition;
-        return getPosition(box, realPosition);
+        const realPosition = this.realPosition;
+        const preferredPosition = !box || box[4] !== 'visible' ? 'center' : realPosition;
+        return getPosition(box, preferredPosition);
+    }
+    get realWindowPosition() {
+        if (this.position === 'hidden') {
+            return 'hidden';
+        }
+        return this.computePosition[2];
     }
     get stylePosition() {
         let [x, y, placement] = this.computePosition;
         const [elWidth, elHeight] = this.elementSize;
         switch (placement) {
             case 'center':
+            case 'hidden':
                 break;
             case 'bottom':
             case 'top':
@@ -700,17 +1274,27 @@ let Window = class Window extends vtyx.Vue {
                 }
                 break;
         }
-        return `left: ${x}; top: ${y};`;
+        return `--vue3-tutorial-x: ${x}; --vue3-tutorial-y: ${y};`;
     }
     /* XXX: This is only to create a reference to the same function */
     get refUpdateSize() {
         return this.updateSize.bind(this);
     }
+    get teleportContainer() {
+        let el = this.teleport;
+        if (typeof el === 'boolean') {
+            if (el) {
+                return document.body;
+            }
+            return null;
+        }
+        return el;
+    }
     /* {{{ scroll */
     get getScrollPosition() {
         const box = this.mainBoxElement;
         const hiddenPosition = box === null || box === void 0 ? void 0 : box[4];
-        if (!hiddenPosition || hiddenPosition === 'visible') {
+        if (!hiddenPosition || hiddenPosition === 'visible' || hiddenPosition === 'hidden') {
             return;
         }
         return getPosition(box, hiddenPosition);
@@ -736,26 +1320,54 @@ let Window = class Window extends vtyx.Vue {
     onElementBoxChange() {
         setTimeout(this.refUpdateSize, 10);
     }
+    onTeleportChange() {
+        this.useTeleport();
+    }
     /* }}} */
     /* {{{ methods */
     updateSize() {
         const el = this.$refs.modalWindow;
+        if (!el) {
+            // it could be because the component has been removed (async call)
+            return;
+        }
         const rect = el.getBoundingClientRect();
-        this.elementSize = [rect.width, rect.height];
+        // XXX: Avoid this.elementSize = [rect.width, rect.height];
+        // because it creates a new reference (and so it renders continually)
+        this.elementSize[0] = rect.width;
+        this.elementSize[1] = rect.height;
+    }
+    useTeleport() {
+        const containerElement = this.teleportContainer;
+        const el = this.$el;
+        if (containerElement && el) {
+            containerElement.appendChild(el);
+        }
+    }
+    removeTeleport() {
+        const el = this.$el;
+        const containerElement = el === null || el === void 0 ? void 0 : el.parentNode;
+        containerElement === null || containerElement === void 0 ? void 0 : containerElement.removeChild(this.$el);
     }
     /* }}} */
     /* {{{ Life cycle */
     mounted() {
+        this.useTeleport();
         this.updateSize();
         addEventListener('resize', this.refUpdateSize);
     }
+    updated() {
+        // call updateSize after all changes in render (debounce)
+        clearTimeout(this.timerSizeRefresh);
+        this.timerSizeRefresh = setTimeout(this.updateSize.bind(this), 50);
+    }
     unmounted() {
         removeEventListener('resize', this.refUpdateSize);
+        this.removeTeleport();
     }
     /* }}} */
     render() {
         var _a, _b;
-        const position = this.computePosition[2];
         const arrowAnimation = this.arrowAnimation;
         return (vtyx.h("div", { class: "vue3-tutorial__window-container" },
             this.mask && (vtyx.h(Mask, { targets: this.masksBox, maskMargin: this.maskMargin })),
@@ -771,7 +1383,7 @@ let Window = class Window extends vtyx.Vue {
                 ] })),
             vtyx.h("div", { style: this.stylePosition, class: [
                     'vue3-tutorial__window',
-                    'position-' + position,
+                    'position-' + this.realWindowPosition,
                 ], ref: "modalWindow" }, (_b = (_a = this.$slots).content) === null || _b === void 0 ? void 0 : _b.call(_a))));
     }
 };
@@ -797,8 +1409,14 @@ __decorate$2([
     vtyx.Prop({ default: 0 })
 ], Window.prototype, "maskMargin", void 0);
 __decorate$2([
+    vtyx.Prop({ default: true })
+], Window.prototype, "teleport", void 0);
+__decorate$2([
     vtyx.Watch('elementsBox', { deep: true })
 ], Window.prototype, "onElementBoxChange", null);
+__decorate$2([
+    vtyx.Watch('teleport')
+], Window.prototype, "onTeleportChange", null);
 Window = __decorate$2([
     vtyx.Component
 ], Window);
@@ -830,9 +1448,11 @@ const DEFAULT_STEP_OPTIONS = {
     maskMargin: 0,
     bindings: DEFAULT_BINDING,
     focus: 'no-focus',
+    muteElements: false,
     texts: DEFAULT_DICTIONARY,
     scroll: 'scroll-to',
     timeout: 3000,
+    teleport: true,
     debug: false,
 };
 function mergeStepOptions(...options) {
@@ -1053,203 +1673,69 @@ var __decorate$1 = (this && this.__decorate) || function (decorators, target, ke
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 const noop = function () { };
+const mutationConfig = { childList: true, subtree: true };
 let VStep = class VStep extends vtyx.Vue {
     constructor() {
         /* {{{ props */
         super(...arguments);
         /* }}} */
-        /* {{{ data */
+        /* {{{ Next action */
         this.removeActionListener = noop;
+        /* }}} */
+        /* {{{ Scroll */
+        this.scrollElements = new Set();
+        /* }}} */
+        /* }}} */
+        /* {{{ Elements workflow */
         this.cacheElements = new Map();
-        this.promiseTargetElements = Promise.resolve();
-        this.targetElements = new Set();
-        this.parentElements = new Set();
-        this.highlightElements = new Set();
-        this.timerSetFocus = 0;
+        this.boxCache = new WeakMap();
+        this.startTime = 0;
+        this.timerGetAllElements = 0;
+        this.working = new Map();
+        /* This property is updated anytime elements are refetch. It helps to show
+         *  when an asynchronous request is deprecated. */
+        this.requestRef = 0;
+        /* This property is only to force recompute Boxes and re-rendering */
         this.updateBox = 0;
+        /* {{{ Targets */
+        this.mainElement = null;
+        this.targetElements = new Set();
+        /* }}} */
+        /* {{{ Highlight & class */
+        this.highlightElements = new Set();
+        this.oldHighlightElements = new Set();
+        /* }}} */
+        /* {{{ Mask */
+        this.maskElements = new Set();
+        /* }}} */
+        /* {{{ Arrows */
+        this.arrowElements = new Set();
+        /* }}} */
+        /* {{{ Muted */
+        /* [Element, tabIndex it had before mute ] */
+        this.mutedElements = new Map();
+        /* }}} */
+        /* {{{ Focus */
+        this.timerSetFocus = 0;
+        this.stopWatchForFocus = noop;
     }
+    /* }}} */
+    /* {{{ data */
+    /* XXX: some data are configured in elements Workflow */
     /* }}} */
     /* {{{ computed */
     get fullOptions() {
-        return this.step.options;
-    }
-    /* {{{ targets */
-    get elements() {
-        return Array.from(this.targetElements);
-    }
-    get mainElement() {
-        const element = this.elements[0];
-        return element || null;
-    }
-    get elementsBox() {
-        const elements = this.elements;
-        /* XXX: only for reactivity, to force to recompute box coordinates */
-        this.updateBox;
-        const memo = new WeakMap();
-        return elements.map((element) => {
-            return getBox(element, memo);
-        });
-    }
-    get isMainElementHidden() {
-        const mainBox = this.elementsBox[0];
-        if (mainBox && mainBox[4] !== 'visible') {
-            return true;
-        }
-        return false;
-    }
-    /* }}} */
-    /* {{{ mask */
-    get masksBox() {
-        const { mask } = this.fullOptions;
-        if (!mask) {
-            return emptyArray;
-        }
-        const elementsBox = this.elementsBox;
-        if (mask === true) {
-            if (this.isMainElementHidden) {
-                /* Add the parent box, if element is not visible. This is to have a
-                * visible box to scroll */
-                return [
-                    ...elementsBox,
-                    getBox(this.mainElement, new WeakMap(), { getParentBox: true }),
-                ];
-            }
-            else {
-                return elementsBox;
+        const options = this.step.options;
+        if (options.position === 'hidden') {
+            if (this.needsNextButton) {
+                /* If there are no other possibility to go to "next" action
+                 * then redisplay the step.
+                 */
+                return Object.assign(Object.assign({}, options), { position: 'center' });
             }
         }
-        /* XXX: only for reactivity, to force to recompute box coordinates */
-        this.updateBox;
-        const cache = this.cacheElements;
-        const selectors = Array.isArray(mask) ? mask : [mask];
-        const memo = new WeakMap();
-        const boxes = selectors.reduce((boxList, selector) => {
-            const listElements = getElement(selector, {
-                all: true,
-                purpose: 'mask',
-                cache,
-                errorIsWarning: true,
-            });
-            if (listElements) {
-                for (const element of listElements) {
-                    boxList.push(getBox(element, memo));
-                }
-            }
-            else {
-                /* some elements have not been found, search them asynchronously */
-                getElement(selector, {
-                    timeout: this.fullOptions.timeout,
-                    all: true,
-                    purpose: 'mask',
-                    cache,
-                    errorIsWarning: true,
-                }).then((result) => {
-                    if (result) {
-                        /* Recompute the boxes */
-                        this.updateBox++;
-                    }
-                });
-            }
-            return boxList;
-        }, []);
-        /* Add the parent box, if element is not visible. This is to have a
-         * visible box to scroll */
-        if (this.isMainElementHidden) {
-            boxes.push(getBox(this.mainElement, new WeakMap(), { getParentBox: true }));
-        }
-        return boxes;
+        return options;
     }
-    /* }}} */
-    /* {{{ arrows */
-    get arrowsPosition() {
-        const arrow = this.fullOptions.arrow;
-        if (typeof arrow === 'boolean') {
-            return arrow;
-        }
-        /* XXX: only for reactivity, to force to recompute box coordinates */
-        this.updateBox;
-        const cache = this.cacheElements;
-        const selectors = Array.isArray(arrow) ? arrow : [arrow];
-        const memo = new WeakMap();
-        const positions = selectors.reduce((positionList, selector) => {
-            const listElements = getElement(selector, {
-                all: true,
-                purpose: 'arrow',
-                cache,
-                errorIsWarning: true,
-            });
-            if (listElements) {
-                for (const element of listElements) {
-                    const box = getBox(element, memo);
-                    const placement = getPlacement(box);
-                    const [x, y, position] = getPosition(box, placement);
-                    positionList.push({ x, y, position });
-                }
-            }
-            else {
-                /* some elements have not been found, search them asynchronously */
-                getElement(selector, {
-                    timeout: this.fullOptions.timeout,
-                    all: true,
-                    purpose: 'arrow',
-                    cache,
-                    errorIsWarning: true,
-                }).then((result) => {
-                    if (result) {
-                        /* Recompute the boxes (and so arrows) */
-                        this.updateBox++;
-                    }
-                });
-            }
-            return positionList;
-        }, []);
-        return positions;
-    }
-    /* }}} */
-    /* {{{ Next action */
-    get nextActionType() {
-        return getActionType(this.step.desc);
-    }
-    get nextActionTarget() {
-        const type = this.nextActionType;
-        if (type === 'next') {
-            return null;
-        }
-        const action = this.step.desc.actionNext;
-        if (typeof action === 'string') {
-            return this.mainElement;
-        }
-        const target = action === null || action === void 0 ? void 0 : action.target;
-        if (typeof target !== 'string') {
-            return this.mainElement;
-        }
-        return getElement(target, { purpose: 'nextAction' });
-    }
-    get needsNextButton() {
-        return this.step.status.isActionNext;
-    }
-    /* }}} */
-    /* {{{ listeners */
-    get actionListener() {
-        return () => {
-            const type = this.nextActionType;
-            const valueEventName = ['input', 'change'];
-            if (valueEventName.includes(type)) {
-                const action = this.step.desc.actionNext;
-                const targetElement = this.nextActionTarget;
-                if (!checkExpression(action, targetElement, 'nextAction')) {
-                    return;
-                }
-            }
-            this.$emit('next');
-        };
-    }
-    get recomputeBoxListener() {
-        return () => {
-            this.updateBox++;
-        };
-    }
-    /* }}} */
     /* {{{ buttons */
     get displayPreviousButton() {
         const info = this.tutorialInformation;
@@ -1279,107 +1765,450 @@ let VStep = class VStep extends vtyx.Vue {
     /* }}} */
     /* {{{ watch */
     onTextsChange() {
+        /* Update labels */
         changeTexts(this.fullOptions.texts);
     }
     onBindingsChange() {
+        /* update key bindings */
         resetBindings(this.fullOptions.bindings);
     }
-    onElementsChange(newElements, oldElements) {
-        if (oldElements) {
-            this.removeClass(oldElements);
+    get nextActionType() {
+        return getActionType(this.step.desc);
+    }
+    /* Target the element where we expect user to interact with */
+    get nextActionTarget() {
+        const type = this.nextActionType;
+        if (type === 'next') {
+            return null;
         }
-        if (newElements) {
-            this.addClass(newElements);
+        const action = this.step.desc.actionNext;
+        if (typeof action === 'string') {
+            return this.mainElement;
         }
-        /* Remove events */
-        this.clearScrollListener();
-        /* Add events */
-        const parentElements = this.parentElements;
-        function addParents(el) {
-            let node = el;
-            while (node) {
-                node = node.parentElement;
-                if (node) {
-                    parentElements.add(node);
-                }
+        const target = action === null || action === void 0 ? void 0 : action.target;
+        if (typeof target !== 'string') {
+            return this.mainElement;
+        }
+        /* XXX: only for reactivity, to force to get the correct element */
+        this.targetElements;
+        return getElement(target, { purpose: 'nextAction' });
+    }
+    get needsNextButton() {
+        return this.step.status.isActionNext;
+    }
+    actionListener() {
+        const type = this.nextActionType;
+        const valueEventName = ['input', 'change'];
+        if (valueEventName.includes(type)) {
+            const action = this.step.desc.actionNext;
+            const targetElement = this.nextActionTarget;
+            if (!checkExpression(action, targetElement, 'nextAction')) {
+                return;
             }
         }
-        this.elements.forEach(addParents);
-        parentElements.add(window);
+        this.$emit('next');
     }
-    onHighlightChange() {
-        this.removeClass(Array.from(this.highlightElements));
-        this.highlightElements.clear();
-        this.addHighlightClass();
-    }
-    onParentElementsChange() {
-        this.addScrollListener();
+    addActionListener() {
+        const eventName = this.nextActionType;
+        const el = this.nextActionTarget;
+        this.removeActionListener();
+        if (!el || eventName === 'next') {
+            return;
+        }
+        const listener = this.actionListener;
+        el.addEventListener(eventName, listener, { capture: true });
+        this.removeActionListener = () => {
+            el.removeEventListener(eventName, listener, { capture: true });
+            this.removeActionListener = noop;
+        };
     }
     onActionTypeChange() {
         this.addActionListener();
     }
-    /* XXX: flush: post is needed because some of the variable are related to DOM */
-    onStepChange() {
-        this.scroll();
-        this.setFocus();
-        debug(22, this.fullOptions, {
-            step: this.step,
-            tutorialInformation: this.tutorialInformation,
-        });
+    /* }}} */
+    /* {{{ Events */
+    /* {{{ Resize */
+    addResizeListener() {
+        const callback = this.recomputeBox;
+        window.addEventListener('resize', callback);
     }
-    onStepTargetChange() {
-        this.resetElements();
+    removeResizeListener() {
+        const callback = this.recomputeBox;
+        window.removeEventListener('resize', callback);
     }
-    onElementsBoxChange() {
-        debug(25, this.fullOptions, {
-            elementsBox: this.elementsBox,
-            elements: this.elements,
-            tutorialInformation: this.tutorialInformation,
-        });
+    addScrollListener() {
+        const callback = this.recomputeBox;
+        const scrollElements = this.scrollElements;
+        for (const el of scrollElements) {
+            el.addEventListener('scroll', callback);
+        }
+    }
+    clearScrollListener() {
+        const callback = this.recomputeBox;
+        const elements = this.scrollElements;
+        for (const el of elements) {
+            el.removeEventListener('scroll', callback);
+        }
+        this.scrollElements.clear();
+    }
+    onPositionElementsChange() {
+        const scrollElements = this.scrollElements;
+        this.clearScrollListener();
+        scrollElements.add(window);
+        for (const el of this.targetElements) {
+            addParents(el, scrollElements);
+        }
+        for (const el of this.maskElements) {
+            addParents(el, scrollElements);
+        }
+        for (const el of this.arrowElements) {
+            addParents(el, scrollElements);
+        }
+        this.addScrollListener();
     }
     /* }}} */
-    /* {{{ methods */
-    resetElements(get = true) {
-        this.removeClass(this.elements);
-        this.removeClass(Array.from(this.highlightElements));
-        this.cacheElements.clear();
-        this.targetElements.clear();
-        this.highlightElements.clear();
-        if (get) {
-            this.getTargetElements();
+    /* {{{ Mutation */
+    get mutationObserver() {
+        return new MutationObserver((mutationList) => {
+            const el = this.nextActionTarget;
+            if (!el) {
+                return;
+            }
+            for (const mutation of mutationList) {
+                if (mutation.type === 'childList'
+                    && mutation.removedNodes.length
+                    && el.getRootNode() !== document) {
+                    /* On DOM change refetch all elements */
+                    this.debounceGetAllElement();
+                }
+            }
+        });
+    }
+    /** list of target elements.
+     *
+     * Convert the Set in Array.
+     * The Set is used to avoid duplications.
+     * The Array is used to keep elements in the same order as boxes.
+     */
+    get targetElementsOrdered() {
+        const list = Array.from(this.targetElements);
+        const mainElement = this.mainElement;
+        const index = list.indexOf(mainElement);
+        if (index === -1) {
+            list.unshift(mainElement);
         }
+        else if (index > 0) {
+            list.splice(index, 1);
+            list.unshift(mainElement);
+        }
+        return list;
+    }
+    get isMainElementHidden() {
+        const mainBox = this.targetBoxes[0];
+        if (mainBox && mainBox[4] !== 'visible') {
+            return true;
+        }
+        return false;
+    }
+    get targetBoxes() {
+        const elements = this.targetElements;
+        /* XXX: only for reactivity, to force to recompute box coordinates */
+        this.updateBox;
+        const memo = this.boxCache;
+        return Array.from(elements, (element) => {
+            if (element) {
+                return getBox(element, memo);
+            }
+            return [0, 0, 0, 0, 'hidden'];
+        });
     }
     getTargetElements() {
         const targetElements = this.targetElements;
-        const target = this.step.desc.target;
-        if (!(target === null || target === void 0 ? void 0 : target.length)) {
+        this.getElements({
+            selectors: this.step.desc.target,
+            elements: targetElements,
+            timeout: this.fullOptions.timeout,
+            purpose: 'targets',
+            errorIsWarning: false,
+            thenCb: (elements, selector, index) => {
+                if (elements === null || elements === void 0 ? void 0 : elements.length) {
+                    debug(26, this.fullOptions, {
+                        elements,
+                        selector,
+                    });
+                    if (index === 1) {
+                        this.mainElement = elements[0];
+                    }
+                    elements.forEach((el) => targetElements.add(el));
+                }
+                else {
+                    /* No elements have been found */
+                    debug(27, this.fullOptions, {
+                        selector,
+                    });
+                }
+            },
+        });
+    }
+    onElementsBoxChange() {
+        const boxes = this.targetBoxes;
+        const hasHiddenElement = boxes.some((box) => box[4] === 'hidden');
+        const elements = this.targetElementsOrdered;
+        debug(25, this.fullOptions, {
+            elementsBox: boxes,
+            elements: elements,
+            tutorialInformation: this.tutorialInformation,
+            hasHiddenElement,
+        });
+        if (hasHiddenElement) {
+            const timeout = this.fullOptions.timeout;
+            this.startTime + timeout;
+            const hiddenElements = boxes.reduce((list, box, idx) => {
+                if (box[4] === 'hidden') {
+                    list.push(elements[idx]);
+                }
+                return list;
+            }, []);
+            const hasVisibleElement = hiddenElements.length < boxes.length;
+            /* force to recompute */
+            const ref = this.requestRef;
+            setTimeout(() => this.getAllElements({
+                ref,
+                timeout,
+                purpose: 'targets',
+                elements: hiddenElements,
+                error: !hasVisibleElement,
+            }), 50);
+        }
+    }
+    getHighlightElements() {
+        const highlight = this.fullOptions.highlight;
+        const highlightElements = this.highlightElements;
+        highlightElements.clear();
+        if (!highlight || highlight === true) {
             return;
         }
-        const timeout = this.fullOptions.timeout;
-        const cache = this.cacheElements;
-        const targets = Array.isArray(target) ? target : [target];
-        const promises = [];
-        targets.forEach(async (selector) => {
-            const promise = getElement(selector, {
-                timeout,
-                all: true,
-                purpose: 'targets',
-                cache,
-            });
-            promises.push(promise);
-            const elements = await promise;
-            if (elements === null || elements === void 0 ? void 0 : elements.length) {
-                elements.forEach((el) => targetElements.add(el));
+        this.getElements({
+            selectors: highlight,
+            elements: highlightElements,
+            timeout: this.fullOptions.timeout,
+            purpose: 'highlight',
+            errorIsWarning: true,
+            thenCb: (elements) => {
+                if (elements) {
+                    elements.forEach((el) => highlightElements.add(el));
+                }
+            },
+        });
+    }
+    addHighlightClass() {
+        const highlight = this.fullOptions.highlight;
+        if (!highlight) {
+            return;
+        }
+        const highlightElements = this.highlightElements;
+        for (const el of highlightElements) {
+            el.classList.add('vue3-tutorial-highlight');
+        }
+    }
+    addClass(newTargets) {
+        const options = this.fullOptions;
+        const classForTargets = options.classForTargets;
+        /* add vue3-tutorial class */
+        newTargets.forEach((el) => {
+            if (!el) {
+                return;
+            }
+            el.classList.add('vue3-tutorial__target');
+            if (classForTargets) {
+                el.classList.add(classForTargets);
             }
         });
-        this.promiseTargetElements = Promise.all(promises);
+        const mainEl = newTargets[0];
+        if (mainEl) {
+            mainEl.classList.add('vue3-tutorial__main-target');
+        }
+    }
+    removeClass(elements) {
+        const options = this.fullOptions;
+        const classForTargets = options.classForTargets;
+        /* remove previous vue3-tutorial class */
+        elements.forEach((el) => {
+            if (!el) {
+                return;
+            }
+            el.classList.remove('vue3-tutorial-highlight', 'vue3-tutorial__target', 'vue3-tutorial__main-target');
+            if (classForTargets) {
+                el.classList.remove(classForTargets);
+            }
+        });
+        if (elements instanceof Set) {
+            elements.clear();
+        }
+    }
+    onElementsChange(oldList) {
+        /* cleanup previous elements */
+        this.removeClass(oldList);
+        /* add class to elements */
+        const newList = this.targetElementsOrdered;
+        this.addClass(newList);
+        this.addHighlightClass();
+    }
+    onHighlightElementsChange() {
+        const oldList = this.oldHighlightElements;
+        /* cleanup previous elements */
+        this.removeClass(oldList);
+        shallowSetCopy(this.highlightElements, oldList);
+        /* add class to elements */
+        this.addHighlightClass();
+    }
+    onMainElementChange() {
+        const highlight = this.fullOptions.highlight;
+        if (highlight === true) {
+            const highlightElements = this.highlightElements;
+            const mainElement = this.mainElement;
+            if (mainElement) {
+                highlightElements.clear();
+                highlightElements.add(mainElement);
+            }
+        }
+    }
+    get masksBox() {
+        const { mask } = this.fullOptions;
+        if (!mask) {
+            return emptyArray;
+        }
+        const cache = this.boxCache;
+        const mainElement = this.mainElement;
+        if (mask === true) {
+            const elementsBox = this.targetBoxes;
+            if (mainElement && this.isMainElementHidden) {
+                /* Add the parent box, if element is not visible. This is
+                * to have a visible box to scroll */
+                return [
+                    ...elementsBox,
+                    getBox(mainElement, cache, { getParentBox: true }),
+                ];
+            }
+            else {
+                return elementsBox;
+            }
+        }
+        /* XXX: only for reactivity, to force to recompute box coordinates */
+        this.updateBox;
+        const listElements = this.maskElements;
+        const boxList = [];
+        for (const element of listElements) {
+            boxList.push(getBox(element, cache));
+        }
+        /* Add the parent box, if element is not visible. This is to have a
+        * visible box to scroll */
+        if (mainElement && this.isMainElementHidden) {
+            boxList.push(getBox(mainElement, cache, { getParentBox: true }));
+        }
+        return boxList;
+    }
+    getMaskElements() {
+        const mask = this.fullOptions.mask;
+        if (typeof mask === 'boolean') {
+            this.working.set('mask', false);
+            return;
+        }
+        const maskElements = this.maskElements;
+        this.getElements({
+            selectors: mask,
+            elements: maskElements,
+            timeout: this.fullOptions.timeout,
+            purpose: 'mask',
+            errorIsWarning: true,
+            thenCb: (elements) => {
+                if (elements === null || elements === void 0 ? void 0 : elements.length) {
+                    elements.forEach((el) => maskElements.add(el));
+                }
+            },
+        });
+    }
+    get arrowsPosition() {
+        const arrow = this.fullOptions.arrow;
+        if (typeof arrow === 'boolean') {
+            return arrow;
+        }
+        /* XXX: only for reactivity, to force to recompute box coordinates */
+        this.updateBox;
+        const memo = this.boxCache;
+        const listElements = this.arrowElements;
+        const positionList = [];
+        for (const element of listElements) {
+            const box = getBox(element, memo);
+            const placement = getPlacement(box);
+            const [x, y, position] = getPosition(box, placement);
+            positionList.push({ x, y, position });
+        }
+        return positionList;
+    }
+    getArrowElements() {
+        const arrow = this.fullOptions.arrow;
+        if (typeof arrow === 'boolean') {
+            this.working.set('arrow', false);
+            return;
+        }
+        const arrowElements = this.arrowElements;
+        this.getElements({
+            selectors: arrow,
+            elements: arrowElements,
+            timeout: this.fullOptions.timeout,
+            purpose: 'arrow',
+            errorIsWarning: true,
+            thenCb: (elements) => {
+                if (elements === null || elements === void 0 ? void 0 : elements.length) {
+                    elements.forEach((el) => arrowElements.add(el));
+                }
+            },
+        });
+    }
+    getMutedElements() {
+        this.resetMutedElements();
+        const mutedSelectors = this.fullOptions.muteElements;
+        const mutedElements = this.mutedElements;
+        if (!mutedSelectors) {
+            return;
+        }
+        this.getElements({
+            selectors: mutedSelectors,
+            elements: mutedElements,
+            timeout: this.fullOptions.timeout,
+            purpose: 'mute',
+            errorIsWarning: true,
+            thenCb: (elements) => {
+                if (elements) {
+                    elements.forEach((el) => {
+                        if (!mutedElements.has(el)) {
+                            mutedElements.set(el, el.tabIndex);
+                            el.classList.add('vue3-tutorial-muted');
+                            el.tabIndex = -1;
+                        }
+                    });
+                }
+            },
+        });
+    }
+    resetMutedElements() {
+        const elements = this.mutedElements;
+        for (const [element, tabindex] of elements) {
+            element.tabIndex = tabindex;
+            element.classList.remove('vue3-tutorial-muted');
+        }
+        elements.clear();
     }
     setFocus() {
+        var _a;
         const fullOptions = this.fullOptions;
         const focusCfg = fullOptions.focus;
-        clearTimeout(this.timerSetFocus++);
+        this.stopWatchForFocus();
+        this.timerSetFocus++;
         switch (focusCfg) {
             case false:
+            case 'false':
             case 'no-focus': {
                 /* Remove focus from any element */
                 const el = document.activeElement;
@@ -1390,6 +2219,7 @@ let VStep = class VStep extends vtyx.Vue {
                 /* Do not change any focus */
                 return;
             case true:
+            case 'true':
             case 'main-target': {
                 /* set focus to the main target */
                 const timeout = fullOptions.timeout;
@@ -1417,15 +2247,21 @@ let VStep = class VStep extends vtyx.Vue {
                         return;
                     }
                 }, { immediate: true });
+                this.stopWatchForFocus = () => {
+                    stopWatch();
+                    clearTimeout(this.timerSetFocus);
+                    this.stopWatchForFocus = noop;
+                };
                 break;
             }
             default: {
                 /* Set focus to given target */
                 const target = focusCfg.target;
                 const refTimer = this.timerSetFocus;
+                const timeout = (_a = focusCfg.timeout) !== null && _a !== void 0 ? _a : fullOptions.timeout;
                 getElement(target, {
                     purpose: 'focus',
-                    timeout: fullOptions.timeout,
+                    timeout: timeout,
                 }).then((el) => {
                     if (el && refTimer === this.timerSetFocus) {
                         el.focus();
@@ -1435,19 +2271,33 @@ let VStep = class VStep extends vtyx.Vue {
             }
         }
     }
-    async scroll() {
+    /* }}} */
+    /* {{{ Scroll To */
+    async scrollTo() {
         var _a, _b;
         const options = this.fullOptions;
-        const scroll = options.scroll;
+        let scroll = options.scroll;
         let behavior;
         let target;
         if (typeof scroll === 'boolean') {
-            await this.promiseTargetElements;
+            const targetWorking = this.working.get('targets');
+            if (targetWorking instanceof Promise) {
+                await targetWorking;
+            }
             behavior = scroll ? 'scroll-to' : 'no-scroll';
             target = this.mainElement;
         }
         else if (typeof scroll === 'string') {
-            await this.promiseTargetElements;
+            if (scroll === 'true') {
+                scroll = 'scroll-to';
+            }
+            else if (scroll === 'false') {
+                scroll = 'no-scroll';
+            }
+            const targetWorking = this.working.get('targets');
+            if (targetWorking instanceof Promise) {
+                await targetWorking;
+            }
             behavior = scroll;
             target = this.mainElement;
         }
@@ -1463,101 +2313,137 @@ let VStep = class VStep extends vtyx.Vue {
             target.scrollIntoView({ behavior: 'smooth' });
         }
     }
-    addHighlightClass() {
-        const highlight = this.fullOptions.highlight;
-        if (!highlight) {
-            return;
+    /* }}} */
+    /* {{{ global */
+    get isStepReady() {
+        const working = this.working;
+        if (working.size === 0) {
+            return false;
         }
-        const highlightElements = this.highlightElements;
-        if (highlight === true) {
-            const mainElement = this.mainElement;
-            if (mainElement) {
-                mainElement === null || mainElement === void 0 ? void 0 : mainElement.classList.add('vue3-tutorial-highlight');
-                highlightElements.add(mainElement);
+        for (const isWorking of working.values()) {
+            if (isWorking) {
+                return false;
             }
-            return;
         }
-        const selectors = Array.isArray(highlight) ? highlight : [highlight];
-        const timeout = this.fullOptions.timeout;
-        const cache = this.cacheElements;
-        selectors.forEach(async (selector) => {
-            const elements = await getElement(selector, {
-                all: true,
-                timeout,
-                purpose: 'highlight',
-                cache,
-                errorIsWarning: true,
-            });
-            if (elements) {
-                for (const el of elements) {
-                    el.classList.add('vue3-tutorial-highlight');
-                    highlightElements.add(el);
+        return true;
+    }
+    recomputeBox() {
+        this.updateBox++;
+        this.boxCache = new WeakMap();
+    }
+    debounceGetAllElement(info, timer = 10) {
+        this.timerGetAllElements = setTimeout(() => {
+            this.getAllElements(info);
+        }, timer);
+    }
+    /** Fetch all elements needed for the step.
+     *
+     * @param ref {number} this is to check if the query is deprecated.
+     *                     if 0, a new query is done.
+     */
+    getAllElements(info) {
+        const { ref = 0, timeout = this.fullOptions.timeout, purpose, elements, error: sendError, } = info !== null && info !== void 0 ? info : {};
+        const currentTime = performance.now();
+        /* Check if timeout is reached */
+        if (ref) {
+            if (ref !== this.requestRef) {
+                /* A newer query has already been requested */
+                return;
+            }
+            const duration = currentTime - this.startTime;
+            if (duration > timeout) {
+                const details = {
+                    timeout,
+                    elements,
+                    purpose,
+                };
+                if (sendError) {
+                    error(325, details);
                 }
+                else {
+                    error(225, details);
+                }
+                return;
             }
-        });
-    }
-    addClass(newTargets) {
-        const options = this.fullOptions;
-        /* add vue3-tutorial class */
-        newTargets.forEach((el) => {
-            el.classList.add('vue3-tutorial__target');
-            if (options.classForTargets) {
-                el.classList.add(options.classForTargets);
-            }
-        });
-        options.highlight;
-        const mainEl = newTargets[0];
-        if (mainEl) {
-            mainEl.classList.add('vue3-tutorial__main-target');
         }
-    }
-    removeClass(oldTargets) {
-        const options = this.fullOptions;
-        const classForTargets = options.classForTargets;
-        /* remove previous vue3-tutorial class */
-        oldTargets.forEach((el) => {
-            el.classList.remove('vue3-tutorial-highlight', 'vue3-tutorial__target', 'vue3-tutorial__main-target');
-            if (classForTargets) {
-                el.classList.remove(classForTargets);
-            }
+        /* Reinitialize */
+        this.requestRef++;
+        this.cacheElements.clear();
+        this.boxCache = new WeakMap();
+        if (!ref) {
+            this.startTime = currentTime;
+        }
+        /* fetch elements */
+        this.getTargetElements();
+        this.getMaskElements();
+        this.getArrowElements();
+        this.getHighlightElements();
+        this.getMutedElements();
+        /* Apply effects */
+        this.scrollTo();
+        this.setFocus();
+        debug(24, this.fullOptions, {
+            ref: this.requestRef,
+            startTime: this.startTime,
+            currentTime,
         });
+        /* TODO: check that it is ok (no hidden element) */
     }
-    addActionListener() {
-        const eventName = this.nextActionType;
-        const el = this.nextActionTarget;
-        this.removeActionListener();
-        if (!el || eventName === 'next') {
+    getElements(arg) {
+        const { selectors, elements, timeout, purpose, errorIsWarning, thenCb, } = arg;
+        const ref = this.requestRef;
+        elements.clear();
+        const querySelectors = Array.isArray(selectors) ? selectors : [selectors];
+        if (!selectors || !querySelectors.length) {
+            this.working.set(purpose, false);
             return;
         }
-        el.addEventListener(eventName, this.actionListener);
-        this.removeActionListener = () => {
-            el.removeEventListener(eventName, this.actionListener);
-            this.removeActionListener = noop;
-        };
+        const isDeprecated = this.isDeprecated;
+        const cache = this.cacheElements;
+        const promises = [];
+        querySelectors.forEach(async (selector) => {
+            const promise = getElement(selector, {
+                timeout,
+                all: true,
+                purpose,
+                cache,
+                errorIsWarning,
+            });
+            const index = promises.push(promise);
+            const elements = await promise;
+            if (isDeprecated(ref)) {
+                return;
+            }
+            thenCb(elements, selector, index);
+        });
+        const allPromises = Promise.all(promises).then(() => {
+            if (isDeprecated(ref)) {
+                return false;
+            }
+            this.working.set(purpose, false);
+            return true;
+        });
+        this.working.set(purpose, allPromises);
     }
-    addScrollListener() {
-        const callback = this.recomputeBoxListener;
-        const parentElements = this.parentElements;
-        for (const el of parentElements) {
-            el.addEventListener('scroll', callback);
+    isDeprecated(ref) {
+        return ref !== this.requestRef;
+    }
+    onStepTargetChange() {
+        /* Step changed */
+        debug(22, this.fullOptions, {
+            step: this.step,
+            tutorialInformation: this.tutorialInformation,
+        });
+        /* Fetch elements for this step */
+        this.getAllElements();
+    }
+    onReadyChange() {
+        this.mutationObserver.disconnect();
+        if (this.isStepReady) {
+            this.mutationObserver.observe(document.body, mutationConfig);
         }
     }
-    clearScrollListener() {
-        const callback = this.recomputeBoxListener;
-        const elements = this.parentElements;
-        for (const el of elements) {
-            el.removeEventListener('scroll', callback);
-        }
-        this.parentElements.clear();
-    }
-    addResizeListener() {
-        const callback = this.recomputeBoxListener;
-        window.addEventListener('resize', callback);
-    }
-    removeResizeListener() {
-        const callback = this.recomputeBoxListener;
-        window.removeEventListener('resize', callback);
-    }
+    /* }}} */
     /* }}} */
     /* {{{ Life cycle */
     /* }}} */
@@ -1569,10 +2455,18 @@ let VStep = class VStep extends vtyx.Vue {
         });
     }
     unmounted() {
-        this.resetElements(false);
+        this.removeClass(this.targetElements);
+        this.removeClass(this.oldHighlightElements);
+        this.removeClass(this.highlightElements);
+        this.resetMutedElements();
+        this.stopWatchForFocus();
         this.removeActionListener();
         this.clearScrollListener();
         this.removeResizeListener();
+        this.mutationObserver.disconnect();
+        this.cacheElements.clear();
+        /* Ensure that all asynchronous request will be deprecated */
+        this.requestRef++;
         debug(21, this.fullOptions, {
             step: this.step,
             tutorialInformation: this.tutorialInformation,
@@ -1582,7 +2476,7 @@ let VStep = class VStep extends vtyx.Vue {
         const options = this.fullOptions;
         const stepDesc = this.step.desc;
         const information = this.tutorialInformation;
-        return (vtyx.h(Window$1, { elementsBox: this.elementsBox, masksBox: this.masksBox, position: options.position, arrow: this.arrowsPosition, arrowAnimation: options.arrowAnimation, mask: !!options.mask, maskMargin: options.maskMargin },
+        return (vtyx.h(Window$1, { elementsBox: this.targetBoxes, masksBox: this.masksBox, position: options.position, arrow: this.arrowsPosition, arrowAnimation: options.arrowAnimation, mask: !!options.mask, maskMargin: options.maskMargin, teleport: options.teleport },
             vtyx.h("aside", { slot: "content", class: "vue3-tutorial__step" },
                 vtyx.h("header", { class: "vue3-tutorial__step__header" },
                     vtyx.h("div", { class: "vue3-tutorial__step__header__title" }, stepDesc.title),
@@ -1591,7 +2485,7 @@ let VStep = class VStep extends vtyx.Vue {
                         totalStep: information.nbTotalSteps,
                     }))),
                 vtyx.h("div", { class: "vue3-tutorial__step__content" },
-                    vtyx.h(Markdown__default["default"], { source: stepDesc.content })),
+                    vtyx.h(Markdown$1, { source: stepDesc.content })),
                 vtyx.h("nav", { class: "vue3-tutorial__step__commands" },
                     this.displayPreviousButton && (vtyx.h("button", { class: "vue3-tutorial__step__btn vue3-tutorial__step__btn-previous", on: {
                             click: () => this.$emit('previous'),
@@ -1620,28 +2514,32 @@ __decorate$1([
     vtyx.Watch('fullOptions.bindings', { immediate: true, deep: true })
 ], VStep.prototype, "onBindingsChange", null);
 __decorate$1([
-    vtyx.Watch('elements', { deep: true })
-], VStep.prototype, "onElementsChange", null);
-__decorate$1([
-    vtyx.Watch('elements', { deep: true, flush: 'post' }),
-    vtyx.Watch('fullOptions.highlight', { deep: true, flush: 'post' })
-], VStep.prototype, "onHighlightChange", null);
-__decorate$1([
-    vtyx.Watch('parentElements', { deep: true })
-], VStep.prototype, "onParentElementsChange", null);
-__decorate$1([
     vtyx.Watch('nextActionTarget'),
     vtyx.Watch('nextActionType', { immediate: true })
 ], VStep.prototype, "onActionTypeChange", null);
 __decorate$1([
-    vtyx.Watch('step.desc', { immediate: true, deep: false, flush: 'post' })
-], VStep.prototype, "onStepChange", null);
+    vtyx.Watch('targetElements', { deep: true }),
+    vtyx.Watch('maskElements', { deep: true }),
+    vtyx.Watch('arrowElements', { deep: true })
+], VStep.prototype, "onPositionElementsChange", null);
 __decorate$1([
-    vtyx.Watch('step.desc.target', { immediate: true })
+    vtyx.Watch('targetBoxes')
+], VStep.prototype, "onElementsBoxChange", null);
+__decorate$1([
+    vtyx.Watch('targetElementsOrdered')
+], VStep.prototype, "onElementsChange", null);
+__decorate$1([
+    vtyx.Watch('highlightElements', { deep: true })
+], VStep.prototype, "onHighlightElementsChange", null);
+__decorate$1([
+    vtyx.Watch('mainElement')
+], VStep.prototype, "onMainElementChange", null);
+__decorate$1([
+    vtyx.Watch('step.desc.target', { immediate: true, deep: true })
 ], VStep.prototype, "onStepTargetChange", null);
 __decorate$1([
-    vtyx.Watch('elementsBox')
-], VStep.prototype, "onElementsBoxChange", null);
+    vtyx.Watch('isStepReady')
+], VStep.prototype, "onReadyChange", null);
 __decorate$1([
     vtyx.Emits(['finish', 'next', 'previous', 'skip'])
 ], VStep.prototype, "render", null);
@@ -1677,7 +2575,7 @@ function styleInject(css, ref) {
   }
 }
 
-var css_248z = "/* {{{ variables */\n\n:root {\n    /** Main color used for component */\n    --vue3-tutorial-brand-primary: #42b883;\n\n    /** Secondary color used for contrast */\n    --vue3-tutorial-brand-secondary: #2c3e50;\n\n    /** zIndex used by popup window for the tips. It should be higher than\n     * your other components\n     * The mask will use this value.\n     * The arrow will use this value + 10;\n     * The pop-up window will use this value + 20;\n     */\n    --vue3-tutorial-zindex: 1000;\n\n    /** The background color of the step window */\n    --vue3-tutorial-step-bg-color: var(--vue3-tutorial-brand-primary);\n    /** The text color of step window */\n    --vue3-tutorial-step-text-color: white;\n\n    /** The background color of the header of step window */\n    --vue3-tutorial-step-header-bg-color: var(--vue3-tutorial-brand-secondary);\n    /** The text color of the header of step window */\n    --vue3-tutorial-step-header-text-color: var(--vue3-tutorial-step-text-color);\n\n    /** The shadow style of the popup-window */\n    --vue3-tutorial-window-shadow: 2px 5px 15px black;\n\n    /** The shadow style of the highlighted element */\n    --vue3-tutorial-highlight-shadow: 0 0 10px var(--vue3-tutorial-brand-primary), inset 0 0 10px var(--vue3-tutorial-brand-primary);\n\n    /** The mask fill color */\n    --vue3-tutorial-mask-color: #c8c8c8bb;\n}\n\n/* }}} */\n/* {{{ animations */\n\n@keyframes v3-tutorial-verticalWave {\n    from {margin-top: -3px;}\n    to {margin-top: 3px;}\n}\n\n@keyframes v3-tutorial-horizontalWave {\n    from {margin-left: -3px;}\n    to {margin-left: 3px;}\n}\n\n/* }}} */\n/* {{{ Window */\n\n.vue3-tutorial__window {\n    position: fixed;\n    z-index: calc(var(--vue3-tutorial-zindex) + 20);\n    box-shadow: var(--vue3-tutorial-window-shadow);\n    border-radius: 3px;\n    --vue3-tutorial-priv-window-margin: 20px;\n\n    min-width: 150px;\n\n    transition-property: top, left;\n    transition-duration: 250ms;\n}\n.vue3-tutorial__window.position-top {\n    transform: translate(-50%, calc(-100% - var(--vue3-tutorial-priv-window-margin)));\n}\n.vue3-tutorial__window.position-bottom {\n    transform: translate(-50%, var(--vue3-tutorial-priv-window-margin));\n}\n.vue3-tutorial__window.position-left {\n    transform: translate(calc(-100% - var(--vue3-tutorial-priv-window-margin)), -50%);\n}\n.vue3-tutorial__window.position-right {\n    transform: translate(var(--vue3-tutorial-priv-window-margin), -50%);\n}\n.vue3-tutorial__window.position-center {\n    transform: translate(-50%, -50%);\n}\n\n.vue3-tutorial__window-arrow,\n.vue3-tutorial__window-scroll-arrow {\n    position: fixed;\n    z-index: calc(var(--vue3-tutorial-zindex) + 10);\n    fill: var(--vue3-tutorial-brand-primary);\n    stroke: var(--vue3-tutorial-brand-secondary);\n}\n.vue3-tutorial__window-arrow.animation,\n.vue3-tutorial__window-scroll-arrow.animation {\n    animation-timing-function: ease-in-out;\n    animation-duration: 0.75s;\n    animation-iteration-count: infinite;\n    animation-direction: alternate;\n}\n.vue3-tutorial__window-arrow.position-top {\n    transform: translate(-50%, -100%)  rotate(-135deg);\n    animation-name: v3-tutorial-verticalWave;\n}\n.vue3-tutorial__window-arrow.position-bottom {\n    transform: translate(-50%) rotate(45deg);\n    animation-name: v3-tutorial-verticalWave;\n}\n.vue3-tutorial__window-arrow.position-left {\n    transform: translate(-100%, -50%) rotate(135deg);\n    animation-name: v3-tutorial-horizontalWave;\n}\n.vue3-tutorial__window-arrow.position-right {\n    transform: translate(0, -50%) rotate(-45deg);\n    animation-name: v3-tutorial-horizontalWave;\n}\n.vue3-tutorial__window-arrow.position-center {\n    display: none;\n}\n\n.vue3-tutorial__window-scroll-arrow.position-top {\n    transform: translate(-50%) rotate(45deg);\n    animation-name: v3-tutorial-verticalWave;\n}\n.vue3-tutorial__window-scroll-arrow.position-bottom {\n    transform: translate(-50%, -100%)  rotate(-135deg);\n    animation-name: v3-tutorial-verticalWave;\n}\n.vue3-tutorial__window-scroll-arrow.position-left {\n    transform: translate(0, -50%) rotate(-45deg);\n    animation-name: v3-tutorial-horizontalWave;\n}\n.vue3-tutorial__window-scroll-arrow.position-right {\n    transform: translate(-100%, -50%) rotate(135deg);\n    animation-name: v3-tutorial-horizontalWave;\n}\n.vue3-tutorial__window-scroll-arrow.position-center,\n.vue3-tutorial__window-scroll-arrow.position-visible {\n    display: none;\n}\n\n.vue3-tutorial__svg-mask {\n    position: fixed;\n    top: 0;\n    left: 0;\n    bottom: 100%;\n    right: 100%;\n    z-index: var(--vue3-tutorial-zindex);\n    pointer-events: none;\n}\n.vue3-tutorial__mask {\n    fill: var(--vue3-tutorial-mask-color);\n    stroke: none;\n    pointer-events: fill;\n}\n\n/* }}} */\n/* {{{ Step */\n\n.vue3-tutorial__step {\n    background-color: var(--vue3-tutorial-step-bg-color);\n    color: var(--vue3-tutorial-step-text-color);\n    padding: 1rem;\n    border-radius: 3px;\n}\n\n.vue3-tutorial__step__header {\n    background-color: var(--vue3-tutorial-step-header-bg-color);\n    color: var(--vue3-tutorial-step-header-text-color);\n    text-align: center;\n    padding: 0.5rem;\n    margin-top: -1rem;\n    margin-left: -1rem;\n    margin-right: -1rem;\n    border-radius: 3px;\n}\n\n.vue3-tutorial__step__header__title {\n    font-weight: 300;\n}\n\n.vue3-tutorial__step__header__status {\n    font-size: 0.7em;\n    font-style: italic;\n    opacity: 0.8;\n}\n\n.vue3-tutorial__step__content {\n    margin: 1rem 0 1rem 0;\n}\n\n.vue3-tutorial__step__btn {\n    background: transparent;\n    border: 0.05rem solid var(--vue3-tutorial-step-text-color);\n    border-radius: 0.1rem;\n    color: var(--vue3-tutorial-step-text-color);\n    cursor: pointer;\n    display: inline-block;\n    font-size: 0.8rem;\n    height: 1.8rem;\n    line-height: 1rem;\n    outline: none;\n    margin: 0 0.2rem;\n    padding: 0.35rem 0.4rem;\n    text-align: center;\n    text-decoration: none;\n    transition: all 0.2s ease;\n    vertical-align: middle;\n    white-space: nowrap;\n}\n\n.vue3-tutorial__step__btn-skip {\n    position: absolute;\n    top: 1px;\n    right: 1px;\n    font-size: 32px;\n    width: 32px;\n    height: 32px;\n    border-radius: 32px;\n    padding: 0 3px 0 3px;\n    transform: translate(calc(50% - 5px), calc(-50% + 9px)) scale(0.4);\n    transition: transform 600ms;\n}\n.vue3-tutorial__step__btn-skip:hover {\n    transform: translate(calc(50% - 5px), calc(-50% + 9px)) scale(0.7);\n}\n\n/* }}} */\n/* {{{ External elements */\n\n.vue3-tutorial-highlight {\n    box-shadow: var(--vue3-tutorial-highlight-shadow);\n}\n\n/* }}} */\n";
+var css_248z = "/* {{{ variables */\n\n:root {\n    /** Main color used for component */\n    --vue3-tutorial-brand-primary: #42b883;\n\n    /** Secondary color used for contrast */\n    --vue3-tutorial-brand-secondary: #2c3e50;\n\n    /** zIndex used by popup window for the tips. It should be higher than\n     * your other components\n     * The mask will use this value.\n     * The arrow will use this value + 10;\n     * The pop-up window will use this value + 20;\n     */\n    --vue3-tutorial-zindex: 1000;\n\n    /** The background color of the step window */\n    --vue3-tutorial-step-bg-color: var(--vue3-tutorial-brand-primary);\n    /** The text color of step window */\n    --vue3-tutorial-step-text-color: white;\n\n    /** The background color of the header of step window */\n    --vue3-tutorial-step-header-bg-color: var(--vue3-tutorial-brand-secondary);\n    /** The text color of the header of step window */\n    --vue3-tutorial-step-header-text-color: var(--vue3-tutorial-step-text-color);\n\n    /** The shadow style of the popup-window */\n    --vue3-tutorial-window-shadow: 2px 5px 15px black;\n\n    /** The shadow style of the highlighted element */\n    --vue3-tutorial-highlight-shadow: 0 0 10px var(--vue3-tutorial-brand-primary), inset 0 0 10px var(--vue3-tutorial-brand-primary);\n\n    /** The mask fill color */\n    --vue3-tutorial-mask-color: #c8c8c8bb;\n\n    /** Text color of the \"info\" quote */\n    --vue3-tutorial-info-text-color: #000000;\n\n    /** Border color of the \"info\" quote */\n    --vue3-tutorial-info-border-color: #759fcd;\n\n    /** Background color of the \"info\" quote */\n    --vue3-tutorial-info-bg-color: #b4c8ed;\n\n    /** Text color of the \"warning\" quote */\n    --vue3-tutorial-warning-text-color: #000000;\n\n    /** Border color of the \"warning\" quote */\n    --vue3-tutorial-warning-border-color: #f5b95c;\n\n    /** Background color of the \"warning\" quote */\n    --vue3-tutorial-warning-bg-color: #fff7e6;\n\n    /** Text color of the \"danger\" quote */\n    --vue3-tutorial-danger-text-color: #000000;\n\n    /** Border color of the \"danger\" quote */\n    --vue3-tutorial-danger-border-color: #ff4949;\n\n    /** Background color of the \"danger\" quote */\n    --vue3-tutorial-danger-bg-color: #fde2e2;\n}\n\n/* }}} */\n/* {{{ animations */\n\n@keyframes v3-tutorial-verticalWave {\n    from {margin-top: -3px;}\n    to {margin-top: 3px;}\n}\n\n@keyframes v3-tutorial-horizontalWave {\n    from {margin-left: -3px;}\n    to {margin-left: 3px;}\n}\n\n/* }}} */\n/* {{{ Window */\n\n.vue3-tutorial__window {\n    position: fixed;\n    left: var(--vue3-tutorial-x, 50%);\n    top: var(--vue3-tutorial-y, 50%);\n    z-index: calc(var(--vue3-tutorial-zindex) + 20);\n    box-shadow: var(--vue3-tutorial-window-shadow);\n    border-radius: 3px;\n    --vue3-tutorial-priv-window-margin: 20px;\n\n    min-width: 150px;\n\n    transition-property: top, left;\n    transition-duration: 250ms;\n}\n.vue3-tutorial__window.position-top {\n    transform: translate(-50%, calc(-100% - var(--vue3-tutorial-priv-window-margin)));\n}\n.vue3-tutorial__window.position-bottom {\n    transform: translate(-50%, var(--vue3-tutorial-priv-window-margin));\n}\n.vue3-tutorial__window.position-left {\n    transform: translate(calc(-100% - var(--vue3-tutorial-priv-window-margin)), -50%);\n}\n.vue3-tutorial__window.position-right {\n    transform: translate(var(--vue3-tutorial-priv-window-margin), -50%);\n}\n.vue3-tutorial__window.position-center {\n    transform: translate(-50%, -50%);\n}\n.vue3-tutorial__window.position-hidden {\n    display: none;\n}\n\n.vue3-tutorial__window-arrow,\n.vue3-tutorial__window-scroll-arrow {\n    position: fixed;\n    z-index: calc(var(--vue3-tutorial-zindex) + 10);\n    fill: var(--vue3-tutorial-brand-primary);\n    stroke: var(--vue3-tutorial-brand-secondary);\n}\n.vue3-tutorial__window-arrow.animation,\n.vue3-tutorial__window-scroll-arrow.animation {\n    animation-timing-function: ease-in-out;\n    animation-duration: 0.75s;\n    animation-iteration-count: infinite;\n    animation-direction: alternate;\n}\n.vue3-tutorial__window-arrow.position-top {\n    transform: translate(-50%, -100%)  rotate(-135deg);\n    animation-name: v3-tutorial-verticalWave;\n}\n.vue3-tutorial__window-arrow.position-bottom {\n    transform: translate(-50%) rotate(45deg);\n    animation-name: v3-tutorial-verticalWave;\n}\n.vue3-tutorial__window-arrow.position-left {\n    transform: translate(-100%, -50%) rotate(135deg);\n    animation-name: v3-tutorial-horizontalWave;\n}\n.vue3-tutorial__window-arrow.position-right {\n    transform: translate(0, -50%) rotate(-45deg);\n    animation-name: v3-tutorial-horizontalWave;\n}\n.vue3-tutorial__window-arrow.position-center {\n    display: none;\n}\n\n.vue3-tutorial__window-scroll-arrow.position-top {\n    transform: translate(-50%) rotate(45deg);\n    animation-name: v3-tutorial-verticalWave;\n}\n.vue3-tutorial__window-scroll-arrow.position-bottom {\n    transform: translate(-50%, -100%)  rotate(-135deg);\n    animation-name: v3-tutorial-verticalWave;\n}\n.vue3-tutorial__window-scroll-arrow.position-left {\n    transform: translate(0, -50%) rotate(-45deg);\n    animation-name: v3-tutorial-horizontalWave;\n}\n.vue3-tutorial__window-scroll-arrow.position-right {\n    transform: translate(-100%, -50%) rotate(135deg);\n    animation-name: v3-tutorial-horizontalWave;\n}\n.vue3-tutorial__window-scroll-arrow.position-center,\n.vue3-tutorial__window-scroll-arrow.position-visible {\n    display: none;\n}\n\n.vue3-tutorial__svg-mask {\n    position: fixed;\n    top: 0;\n    left: 0;\n    bottom: 100%;\n    right: 100%;\n    z-index: var(--vue3-tutorial-zindex);\n    pointer-events: none;\n}\n.vue3-tutorial__mask {\n    fill: var(--vue3-tutorial-mask-color);\n    stroke: none;\n    pointer-events: fill;\n}\n\n/* }}} */\n/* {{{ Step */\n\n.vue3-tutorial__step {\n    background-color: var(--vue3-tutorial-step-bg-color);\n    background-image: radial-gradient( 70% 50% at 50% 42px, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 100% );\n    color: var(--vue3-tutorial-step-text-color);\n    padding: 1rem;\n    border-radius: 3px;\n}\n\n.vue3-tutorial__step__header {\n    background-color: var(--vue3-tutorial-step-header-bg-color);\n    color: var(--vue3-tutorial-step-header-text-color);\n    background-image: radial-gradient( 70% 50% at 50% 100%, rgba(255, 255, 255, 0.2) 0%, rgba(200, 200, 200, 0) 100% );\n    text-align: center;\n    padding: 0.5rem;\n    margin-top: -1rem;\n    margin-left: -1rem;\n    margin-right: -1rem;\n    border-radius: 3px;\n}\n\n.vue3-tutorial__step__header__title {\n    font-weight: 300;\n}\n\n.vue3-tutorial__step__header__status {\n    font-size: 0.7em;\n    font-style: italic;\n    opacity: 0.8;\n}\n\n.vue3-tutorial__step__content {\n    margin: 1rem 0 1rem 0;\n}\n\n.vue3-tutorial__step__btn {\n    background: transparent;\n    border: 0.05rem solid var(--vue3-tutorial-step-text-color);\n    border-radius: 0.1rem;\n    color: var(--vue3-tutorial-step-text-color);\n    cursor: pointer;\n    display: inline-block;\n    font-size: 0.8rem;\n    height: 1.8rem;\n    line-height: 1rem;\n    outline: none;\n    margin: 0 0.2rem;\n    padding: 0.35rem 0.4rem;\n    text-align: center;\n    text-decoration: none;\n    transition: all 0.2s ease;\n    vertical-align: middle;\n    white-space: nowrap;\n}\n\n.vue3-tutorial__step__btn-skip {\n    position: absolute;\n    top: 1px;\n    right: 1px;\n    font-size: 32px;\n    width: 32px;\n    height: 32px;\n    border-radius: 32px;\n    padding: 0 3px 0 3px;\n    transform: translate(calc(50% - 5px), calc(-50% + 9px)) scale(0.4);\n    transition: transform 600ms;\n}\n.vue3-tutorial__step__btn-skip:hover {\n    transform: translate(calc(50% - 5px), calc(-50% + 9px)) scale(0.7);\n}\n\n/* }}} */\n/* {{{ Markdown */\n\n.vue3-tutorial-md-bold {\n    font-weight: bold;\n}\n.vue3-tutorial-md-italic {\n    font-style: italic;\n}\n.vue3-tutorial-md-strike {\n    text-decoration: line-through;\n}\n\n.vue3-tutorial-md-multiline-code {\n    background-color: var(--vue3-tutorial-brand-secondary);\n    color:white;\n    padding: 0.5em;\n}\n\n.vue3-tutorial-md-indent {\n    display: inline-block;\n    width: 2em;\n}\n\n.vue3-tutorial-md-color {\n    color: var(--color);\n}\n\n/* {{{ Quotes */\n\n.vue3-tutorial-md-quote {\n    border-left: 2px solid;\n    padding-left: 1em;\n    margin-left: 0;\n}\n\n.vue3-tutorial-md-quote.danger,\n.vue3-tutorial-md-quote.warning,\n.vue3-tutorial-md-quote.info {\n    position: relative;\n    /* XXX: colors will be overridden by next rules */\n    border: 1px solid #000000;\n    border-left: 8px solid #000000;\n    color: var(--vue3-tutorial-step-text-color);\n    padding: 0.5em;\n    padding-left: 2em;\n}\n.vue3-tutorial-md-quote.danger:before,\n.vue3-tutorial-md-quote.warning:before,\n.vue3-tutorial-md-quote.info:before {\n    position: absolute;\n    left: 0.5em;\n    top: 50%;\n    transform: translateY(-50%);\n}\n\n.vue3-tutorial-md-quote.info {\n    color: var(--vue3-tutorial-info-text-color, inherit);\n    border-color: var(--vue3-tutorial-info-border-color);\n    background-color: var(--vue3-tutorial-info-bg-color);\n}\n.vue3-tutorial-md-quote.info:before {\n    content: '💡';\n}\n.vue3-tutorial-md-quote.warning {\n    color: var(--vue3-tutorial-warning-text-color, inherit);\n    border-color: var(--vue3-tutorial-warning-border-color);\n    background-color: var(--vue3-tutorial-warning-bg-color);\n}\n.vue3-tutorial-md-quote.warning:before {\n    content: '⚠️';\n}\n.vue3-tutorial-md-quote.danger {\n    color: var(--vue3-tutorial-danger-text-color, inherit);\n    border-color: var(--vue3-tutorial-danger-border-color);\n    background-color: var(--vue3-tutorial-danger-bg-color);\n}\n.vue3-tutorial-md-quote.danger:before {\n    content: '⛔';\n}\n\n/* }}} */\n/* {{{ Table */\n\n.vue3-tutorial-md-table {\n    width: 100%;\n    border-collapse: collapse;\n}\n.vue3-tutorial-md-th {\n    border-bottom-width: 1px;\n    border-bottom-style: solid;\n    text-align: start;\n}\n.vue3-tutorial-md-td {\n    text-align: start;\n}\n\n/* }}} */\n/* }}} */\n/* {{{ External elements */\n\n.vue3-tutorial-highlight {\n    box-shadow: var(--vue3-tutorial-highlight-shadow);\n}\n\n.vue3-tutorial-muted {\n    pointer-events: none;\n}\n\n/* }}} */\n";
 styleInject(css_248z);
 
 /* Component Purpose:
@@ -1780,7 +2678,7 @@ let VTutorial = class VTutorial extends vtyx.Vue {
             do {
                 if (upDirection) {
                     if (newIndex >= nbTotalSteps - 1) {
-                        this.stop(true);
+                        this.stop(nbTotalSteps > 0);
                         return -1;
                     }
                     newIndex++;
@@ -1865,6 +2763,7 @@ let VTutorial = class VTutorial extends vtyx.Vue {
             this.$emit('changeStep', currentIndex, oldIndex);
         }
     }
+    /** isFinished is true if the tutorial is completed */
     stop(isFinished = false) {
         if (!this.isRunning) {
             return;

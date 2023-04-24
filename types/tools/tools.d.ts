@@ -1,8 +1,8 @@
 import { BoxNotEmpty, ErrorDetails, ErrorSelectorPurpose, Placement, Position, Rect, SelectorElement, SelectorElements } from '../types.d';
 /** merge deeply an object in another one. */
 export declare function merge<A extends object, B extends object>(target: A, source: B, list?: Map<any, any>): A & B;
-/** Return a value which should be included between min and max */
-export declare function minMaxValue(value: number, min: number, max: number): number;
+/** Copy Set values into another Set */
+export declare function shallowSetCopy<T = any>(origin: Set<T>, copy?: Set<T>): Set<T>;
 declare type SyncOptions = {
     purpose: ErrorSelectorPurpose;
     timeoutError?: (details: ErrorDetails) => void;
@@ -35,4 +35,11 @@ export declare function getBox(el: HTMLElement, memo: WeakMap<HTMLElement, BoxNo
 }): BoxNotEmpty;
 export declare function getPosition(box: BoxNotEmpty, realPosition: Placement): Position;
 export declare function getPlacement(targetBox: Rect, refBox?: Rect): Placement;
+/** Add all Parent nodes of an element into a Set.
+ *
+ * The element itself is also added.
+ * If a parent node is already in the Set, stop the loop because we expect
+ * that all its parent are already in the Set.
+ */
+export declare function addParents(el: HTMLElement, list: Set<HTMLElement>): void;
 export {};

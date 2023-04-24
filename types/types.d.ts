@@ -15,14 +15,14 @@ export type Dictionary = {
     stepState: string;
 }
 
-export type Placement = 'auto' | 'top' | 'bottom' | 'left' | 'right' | 'center';
+export type Placement = 'auto' | 'top' | 'bottom' | 'left' | 'right' | 'center' | 'hidden';
 
 export type BindingAction = 'next' | 'previous' | 'skip';
 export type Binding = {
     [key in BindingAction]: string | string[];
 }
 
-export type HiddenPosition = 'visible' | 'top' | 'bottom' | 'left' | 'right';
+export type HiddenPosition = 'visible' | 'top' | 'bottom' | 'left' | 'right' | 'hidden';
 
 /* [x, y] */
 export type Point = [number, number];
@@ -35,6 +35,7 @@ export type Box = BoxNotEmpty | [];
 /** [style X, style Y, orientation] */
 export type Position = [string, string, Placement];
 
+/* }}} */
 /* {{{ Expression */
 
 export type ExpressionValueOperation = 'is' | 'is not' | 'contains' |
@@ -127,24 +128,21 @@ export type TutorialErrorCodes = {
 };
 
 export type ErrorSelectorPurpose = 'targets' | 'nextAction' | 'focus' | 'skipStep'
-    | 'scroll' | 'mask' | 'highlight' | 'arrow';
+    | 'scroll' | 'mask' | 'highlight' | 'arrow' | 'mute';
 
 /* }}} */
 /* {{{ Focus */
 
-export type FocusBehavior = 'no-focus' | 'keep' | 'main-target' | {
-    target: string;
-};
+type FocusKind = 'no-focus' | 'keep' | 'main-target' | 'true' | 'false';
+export type FocusBehavior = FocusKind | TargetExpression;
 
 /* }}} */
 /* {{{ scroll */
 
-type ScrollKind = 'no-scroll' | 'scroll-to';
+type ScrollKind = 'no-scroll' | 'scroll-to' | 'true' | 'false';
 export type ScrollBehavior = ScrollKind | {
-    target: string;
     scrollKind?: ScrollKind;
-    timeout?: number;
-};
+} & TargetExpression;
 
 /* }}} */
 /* {{{ Arrows */
@@ -196,6 +194,11 @@ export interface StepOptions {
     /** Manage how to set focus when step is changing */
     focus: boolean | FocusBehavior;
 
+    /** Stop propagation of all events of given elements.
+     * If false, no elements are muted.
+     */
+    muteElements: false | ElementSelector;
+
     /** Manage how to scroll when target is not in view */
     scroll: boolean | ScrollBehavior;
 
@@ -204,6 +207,12 @@ export interface StepOptions {
 
     /** Timeout (in ms) after that the target is considered as "not found" */
     timeout: number;
+
+    /** Container where the window should be set.
+     * If true, it is moved to document.body.
+     * If false, it is not moved.
+     */
+    teleport: boolean | HTMLElement;
 
     /** Active debug logs. */
     debug: boolean | number[];
