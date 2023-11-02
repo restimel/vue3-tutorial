@@ -423,3 +423,13 @@ export function addParents(el: HTMLElement, list: Set<HTMLElement>) {
         node = node.parentElement;
     }
 }
+
+/** Returns a number which is a positive Integer
+ */
+export function getPositiveInteger(value: number, minValue = 0): number {
+    if (!Number.isFinite(value) || value < minValue) {
+        return minValue;
+    }
+
+    return Math.floor(value);
+}

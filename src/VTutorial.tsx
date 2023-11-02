@@ -43,13 +43,15 @@ import error, {
     unRegisterError,
 } from './tools/errors';
 import {
-    emptyArray,
+    emptyArray, getPositiveInteger,
 } from './tools/tools';
 
 import {
     BindingAction,
     Options,
     Step,
+    StepMovement,
+    TargetStep,
     Tutorial,
     TutorialEmittedError,
     TutorialError,
@@ -78,7 +80,9 @@ export {
     Placement,
     ScrollBehavior,
     StepDescription,
+    StepMovement,
     StepOptions,
+    TargetStep,
     Tutorial,
     TutorialEmittedError,
     TutorialErrorCodes,
@@ -90,6 +94,7 @@ export interface Props {
     tutorial?: Tutorial | null;
     options?: Options;
     open?: boolean;
+    step?: number | string;
 }
 
 @Component
@@ -104,6 +109,9 @@ export default class VTutorial extends Vue<Props> {
 
     @Prop({ default: false })
     private open: boolean;
+
+    @Prop({ default: 0 })
+    private step: TargetStep;
 
     /* }}} */
     /* {{{ data */
@@ -201,42 +209,54 @@ export default class VTutorial extends Vue<Props> {
         this.start();
     }
 
+    @Watch('step', { immediate: true })
+    protected onStepChange() {
+        this.gotoInitialStep();
+    }
+
     /* }}} */
     /* {{{ methods */
     /* {{{ navigation */
 
-    private async findStep(oldIndex: number, upDirection = true): Promise<number> {
+    /** Find which is the next active step depending on direction */
+    private async findStep(oldIndex: number, upDirection = true, iteration = 1): Promise<number> {
         let newIndex = oldIndex;
         const nbTotalSteps = this.nbTotalSteps;
         const steps = this.steps;
         let step: Step;
 
         try {
-            let isSkipped: boolean;
-            do {
-                if (upDirection) {
-                    if (newIndex >= nbTotalSteps - 1) {
-                        this.stop(nbTotalSteps > 0);
-                        return -1;
+            let iterationLeft = getPositiveInteger(iteration, 1);
+            while (iterationLeft >= 1) {
+                let isSkipped: boolean;
+                do {
+                    if (upDirection) {
+                        if (newIndex >= nbTotalSteps - 1) {
+                            this.stop(nbTotalSteps > 0);
+                            return -1;
+                        }
+                        newIndex++;
+                    } else {
+                        if (newIndex <= 0) {
+                            error(204);
+                            return -1;
+                        }
+                        newIndex--;
                     }
-                    newIndex++;
-                } else {
-                    if (newIndex <= 0) {
-                        error(204);
-                        return -1;
-                    }
-                    newIndex--;
-                }
-                step = steps[newIndex];
+                    step = steps[newIndex];
 
-                if (upDirection) {
-                    /* When moving forward, we check the skipped status */
-                    isSkipped = await step.checkSkipped();
-                } else {
-                    /* When moving backward, we reuse the previous skipped status */
-                    isSkipped = step.status.skipped;
-                }
-            } while (isSkipped);
+                    if (upDirection) {
+                        /* When moving forward, we check the skipped status */
+                        isSkipped = await step.checkSkipped();
+                    } else {
+                        /* When moving backward, we reuse the previous skipped status.
+                         * If it has never been checked then check it this time.
+                         */
+                        isSkipped = step.status.skipped ?? await step.checkSkipped();
+                    }
+                } while (isSkipped);
+                iterationLeft--;
+            };
         } catch (err) {
             error(202, {
                 index: this.currentIndex,
@@ -246,6 +266,104 @@ export default class VTutorial extends Vue<Props> {
             return -1;
         }
         return newIndex;
+    }
+
+    /** Get the final step index depending on a TargetStep.
+     *
+     * The TargetStep can be:
+     *  - a number: the index destination
+     *  - a string starting with '+' or '-' and followed by a number (such as '+1').
+     *    the final step will be a movement in the given direction (skipped steps are ignored)
+     *  - a string: the final step is the first step having the same name as the target
+     */
+    private async getIndex(target: StepMovement, oldIndex: number): Promise<number> {
+        let targetStep: TargetStep;
+
+        if (typeof target === 'function') {
+            targetStep = await Promise.resolve(target({
+                currentIndex: this.currentIndex,
+                nbTotalSteps: this.nbTotalSteps,
+                previousStepIsSpecial: this.previousStepIsSpecial,
+            }));
+        } else {
+            targetStep = target;
+        }
+
+        if (typeof targetStep === 'number') {
+            const targetIndex = getPositiveInteger(targetStep, 0);
+
+            if (targetIndex >= this.steps.length) {
+                this.stop(this.nbTotalSteps > 0);
+                return -1;
+            }
+
+            /* assert that given step is not skipped */
+            return this.findStep(targetIndex - 1, true);
+        }
+
+        if (typeof targetStep !== 'string') {
+            error(305, {
+                index: this.currentIndex,
+                value: targetStep,
+                expected: 'TargetStep (string | number)',
+            });
+            return -1;
+        }
+
+        const firstChar = targetStep[0];
+        if (firstChar === '+' || firstChar === '-') {
+            const upDirection = firstChar === '+';
+            const rawValue = parseInt(targetStep.slice(1), 10);
+            const value = getPositiveInteger(rawValue, 1);
+            const targetIndex = await this.findStep(oldIndex, upDirection, value);
+
+            return targetIndex;
+        }
+
+        /* Search for a step which has the given name */
+        const stepIndex = this.steps.findIndex((step) => {
+            return step.desc.name === targetStep;
+        });
+
+        if (stepIndex === -1) {
+            error(302, {
+                nbTotalSteps: this.nbTotalSteps,
+                index: targetStep,
+            });
+            return -1;
+        }
+
+        /* assert that given step is not skipped */
+        return this.findStep(stepIndex - 1, true);
+    }
+
+    private async gotoInitialStep(): Promise<number> {
+        let step = this.step;
+
+        if (typeof step === 'string' && (step.startsWith('+') || step.startsWith('-'))) {
+            /* For initial step, we should not use increment/decrement variation */
+            step = 0;
+        }
+
+        const oldIndex = this.currentIndex;
+        const stepIndex = await this.getIndex(step, oldIndex);
+
+        if (stepIndex !== -1) {
+            /* NOTE: due to the asynchronous action, oldIndex may be
+             * different to this.currentIndex */
+            if (this.currentIndex !== stepIndex) {
+                this.currentIndex = stepIndex;
+
+                if (this.isRunning) {
+                    this.$emit('changeStep', this.currentIndex, oldIndex);
+                }
+            }
+        } else {
+            error(203);
+            return -1;
+        }
+
+        return stepIndex;
     }
 
     private async start() {
@@ -258,15 +376,10 @@ export default class VTutorial extends Vue<Props> {
             /* The tutorial is already started */
             return;
         }
+
+        const currentIndex = await this.gotoInitialStep();
         this.isRunning = true;
 
-        const currentIndex = await this.findStep(-1, true);
-        this.currentIndex = currentIndex;
-        if (currentIndex === -1) {
-            error(203);
-            this.isRunning = false;
-            return;
-        }
         this.$emit('start', currentIndex);
         startListening(this.onKeyEvent.bind(this));
         debug(2, this.tutorialOptions, {currentIndex});
@@ -281,8 +394,9 @@ export default class VTutorial extends Vue<Props> {
             return;
         }
 
+        const currentStep = this.currentStep;
         const oldIndex = this.currentIndex;
-        const currentIndex = await this.findStep(oldIndex, true);
+        const currentIndex = await this.getIndex(currentStep?.desc?.nextStep ?? '+1', oldIndex);
 
         if (currentIndex > -1) {
             this.currentIndex = currentIndex;
@@ -300,8 +414,9 @@ export default class VTutorial extends Vue<Props> {
             return;
         }
 
+        const currentStep = this.currentStep;
         const oldIndex = this.currentIndex;
-        const currentIndex = await this.findStep(oldIndex, false);
+        const currentIndex = await this.getIndex(currentStep?.desc?.previousStep ?? '-1', oldIndex);
 
         if (currentIndex > -1) {
             this.currentIndex = currentIndex;
@@ -310,7 +425,10 @@ export default class VTutorial extends Vue<Props> {
         }
     }
 
-    /** isFinished is true if the tutorial is completed */
+    /** Will stop the tutorial
+     *
+     * isFinished is true if the tutorial is completed
+     */
     private stop(isFinished = false) {
         if (!this.isRunning) {
             return;

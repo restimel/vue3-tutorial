@@ -9,8 +9,12 @@ Properties defines how to use the component.
 * **tutorial** {[`Tutorial`](#Tutorial)}: Describe the tutorial to show. If you
 modify the tutorial when it is running it restarts from first step.
 * **options** {[`Options`](#Step-options)} _(optional)_: Define the configuration at the _component_ level.
-* **open** {boolean}: If set to `true`, the tutorial starts. If set to `false`,
+* **open** {`boolean`}: If set to `true`, the tutorial starts. If set to `false`,
 the tutorial ends.
+* **step** {`number | string`} _(optional)_: Start to the given step. If changed when a
+tutorial is open, moves to given step. If the value is a `number`, this is the
+step index. If the value is a `string`, target the step with the given name.
+If no step match, it uses the default value. _Default value: `0`_
 
 ### properties example
 
@@ -61,13 +65,27 @@ step is finished, it displays the next one.
 This object describes the current step.
 
 Its properties are:
+* [name](#name)
 * [target](#target)
 * [title](#title)
 * [content](#content)
 * [options](#options)
 * [skipStep](#skipstep)
 * [actionNext](#actionnext)
-* [checkBeforeNext](#checkbeforenext)
+* [previousStep](#previousstep)
+* [nextStep](#nextstep)
+* [checkBeforeNext](#checkbeforenext) _not done yet_
+
+They are all optional.
+
+### name
+
+type: _string_
+
+defaultValue: `''`
+
+This property is to identify the step. It can be used to retrieve the step.
+The value should be unique or the wrong step can be returned.
 
 ### target
 
@@ -214,6 +232,68 @@ Example:
         check: 'contains',
         value: 'foo',
     },
+}
+```
+
+### previousStep
+
+type: _StepMovement_
+
+_StepMovement_ = _[TargetStep](#targetstep) | ([TutorialInformation](#tutorialinformation)) => [TargetStep](#tsargetstep)_
+
+defaultValue: `'-1'`
+
+Describe to which step we should navigate to when leaving the current step with an action "previous".
+
+Example:
+```javascript
+{
+    previousStep: '-5', // when going back moves to 5 step behind.
+}
+```
+
+Example:
+```javascript
+{
+    previousStep: (state) => {
+        if (state.currentIndex > 5) {
+            /* If the current step is after the 5th step
+             * move back to the step named "example" */
+            return 'example';
+        }
+        /* otherwise move backward of 1 step */
+        return '-1';
+}
+```
+
+### nextStep
+
+type: _StepMovement_
+
+_StepMovement_ = _[TargetStep](#targetstep) | ([TutorialInformation](#tutorialinformation)) => [TargetStep](#tsargetstep)_
+
+defaultValue: `'+1'`
+
+Describe to which step we should navigate to when leaving the current step with an action "next" (or any action which move forward).
+
+Example:
+```javascript
+{
+    previousStep: '+5', // when going forward moves to 5 step afterward.
+}
+```
+
+Example:
+```javascript
+{
+    previousStep: (state) => {
+        if (state.currentIndex < 5) {
+            /* If the current step is before the 5th step
+             * move forward to the step named "example" */
+            return 'example';
+        }
+        /* otherwise move forward of 1 step */
+        return '+1';
 }
 ```
 
@@ -478,6 +558,40 @@ Arrow is added to show where to scroll in order to see the target element.
   * **timeout** _optional_: {`number`} Duration in milliseconds to find the
 `target` before the timeout warning is triggered.
 _Default value is the `timeout` defined in [step options](#step-options)._
+
+### TargetStep
+
+Define to which step we should navigate to.
+
+Type: `number | string`
+
+If the type is `number`, it targets the step to the given index.
+
+If the type is `string`, and starts with `'+'` and followed by digits (`+X`),
+
+If the type is `string`, and starts with `'-'` and followed by digits (`-X`),
+it target the previous X step.
+
+If the type is `string`, it targets the step with the given `name`.
+
+If no steps match, it will use the default value.
+
+> [!WARNING]
+> Giving a negative number value, will be considered as invalid and so it will returns the default value.
+
+### TutorialInformation
+
+Gives some global information about the tutorial and the current step.
+
+It is provided when changing step or for debug information.
+
+This is an object with the following properties:
+
+* **tutorial** _[Tutorial](#tutorial)_: The current tutorial.
+* **step** _[Step](#step)_: The current step.
+* **currentIndex** _number_: The current index of the step.
+* **nbTotalSteps** _number_: The number of steps which are in the tutorial.
+* **previousStepIsSpecial** _boolean_: `true` is the step one step before does not have a simple 'next' action.
 
 ### Dictionary
 

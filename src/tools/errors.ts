@@ -45,6 +45,7 @@ const errorMap: TutorialErrorCodes = {
     301: 'Unknown operation',
     302: 'Step not found',
     303: 'Tutorial is not defined',
+    305: 'Wrong type',
     324: 'Timeout: some targets have not been found in the allowing time',
     325: 'Timeout: some target elements are still hidden in the allowing time',
 };

@@ -136,7 +136,7 @@ export function getStep(stepDesc: StepDescription, tutorialOptions: Options, inf
         desc: stepDesc,
         status: {
             isActionNext: true,
-            skipped: false,
+            skipped: null,
             index: info.currentIndex,
         },
 

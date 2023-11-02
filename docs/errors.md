@@ -46,6 +46,7 @@ cannot behave correctly or going to next steps is problematic).
 |301 | Unknown operation | - **operation**: the unknown operation<br> - **purpose** - explain the purpose of this selector (is of type [`ErrorSelectorPurpose`](#ErrorSelectorPurpose))  | In an expression operation (nextAction, skipStep, nextStep), the check operator is not known. It is not possible to evaluate the expression. |
 |302 | Step not found | - **nbTotalSteps**: the number of steps in the tutorial<br> - **index**: the index not found | In the tutorial, the step is missing for given index. |
 |303 | Tutorial is not defined | | The tutorial is not defined while the tour is started |
+|305 | Wrong type | - **index**: The step index where the issue occurs<br> - **value**: The value which is wrong<br> - **expected**: The expected type | A value has returned a type which was not expected |
 |324 | Timeout: some targets have not been found in the allowing time | - **timeout**: the timeout duration<br> - **selector**: the selector which has expired<br> - **purpose** - explain the purpose of this selector (is of type [`ErrorSelectorPurpose`](#ErrorSelectorPurpose)) | Some elements have not been found during the elapsed time. |
 |325 | Timeout: some target elements are still hidden in the allowing time | - **timeout**: the timeout duration<br> - **elements**: the list of hidden elements.<br> - **purpose** - explain the purpose of this selector (is of type [`ErrorSelectorPurpose`](#ErrorSelectorPurpose)) | Some elements have been found but are still hidden during the elapsed time. |
 
