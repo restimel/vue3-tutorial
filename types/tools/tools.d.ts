@@ -42,4 +42,7 @@ export declare function getPlacement(targetBox: Rect, refBox?: Rect): Placement;
  * that all its parent are already in the Set.
  */
 export declare function addParents(el: HTMLElement, list: Set<HTMLElement>): void;
+/** Returns a number which is a positive Integer
+ */
+export declare function getPositiveInteger(value: number, minValue?: number): number;
 export {};

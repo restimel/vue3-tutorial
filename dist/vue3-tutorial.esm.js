@@ -32,6 +32,7 @@ const errorMap = {
     301: 'Unknown operation',
     302: 'Step not found',
     303: 'Tutorial is not defined',
+    305: 'Wrong type',
     324: 'Timeout: some targets have not been found in the allowing time',
     325: 'Timeout: some target elements are still hidden in the allowing time',
 };
@@ -1152,6 +1153,14 @@ function addParents(el, list) {
         node = node.parentElement;
     }
 }
+/** Returns a number which is a positive Integer
+ */
+function getPositiveInteger(value, minValue = 0) {
+    if (!Number.isFinite(value) || value < minValue) {
+        return minValue;
+    }
+    return Math.floor(value);
+}
 
 /* File Purpose:
  * Display a modal box on the screen depending on a position.
@@ -1552,7 +1561,7 @@ function getStep(stepDesc, tutorialOptions, info) {
         desc: stepDesc,
         status: {
             isActionNext: true,
-            skipped: false,
+            skipped: null,
             index: info.currentIndex,
         },
         /* will be filled immediately */
@@ -2571,7 +2580,7 @@ function styleInject(css, ref) {
   }
 }
 
-var css_248z = "/* {{{ variables */\n\n:root {\n    /** Main color used for component */\n    --vue3-tutorial-brand-primary: #42b883;\n\n    /** Secondary color used for contrast */\n    --vue3-tutorial-brand-secondary: #2c3e50;\n\n    /** zIndex used by popup window for the tips. It should be higher than\n     * your other components\n     * The mask will use this value.\n     * The arrow will use this value + 10;\n     * The pop-up window will use this value + 20;\n     */\n    --vue3-tutorial-zindex: 1000;\n\n    /** The background color of the step window */\n    --vue3-tutorial-step-bg-color: var(--vue3-tutorial-brand-primary);\n    /** The text color of step window */\n    --vue3-tutorial-step-text-color: white;\n\n    /** The background color of the header of step window */\n    --vue3-tutorial-step-header-bg-color: var(--vue3-tutorial-brand-secondary);\n    /** The text color of the header of step window */\n    --vue3-tutorial-step-header-text-color: var(--vue3-tutorial-step-text-color);\n\n    /** The shadow style of the popup-window */\n    --vue3-tutorial-window-shadow: 2px 5px 15px black;\n\n    /** The shadow style of the highlighted element */\n    --vue3-tutorial-highlight-shadow: 0 0 10px var(--vue3-tutorial-brand-primary), inset 0 0 10px var(--vue3-tutorial-brand-primary);\n\n    /** The mask fill color */\n    --vue3-tutorial-mask-color: #c8c8c8bb;\n\n    /** Text color of the \"info\" quote */\n    --vue3-tutorial-info-text-color: #000000;\n\n    /** Border color of the \"info\" quote */\n    --vue3-tutorial-info-border-color: #759fcd;\n\n    /** Background color of the \"info\" quote */\n    --vue3-tutorial-info-bg-color: #b4c8ed;\n\n    /** Text color of the \"warning\" quote */\n    --vue3-tutorial-warning-text-color: #000000;\n\n    /** Border color of the \"warning\" quote */\n    --vue3-tutorial-warning-border-color: #f5b95c;\n\n    /** Background color of the \"warning\" quote */\n    --vue3-tutorial-warning-bg-color: #fff7e6;\n\n    /** Text color of the \"danger\" quote */\n    --vue3-tutorial-danger-text-color: #000000;\n\n    /** Border color of the \"danger\" quote */\n    --vue3-tutorial-danger-border-color: #ff4949;\n\n    /** Background color of the \"danger\" quote */\n    --vue3-tutorial-danger-bg-color: #fde2e2;\n}\n\n/* }}} */\n/* {{{ animations */\n\n@keyframes v3-tutorial-verticalWave {\n    from {margin-top: -3px;}\n    to {margin-top: 3px;}\n}\n\n@keyframes v3-tutorial-horizontalWave {\n    from {margin-left: -3px;}\n    to {margin-left: 3px;}\n}\n\n/* }}} */\n/* {{{ Window */\n\n.vue3-tutorial__window {\n    position: fixed;\n    left: var(--vue3-tutorial-x, 50%);\n    top: var(--vue3-tutorial-y, 50%);\n    z-index: calc(var(--vue3-tutorial-zindex) + 20);\n    box-shadow: var(--vue3-tutorial-window-shadow);\n    border-radius: 3px;\n    --vue3-tutorial-priv-window-margin: 20px;\n\n    min-width: 150px;\n\n    transition-property: top, left;\n    transition-duration: 250ms;\n}\n.vue3-tutorial__window.position-top {\n    transform: translate(-50%, calc(-100% - var(--vue3-tutorial-priv-window-margin)));\n}\n.vue3-tutorial__window.position-bottom {\n    transform: translate(-50%, var(--vue3-tutorial-priv-window-margin));\n}\n.vue3-tutorial__window.position-left {\n    transform: translate(calc(-100% - var(--vue3-tutorial-priv-window-margin)), -50%);\n}\n.vue3-tutorial__window.position-right {\n    transform: translate(var(--vue3-tutorial-priv-window-margin), -50%);\n}\n.vue3-tutorial__window.position-center {\n    transform: translate(-50%, -50%);\n}\n.vue3-tutorial__window.position-hidden {\n    display: none;\n}\n\n.vue3-tutorial__window-arrow,\n.vue3-tutorial__window-scroll-arrow {\n    position: fixed;\n    z-index: calc(var(--vue3-tutorial-zindex) + 10);\n    fill: var(--vue3-tutorial-brand-primary);\n    stroke: var(--vue3-tutorial-brand-secondary);\n}\n.vue3-tutorial__window-arrow.animation,\n.vue3-tutorial__window-scroll-arrow.animation {\n    animation-timing-function: ease-in-out;\n    animation-duration: 0.75s;\n    animation-iteration-count: infinite;\n    animation-direction: alternate;\n}\n.vue3-tutorial__window-arrow.position-top {\n    transform: translate(-50%, -100%)  rotate(-135deg);\n    animation-name: v3-tutorial-verticalWave;\n}\n.vue3-tutorial__window-arrow.position-bottom {\n    transform: translate(-50%) rotate(45deg);\n    animation-name: v3-tutorial-verticalWave;\n}\n.vue3-tutorial__window-arrow.position-left {\n    transform: translate(-100%, -50%) rotate(135deg);\n    animation-name: v3-tutorial-horizontalWave;\n}\n.vue3-tutorial__window-arrow.position-right {\n    transform: translate(0, -50%) rotate(-45deg);\n    animation-name: v3-tutorial-horizontalWave;\n}\n.vue3-tutorial__window-arrow.position-center {\n    display: none;\n}\n\n.vue3-tutorial__window-scroll-arrow.position-top {\n    transform: translate(-50%) rotate(45deg);\n    animation-name: v3-tutorial-verticalWave;\n}\n.vue3-tutorial__window-scroll-arrow.position-bottom {\n    transform: translate(-50%, -100%)  rotate(-135deg);\n    animation-name: v3-tutorial-verticalWave;\n}\n.vue3-tutorial__window-scroll-arrow.position-left {\n    transform: translate(0, -50%) rotate(-45deg);\n    animation-name: v3-tutorial-horizontalWave;\n}\n.vue3-tutorial__window-scroll-arrow.position-right {\n    transform: translate(-100%, -50%) rotate(135deg);\n    animation-name: v3-tutorial-horizontalWave;\n}\n.vue3-tutorial__window-scroll-arrow.position-center,\n.vue3-tutorial__window-scroll-arrow.position-visible {\n    display: none;\n}\n\n.vue3-tutorial__svg-mask {\n    position: fixed;\n    top: 0;\n    left: 0;\n    bottom: 100%;\n    right: 100%;\n    z-index: var(--vue3-tutorial-zindex);\n    pointer-events: none;\n}\n.vue3-tutorial__mask {\n    fill: var(--vue3-tutorial-mask-color);\n    stroke: none;\n    pointer-events: fill;\n}\n\n/* }}} */\n/* {{{ Step */\n\n.vue3-tutorial__step {\n    background-color: var(--vue3-tutorial-step-bg-color);\n    background-image: radial-gradient( 70% 50% at 50% 42px, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 100% );\n    color: var(--vue3-tutorial-step-text-color);\n    padding: 1rem;\n    border-radius: 3px;\n}\n\n.vue3-tutorial__step__header {\n    background-color: var(--vue3-tutorial-step-header-bg-color);\n    color: var(--vue3-tutorial-step-header-text-color);\n    background-image: radial-gradient( 70% 50% at 50% 100%, rgba(255, 255, 255, 0.2) 0%, rgba(200, 200, 200, 0) 100% );\n    text-align: center;\n    padding: 0.5rem;\n    margin-top: -1rem;\n    margin-left: -1rem;\n    margin-right: -1rem;\n    border-radius: 3px;\n}\n\n.vue3-tutorial__step__header__title {\n    font-weight: 300;\n}\n\n.vue3-tutorial__step__header__status {\n    font-size: 0.7em;\n    font-style: italic;\n    opacity: 0.8;\n}\n\n.vue3-tutorial__step__content {\n    margin: 1rem 0 1rem 0;\n}\n\n.vue3-tutorial__step__btn {\n    background: transparent;\n    border: 0.05rem solid var(--vue3-tutorial-step-text-color);\n    border-radius: 0.1rem;\n    color: var(--vue3-tutorial-step-text-color);\n    cursor: pointer;\n    display: inline-block;\n    font-size: 0.8rem;\n    height: 1.8rem;\n    line-height: 1rem;\n    outline: none;\n    margin: 0 0.2rem;\n    padding: 0.35rem 0.4rem;\n    text-align: center;\n    text-decoration: none;\n    transition: all 0.2s ease;\n    vertical-align: middle;\n    white-space: nowrap;\n}\n\n.vue3-tutorial__step__btn-skip {\n    position: absolute;\n    top: 1px;\n    right: 1px;\n    font-size: 32px;\n    width: 32px;\n    height: 32px;\n    border-radius: 32px;\n    padding: 0 3px 0 3px;\n    transform: translate(calc(50% - 5px), calc(-50% + 9px)) scale(0.4);\n    transition: transform 600ms;\n}\n.vue3-tutorial__step__btn-skip:hover {\n    transform: translate(calc(50% - 5px), calc(-50% + 9px)) scale(0.7);\n}\n\n/* }}} */\n/* {{{ Markdown */\n\n.vue3-tutorial-md-bold {\n    font-weight: bold;\n}\n.vue3-tutorial-md-italic {\n    font-style: italic;\n}\n.vue3-tutorial-md-strike {\n    text-decoration: line-through;\n}\n\n.vue3-tutorial-md-multiline-code {\n    background-color: var(--vue3-tutorial-brand-secondary);\n    color:white;\n    padding: 0.5em;\n}\n\n.vue3-tutorial-md-indent {\n    display: inline-block;\n    width: 2em;\n}\n\n.vue3-tutorial-md-color {\n    color: var(--color);\n}\n\n/* {{{ Quotes */\n\n.vue3-tutorial-md-quote {\n    border-left: 2px solid;\n    padding-left: 1em;\n    margin-left: 0;\n}\n\n.vue3-tutorial-md-quote.danger,\n.vue3-tutorial-md-quote.warning,\n.vue3-tutorial-md-quote.info {\n    position: relative;\n    /* XXX: colors will be overridden by next rules */\n    border: 1px solid #000000;\n    border-left: 8px solid #000000;\n    color: var(--vue3-tutorial-step-text-color);\n    padding: 0.5em;\n    padding-left: 2em;\n}\n.vue3-tutorial-md-quote.danger:before,\n.vue3-tutorial-md-quote.warning:before,\n.vue3-tutorial-md-quote.info:before {\n    position: absolute;\n    left: 0.5em;\n    top: 50%;\n    transform: translateY(-50%);\n}\n\n.vue3-tutorial-md-quote.info {\n    color: var(--vue3-tutorial-info-text-color, inherit);\n    border-color: var(--vue3-tutorial-info-border-color);\n    background-color: var(--vue3-tutorial-info-bg-color);\n}\n.vue3-tutorial-md-quote.info:before {\n    content: '💡';\n}\n.vue3-tutorial-md-quote.warning {\n    color: var(--vue3-tutorial-warning-text-color, inherit);\n    border-color: var(--vue3-tutorial-warning-border-color);\n    background-color: var(--vue3-tutorial-warning-bg-color);\n}\n.vue3-tutorial-md-quote.warning:before {\n    content: '⚠️';\n}\n.vue3-tutorial-md-quote.danger {\n    color: var(--vue3-tutorial-danger-text-color, inherit);\n    border-color: var(--vue3-tutorial-danger-border-color);\n    background-color: var(--vue3-tutorial-danger-bg-color);\n}\n.vue3-tutorial-md-quote.danger:before {\n    content: '⛔';\n}\n\n/* }}} */\n/* {{{ Table */\n\n.vue3-tutorial-md-table {\n    width: 100%;\n    border-collapse: collapse;\n}\n.vue3-tutorial-md-th {\n    border-bottom-width: 1px;\n    border-bottom-style: solid;\n    text-align: start;\n}\n.vue3-tutorial-md-td {\n    text-align: start;\n}\n\n/* }}} */\n/* }}} */\n/* {{{ External elements */\n\n.vue3-tutorial-highlight {\n    box-shadow: var(--vue3-tutorial-highlight-shadow);\n}\n\n.vue3-tutorial-muted {\n    pointer-events: none;\n}\n\n/* }}} */\n";
+var css_248z = "/* {{{ variables */\n\n:root {\n    /** Main color used for component */\n    --vue3-tutorial-brand-primary: #42b883;\n\n    /** Secondary color used for contrast */\n    --vue3-tutorial-brand-secondary: #2c3e50;\n\n    /** zIndex used by popup window for the tips. It should be higher than\n     * your other components\n     * The mask will use this value.\n     * The arrow will use this value + 10;\n     * The pop-up window will use this value + 20;\n     */\n    --vue3-tutorial-zindex: 1000;\n\n    /** The background color of the step window */\n    --vue3-tutorial-step-bg-color: var(--vue3-tutorial-brand-primary);\n    /** The text color of step window */\n    --vue3-tutorial-step-text-color: white;\n\n    /** The background color of the header of step window */\n    --vue3-tutorial-step-header-bg-color: var(--vue3-tutorial-brand-secondary);\n    /** The text color of the header of step window */\n    --vue3-tutorial-step-header-text-color: var(--vue3-tutorial-step-text-color);\n\n    /** The shadow style of the popup-window */\n    --vue3-tutorial-window-shadow: 2px 5px 15px black;\n\n    /** The shadow style of the highlighted element */\n    --vue3-tutorial-highlight-shadow: 0 0 10px var(--vue3-tutorial-brand-primary), inset 0 0 10px var(--vue3-tutorial-brand-primary);\n\n    /** The mask fill color */\n    --vue3-tutorial-mask-color: #c8c8c8bb;\n\n    /** Text color of the \"info\" quote */\n    --vue3-tutorial-info-text-color: #000000;\n\n    /** Border color of the \"info\" quote */\n    --vue3-tutorial-info-border-color: #759fcd;\n\n    /** Background color of the \"info\" quote */\n    --vue3-tutorial-info-bg-color: #b4c8ed;\n\n    /** Text color of the \"warning\" quote */\n    --vue3-tutorial-warning-text-color: #000000;\n\n    /** Border color of the \"warning\" quote */\n    --vue3-tutorial-warning-border-color: #f5b95c;\n\n    /** Background color of the \"warning\" quote */\n    --vue3-tutorial-warning-bg-color: #fff7e6;\n\n    /** Text color of the \"danger\" quote */\n    --vue3-tutorial-danger-text-color: #000000;\n\n    /** Border color of the \"danger\" quote */\n    --vue3-tutorial-danger-border-color: #ff4949;\n\n    /** Background color of the \"danger\" quote */\n    --vue3-tutorial-danger-bg-color: #fde2e2;\n}\n\n/* }}} */\n/* {{{ animations */\n\n@keyframes v3-tutorial-verticalWave {\n    from {margin-top: -3px;}\n    to {margin-top: 3px;}\n}\n\n@keyframes v3-tutorial-horizontalWave {\n    from {margin-left: -3px;}\n    to {margin-left: 3px;}\n}\n\n/* }}} */\n/* {{{ Window */\n\n.vue3-tutorial__window {\n    position: fixed;\n    left: var(--vue3-tutorial-x, 50%);\n    top: var(--vue3-tutorial-y, 50%);\n    z-index: calc(var(--vue3-tutorial-zindex) + 20);\n    box-shadow: var(--vue3-tutorial-window-shadow);\n    border-radius: 3px;\n    --vue3-tutorial-priv-window-margin: 20px;\n\n    min-width: 250px;\n\n    transition-property: top, left;\n    transition-duration: 250ms;\n}\n.vue3-tutorial__window.position-top {\n    transform: translate(-50%, calc(-100% - var(--vue3-tutorial-priv-window-margin)));\n}\n.vue3-tutorial__window.position-bottom {\n    transform: translate(-50%, var(--vue3-tutorial-priv-window-margin));\n}\n.vue3-tutorial__window.position-left {\n    transform: translate(calc(-100% - var(--vue3-tutorial-priv-window-margin)), -50%);\n}\n.vue3-tutorial__window.position-right {\n    transform: translate(var(--vue3-tutorial-priv-window-margin), -50%);\n}\n.vue3-tutorial__window.position-center {\n    transform: translate(-50%, -50%);\n}\n.vue3-tutorial__window.position-hidden {\n    display: none;\n}\n\n.vue3-tutorial__window-arrow,\n.vue3-tutorial__window-scroll-arrow {\n    position: fixed;\n    z-index: calc(var(--vue3-tutorial-zindex) + 10);\n    fill: var(--vue3-tutorial-brand-primary);\n    stroke: var(--vue3-tutorial-brand-secondary);\n}\n.vue3-tutorial__window-arrow.animation,\n.vue3-tutorial__window-scroll-arrow.animation {\n    animation-timing-function: ease-in-out;\n    animation-duration: 0.75s;\n    animation-iteration-count: infinite;\n    animation-direction: alternate;\n}\n.vue3-tutorial__window-arrow.position-top {\n    transform: translate(-50%, -100%)  rotate(-135deg);\n    animation-name: v3-tutorial-verticalWave;\n}\n.vue3-tutorial__window-arrow.position-bottom {\n    transform: translate(-50%) rotate(45deg);\n    animation-name: v3-tutorial-verticalWave;\n}\n.vue3-tutorial__window-arrow.position-left {\n    transform: translate(-100%, -50%) rotate(135deg);\n    animation-name: v3-tutorial-horizontalWave;\n}\n.vue3-tutorial__window-arrow.position-right {\n    transform: translate(0, -50%) rotate(-45deg);\n    animation-name: v3-tutorial-horizontalWave;\n}\n.vue3-tutorial__window-arrow.position-center {\n    display: none;\n}\n\n.vue3-tutorial__window-scroll-arrow.position-top {\n    transform: translate(-50%) rotate(45deg);\n    animation-name: v3-tutorial-verticalWave;\n}\n.vue3-tutorial__window-scroll-arrow.position-bottom {\n    transform: translate(-50%, -100%)  rotate(-135deg);\n    animation-name: v3-tutorial-verticalWave;\n}\n.vue3-tutorial__window-scroll-arrow.position-left {\n    transform: translate(0, -50%) rotate(-45deg);\n    animation-name: v3-tutorial-horizontalWave;\n}\n.vue3-tutorial__window-scroll-arrow.position-right {\n    transform: translate(-100%, -50%) rotate(135deg);\n    animation-name: v3-tutorial-horizontalWave;\n}\n.vue3-tutorial__window-scroll-arrow.position-center,\n.vue3-tutorial__window-scroll-arrow.position-visible {\n    display: none;\n}\n\n.vue3-tutorial__svg-mask {\n    position: fixed;\n    top: 0;\n    left: 0;\n    bottom: 100%;\n    right: 100%;\n    z-index: var(--vue3-tutorial-zindex);\n    pointer-events: none;\n}\n.vue3-tutorial__mask {\n    fill: var(--vue3-tutorial-mask-color);\n    stroke: none;\n    pointer-events: fill;\n}\n\n/* }}} */\n/* {{{ Step */\n\n.vue3-tutorial__step {\n    background-color: var(--vue3-tutorial-step-bg-color);\n    background-image: radial-gradient( 70% 50% at 50% 42px, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 100% );\n    color: var(--vue3-tutorial-step-text-color);\n    padding: 1rem;\n    border-radius: 3px;\n}\n\n.vue3-tutorial__step__header {\n    background-color: var(--vue3-tutorial-step-header-bg-color);\n    color: var(--vue3-tutorial-step-header-text-color);\n    background-image: radial-gradient( 70% 50% at 50% 100%, rgba(255, 255, 255, 0.2) 0%, rgba(200, 200, 200, 0) 100% );\n    text-align: center;\n    padding: 0.5rem;\n    margin-top: -1rem;\n    margin-left: -1rem;\n    margin-right: -1rem;\n    border-radius: 3px;\n}\n\n.vue3-tutorial__step__header__title {\n    font-weight: 300;\n}\n\n.vue3-tutorial__step__header__status {\n    font-size: 0.7em;\n    font-style: italic;\n    opacity: 0.8;\n}\n\n.vue3-tutorial__step__content {\n    margin: 1rem 0 1rem 0;\n}\n\n.vue3-tutorial__step__btn {\n    background: transparent;\n    border: 0.05rem solid var(--vue3-tutorial-step-text-color);\n    border-radius: 0.1rem;\n    color: var(--vue3-tutorial-step-text-color);\n    cursor: pointer;\n    display: inline-block;\n    font-size: 0.8rem;\n    height: 1.8rem;\n    line-height: 1rem;\n    outline: none;\n    margin: 0 0.2rem;\n    padding: 0.35rem 0.4rem;\n    text-align: center;\n    text-decoration: none;\n    transition: all 0.2s ease;\n    vertical-align: middle;\n    white-space: nowrap;\n}\n\n.vue3-tutorial__step__btn-skip {\n    position: absolute;\n    top: 1px;\n    right: 1px;\n    font-size: 32px;\n    width: 32px;\n    height: 32px;\n    border-radius: 32px;\n    padding: 0 3px 0 3px;\n    transform: translate(calc(50% - 5px), calc(-50% + 9px)) scale(0.4);\n    transition: transform 600ms;\n}\n.vue3-tutorial__step__btn-skip:hover {\n    transform: translate(calc(50% - 5px), calc(-50% + 9px)) scale(0.7);\n}\n\n/* }}} */\n/* {{{ Markdown */\n\n.vue3-tutorial-md-bold {\n    font-weight: bold;\n}\n.vue3-tutorial-md-italic {\n    font-style: italic;\n}\n.vue3-tutorial-md-strike {\n    text-decoration: line-through;\n}\n\n.vue3-tutorial-md-multiline-code {\n    background-color: var(--vue3-tutorial-brand-secondary);\n    color:white;\n    padding: 0.5em;\n}\n\n.vue3-tutorial-md-indent {\n    display: inline-block;\n    width: 2em;\n}\n\n.vue3-tutorial-md-color {\n    color: var(--color);\n}\n\n/* {{{ Quotes */\n\n.vue3-tutorial-md-quote {\n    border-left: 2px solid;\n    padding-left: 1em;\n    margin-left: 0;\n}\n\n.vue3-tutorial-md-quote.danger,\n.vue3-tutorial-md-quote.warning,\n.vue3-tutorial-md-quote.info {\n    position: relative;\n    /* XXX: colors will be overridden by next rules */\n    border: 1px solid #000000;\n    border-left: 8px solid #000000;\n    color: var(--vue3-tutorial-step-text-color);\n    padding: 0.5em;\n    padding-left: 2em;\n}\n.vue3-tutorial-md-quote.danger:before,\n.vue3-tutorial-md-quote.warning:before,\n.vue3-tutorial-md-quote.info:before {\n    position: absolute;\n    left: 0.5em;\n    top: 50%;\n    transform: translateY(-50%);\n}\n\n.vue3-tutorial-md-quote.info {\n    color: var(--vue3-tutorial-info-text-color, inherit);\n    border-color: var(--vue3-tutorial-info-border-color);\n    background-color: var(--vue3-tutorial-info-bg-color);\n}\n.vue3-tutorial-md-quote.info:before {\n    content: '💡';\n}\n.vue3-tutorial-md-quote.warning {\n    color: var(--vue3-tutorial-warning-text-color, inherit);\n    border-color: var(--vue3-tutorial-warning-border-color);\n    background-color: var(--vue3-tutorial-warning-bg-color);\n}\n.vue3-tutorial-md-quote.warning:before {\n    content: '⚠️';\n}\n.vue3-tutorial-md-quote.danger {\n    color: var(--vue3-tutorial-danger-text-color, inherit);\n    border-color: var(--vue3-tutorial-danger-border-color);\n    background-color: var(--vue3-tutorial-danger-bg-color);\n}\n.vue3-tutorial-md-quote.danger:before {\n    content: '⛔';\n}\n\n/* }}} */\n/* {{{ Table */\n\n.vue3-tutorial-md-table {\n    width: 100%;\n    border-collapse: collapse;\n}\n.vue3-tutorial-md-th {\n    border-bottom-width: 1px;\n    border-bottom-style: solid;\n    text-align: start;\n}\n.vue3-tutorial-md-td {\n    text-align: start;\n}\n\n/* }}} */\n/* }}} */\n/* {{{ External elements */\n\n.vue3-tutorial-highlight {\n    box-shadow: var(--vue3-tutorial-highlight-shadow);\n}\n\n.vue3-tutorial-muted {\n    pointer-events: none;\n}\n\n/* }}} */\n";
 styleInject(css_248z);
 
 /* Component Purpose:
@@ -2661,41 +2670,53 @@ let VTutorial = class VTutorial extends Vue {
         }
         this.start();
     }
+    onStepChange() {
+        this.gotoInitialStep();
+    }
     /* }}} */
     /* {{{ methods */
     /* {{{ navigation */
-    async findStep(oldIndex, upDirection = true) {
+    /** Find which is the next active step depending on direction */
+    async findStep(oldIndex, upDirection = true, iteration = 1) {
+        var _a;
         let newIndex = oldIndex;
         const nbTotalSteps = this.nbTotalSteps;
         const steps = this.steps;
         let step;
         try {
-            let isSkipped;
-            do {
-                if (upDirection) {
-                    if (newIndex >= nbTotalSteps - 1) {
-                        this.stop(nbTotalSteps > 0);
-                        return -1;
+            let iterationLeft = getPositiveInteger(iteration, 1);
+            while (iterationLeft >= 1) {
+                let isSkipped;
+                do {
+                    if (upDirection) {
+                        if (newIndex >= nbTotalSteps - 1) {
+                            this.stop(nbTotalSteps > 0);
+                            return -1;
+                        }
+                        newIndex++;
                     }
-                    newIndex++;
-                }
-                else {
-                    if (newIndex <= 0) {
-                        error(204);
-                        return -1;
+                    else {
+                        if (newIndex <= 0) {
+                            error(204);
+                            return -1;
+                        }
+                        newIndex--;
                     }
-                    newIndex--;
-                }
-                step = steps[newIndex];
-                if (upDirection) {
-                    /* When moving forward, we check the skipped status */
-                    isSkipped = await step.checkSkipped();
-                }
-                else {
-                    /* When moving backward, we reuse the previous skipped status */
-                    isSkipped = step.status.skipped;
-                }
-            } while (isSkipped);
+                    step = steps[newIndex];
+                    if (upDirection) {
+                        /* When moving forward, we check the skipped status */
+                        isSkipped = await step.checkSkipped();
+                    }
+                    else {
+                        /* When moving backward, we reuse the previous skipped status.
+                         * If it has never been checked then check it this time.
+                         */
+                        isSkipped = (_a = step.status.skipped) !== null && _a !== void 0 ? _a : await step.checkSkipped();
+                    }
+                } while (isSkipped);
+                iterationLeft--;
+            }
+            ;
         }
         catch (err) {
             error(202, {
@@ -2707,6 +2728,89 @@ let VTutorial = class VTutorial extends Vue {
         }
         return newIndex;
     }
+    /** Get the final step index depending on a TargetStep.
+     *
+     * The TargetStep can be:
+     *  - a number: the index destination
+     *  - a string starting with '+' or '-' and followed by a number (such as '+1').
+     *    the final step will be a movement in the given direction (skipped steps are ignored)
+     *  - a string: the final step is the first step having the same name as the target
+     */
+    async getIndex(target, oldIndex) {
+        let targetStep;
+        if (typeof target === 'function') {
+            targetStep = await Promise.resolve(target({
+                currentIndex: this.currentIndex,
+                nbTotalSteps: this.nbTotalSteps,
+                previousStepIsSpecial: this.previousStepIsSpecial,
+            }));
+        }
+        else {
+            targetStep = target;
+        }
+        if (typeof targetStep === 'number') {
+            const targetIndex = getPositiveInteger(targetStep, 0);
+            if (targetIndex >= this.steps.length) {
+                this.stop(this.nbTotalSteps > 0);
+                return -1;
+            }
+            /* assert that given step is not skipped */
+            return this.findStep(targetIndex - 1, true);
+        }
+        if (typeof targetStep !== 'string') {
+            error(305, {
+                index: this.currentIndex,
+                value: targetStep,
+                expected: 'TargetStep (string | number)',
+            });
+            return -1;
+        }
+        const firstChar = targetStep[0];
+        if (firstChar === '+' || firstChar === '-') {
+            const upDirection = firstChar === '+';
+            const rawValue = parseInt(targetStep.slice(1), 10);
+            const value = getPositiveInteger(rawValue, 1);
+            const targetIndex = await this.findStep(oldIndex, upDirection, value);
+            return targetIndex;
+        }
+        /* Search for a step which has the given name */
+        const stepIndex = this.steps.findIndex((step) => {
+            return step.desc.name === targetStep;
+        });
+        if (stepIndex === -1) {
+            error(302, {
+                nbTotalSteps: this.nbTotalSteps,
+                index: targetStep,
+            });
+            return -1;
+        }
+        /* assert that given step is not skipped */
+        return this.findStep(stepIndex - 1, true);
+    }
+    async gotoInitialStep() {
+        let step = this.step;
+        if (typeof step === 'string' && (step.startsWith('+') || step.startsWith('-'))) {
+            /* For initial step, we should not use increment/decrement variation */
+            step = 0;
+        }
+        const oldIndex = this.currentIndex;
+        const stepIndex = await this.getIndex(step, oldIndex);
+        if (stepIndex !== -1) {
+            /* NOTE: due to the asynchronous action, oldIndex may be
+             * different to this.currentIndex */
+            if (this.currentIndex !== stepIndex) {
+                this.currentIndex = stepIndex;
+                if (this.isRunning) {
+                    this.$emit('changeStep', this.currentIndex, oldIndex);
+                }
+            }
+        }
+        else {
+            error(203);
+            return -1;
+        }
+        return stepIndex;
+    }
     async start() {
         if (!this.tutorial) {
             error(303);
@@ -2717,27 +2821,23 @@ let VTutorial = class VTutorial extends Vue {
             /* The tutorial is already started */
             return;
         }
+        const currentIndex = await this.gotoInitialStep();
         this.isRunning = true;
-        const currentIndex = await this.findStep(-1, true);
-        this.currentIndex = currentIndex;
-        if (currentIndex === -1) {
-            error(203);
-            this.isRunning = false;
-            return;
-        }
         this.$emit('start', currentIndex);
         startListening(this.onKeyEvent.bind(this));
         debug(2, this.tutorialOptions, { currentIndex });
     }
     async nextStep(forceNext = false) {
+        var _a, _b;
         if (!this.isRunning) {
             return;
         }
         if (!forceNext && this.currentStepIsSpecial) {
             return;
         }
+        const currentStep = this.currentStep;
         const oldIndex = this.currentIndex;
-        const currentIndex = await this.findStep(oldIndex, true);
+        const currentIndex = await this.getIndex((_b = (_a = currentStep === null || currentStep === void 0 ? void 0 : currentStep.desc) === null || _a === void 0 ? void 0 : _a.nextStep) !== null && _b !== void 0 ? _b : '+1', oldIndex);
         if (currentIndex > -1) {
             this.currentIndex = currentIndex;
             this.$emit('nextStep', currentIndex, oldIndex);
@@ -2745,21 +2845,26 @@ let VTutorial = class VTutorial extends Vue {
         }
     }
     async previousStep(forcePrevious = false) {
+        var _a, _b;
         if (!this.isRunning) {
             return;
         }
         if (!forcePrevious && this.previousStepIsSpecial) {
             return;
         }
+        const currentStep = this.currentStep;
         const oldIndex = this.currentIndex;
-        const currentIndex = await this.findStep(oldIndex, false);
+        const currentIndex = await this.getIndex((_b = (_a = currentStep === null || currentStep === void 0 ? void 0 : currentStep.desc) === null || _a === void 0 ? void 0 : _a.previousStep) !== null && _b !== void 0 ? _b : '-1', oldIndex);
         if (currentIndex > -1) {
             this.currentIndex = currentIndex;
             this.$emit('previousStep', currentIndex, oldIndex);
             this.$emit('changeStep', currentIndex, oldIndex);
         }
     }
-    /** isFinished is true if the tutorial is completed */
+    /** Will stop the tutorial
+     *
+     * isFinished is true if the tutorial is completed
+     */
     stop(isFinished = false) {
         if (!this.isRunning) {
             return;
@@ -2840,11 +2945,17 @@ __decorate([
     Prop({ default: false })
 ], VTutorial.prototype, "open", void 0);
 __decorate([
+    Prop({ default: 0 })
+], VTutorial.prototype, "step", void 0);
+__decorate([
     Watch('open', { immediate: true })
 ], VTutorial.prototype, "onOpenChange", null);
 __decorate([
     Watch('steps')
 ], VTutorial.prototype, "onStepsChange", null);
+__decorate([
+    Watch('step', { immediate: true })
+], VTutorial.prototype, "onStepChange", null);
 __decorate([
     Emits(['changeStep', 'error', 'nextStep', 'previousStep', 'start', 'stop'])
 ], VTutorial.prototype, "render", null);

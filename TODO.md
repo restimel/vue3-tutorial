@@ -33,7 +33,7 @@
     * Add info
     * Add options to filter what is emitted
 * Pause
-    * restart at previous index
+    * restart at previous index [this should now be possible to do this with "step" props]
 * Step
     * check that next is ok
         * block next action
@@ -60,8 +60,6 @@
         * progress status with progress bar (and/or %)
     * button section
         * When interactive, add a text to tell what is expected
-    * Workflow
-        * Go to step X (instead of next step), which should help to manage errors
 * Window
     * Allow user to move the window
     * improve auto placement
