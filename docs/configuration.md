@@ -245,6 +245,10 @@ defaultValue: `'-1'`
 
 Describe to which step we should navigate to when leaving the current step with an action "previous".
 
+> [!NOTE]
+> If `previousStep` is set, then the "previous" button is always displayed.
+> Otherwise it depends if previous step requires a special action.
+
 Example:
 ```javascript
 {

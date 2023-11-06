@@ -104,8 +104,15 @@ export default class VStep extends Vue<Props> {
 
     private get displayPreviousButton(): boolean {
         const info = this.tutorialInformation;
+        const previousStep = this.step.desc.previousStep;
 
-        if (info.previousStepIsSpecial || info.currentIndex <= 0) {
+        /* If previous step is special (it means user has to do an action)
+         * then it should be better to not display the "previous" button.
+         * But if previousStep is set, then it means that it is allowed from
+         * this step to go backward.  */
+        const avoidPrevious = info.previousStepIsSpecial && !previousStep;
+
+        if (avoidPrevious || info.currentIndex <= 0) {
             return false;
         }
 
