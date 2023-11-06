@@ -24,9 +24,9 @@ export type Binding = {
 
 export type HiddenPosition = 'visible' | 'top' | 'bottom' | 'left' | 'right' | 'hidden';
 
-/* [x, y] */
+/** [x, y] */
 export type Point = [number, number];
-/* [x1, y1, x2, y2] */
+/** [x1, y1, x2, y2] */
 export type Rect = [number, number, number, number];
 /** [x1, y1, x2, y2, hiddenPosition] */
 export type BoxNotEmpty = [number, number, number, number, HiddenPosition];
@@ -171,9 +171,9 @@ export interface StepOptions {
     /** Class added to the targeted elements */
     classForTargets: string;
 
-    /* If true, it displays an arrow to the main target
-     * If false, it displays no arrows
-     * If an elementSelector, it displays arrows to each given elements */
+    /** If true, it displays an arrow to the main target
+     *  If false, it displays no arrows
+     *  If an elementSelector, it displays arrows to each given elements */
     arrow: boolean | ElementSelector;
 
     /** If true, the arrow is animate */
@@ -228,26 +228,41 @@ export interface StepDescription {
     /** Text content of the step. */
     content: string;
 
+    /** Name of the step, which could be used to identify the step. */
+    name?: string;
+
     /** Specific options for this step */
     options?: Options;
 
     /** Check if this step should be skipped.  */
     skipStep?: Verification;
 
-    /** Define the action to go to the next step. */
+    /** Define the action which trigger the movement to the next step. */
     actionNext?: ActionNext;
+
+    /** Define to which step it goes when moving backward.
+     * Default: '-1'
+     */
+    previousStep?: StepMovement;
+
+    /** Define to which step it goes when moving forward.
+     * Default: '+1'
+     */
+    nextStep?: StepMovement;
 
     /** Disable the "next" button if this condition expression returns false. */
     checkBeforeNext?: CheckBeforeNext;
 }
 
 interface StepStatus {
-    /* reactive value about if the step should be skipped */
-    skipped: boolean;
-    /* reactive value about if the step displays the next button (and so
+    /** reactive value about if the step should be skipped.
+     * null means that it has never been checked before.
+     */
+    skipped: boolean | null;
+    /** reactive value about if the step displays the next button (and so
      * does not have special actions) */
     isActionNext: boolean;
-    /* The index of the step. It is more for information */
+    /** The index of the step. It is more for information */
     index: number;
 }
 
@@ -259,6 +274,11 @@ export interface Step {
 }
 
 export type Options = Partial<StepOptions>;
+
+/** Define to which step we should navigate to. */
+export type TargetStep = number | string;
+
+export type StepMovement = TargetStep | ((info: TutorialInformation) => TargetStep);
 
 /* }}} */
 /* {{{ Tutorial */

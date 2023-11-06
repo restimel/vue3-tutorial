@@ -18,9 +18,11 @@ const errorMap = {
     20: 'Step mounted',
     21: 'Step unmounted',
     22: 'Step changed',
+    24: 'Fetch elements',
     25: 'Target elements change',
     26: 'DOM elements targeted',
     27: 'No elements found',
+    28: 'Move to step',
     /* 1xx : info */
     /* 2xx : warning */
     200: 'Unknown error code',
@@ -1748,7 +1750,13 @@ let VStep = class VStep extends vtyx.Vue {
     /* {{{ buttons */
     get displayPreviousButton() {
         const info = this.tutorialInformation;
-        if (info.previousStepIsSpecial || info.currentIndex <= 0) {
+        const previousStep = this.step.desc.previousStep;
+        /* If previous step is special (it means user has to do an action)
+         * then it should be better to not display the "previous" button.
+         * But if previousStep is set, then it means that it is allowed from
+         * this step to go backward.  */
+        const avoidPrevious = info.previousStepIsSpecial && !previousStep;
+        if (avoidPrevious || info.currentIndex <= 0) {
             return false;
         }
         return true;
@@ -2675,7 +2683,9 @@ let VTutorial = class VTutorial extends vtyx.Vue {
         this.start();
     }
     onStepChange() {
-        this.gotoInitialStep();
+        if (this.isRunning) {
+            this.gotoInitialStep();
+        }
     }
     /* }}} */
     /* {{{ methods */
@@ -2717,8 +2727,8 @@ let VTutorial = class VTutorial extends vtyx.Vue {
                          */
                         isSkipped = (_a = step.status.skipped) !== null && _a !== void 0 ? _a : await step.checkSkipped();
                     }
+                    iterationLeft--;
                 } while (isSkipped);
-                iterationLeft--;
             }
             ;
         }
@@ -2742,6 +2752,16 @@ let VTutorial = class VTutorial extends vtyx.Vue {
      */
     async getIndex(target, oldIndex) {
         let targetStep;
+        const returnValue = (finalValue, targetValue = finalValue, info = '') => {
+            debug(28, this.tutorialOptions, {
+                oldIndex,
+                newIndex: finalValue,
+                targetIndex: targetValue,
+                target: targetStep,
+                info,
+            });
+            return finalValue;
+        };
         if (typeof target === 'function') {
             targetStep = await Promise.resolve(target({
                 currentIndex: this.currentIndex,
@@ -2756,10 +2776,11 @@ let VTutorial = class VTutorial extends vtyx.Vue {
             const targetIndex = getPositiveInteger(targetStep, 0);
             if (targetIndex >= this.steps.length) {
                 this.stop(this.nbTotalSteps > 0);
-                return -1;
+                return returnValue(-1, targetIndex, 'out of steps range');
             }
             /* assert that given step is not skipped */
-            return this.findStep(targetIndex - 1, true);
+            const finalIndex = await this.findStep(targetIndex - 1, true);
+            return returnValue(finalIndex, targetIndex);
         }
         if (typeof targetStep !== 'string') {
             error(305, {
@@ -2767,7 +2788,7 @@ let VTutorial = class VTutorial extends vtyx.Vue {
                 value: targetStep,
                 expected: 'TargetStep (string | number)',
             });
-            return -1;
+            return returnValue(-1, -1, 'wrong target step type');
         }
         const firstChar = targetStep[0];
         if (firstChar === '+' || firstChar === '-') {
@@ -2775,7 +2796,7 @@ let VTutorial = class VTutorial extends vtyx.Vue {
             const rawValue = parseInt(targetStep.slice(1), 10);
             const value = getPositiveInteger(rawValue, 1);
             const targetIndex = await this.findStep(oldIndex, upDirection, value);
-            return targetIndex;
+            return returnValue(targetIndex, oldIndex + +target);
         }
         /* Search for a step which has the given name */
         const stepIndex = this.steps.findIndex((step) => {
@@ -2786,10 +2807,11 @@ let VTutorial = class VTutorial extends vtyx.Vue {
                 nbTotalSteps: this.nbTotalSteps,
                 index: targetStep,
             });
-            return -1;
+            return returnValue(-1, stepIndex, 'name not found');
         }
         /* assert that given step is not skipped */
-        return this.findStep(stepIndex - 1, true);
+        const finalIndex = await this.findStep(stepIndex - 1, true);
+        return returnValue(finalIndex, stepIndex);
     }
     async gotoInitialStep() {
         let step = this.step;
