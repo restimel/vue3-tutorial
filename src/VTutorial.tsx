@@ -256,8 +256,8 @@ export default class VTutorial extends Vue<Props> {
                          */
                         isSkipped = step.status.skipped ?? await step.checkSkipped();
                     }
+                    iterationLeft--;
                 } while (isSkipped);
-                iterationLeft--;
             };
         } catch (err) {
             error(202, {
