@@ -25,6 +25,7 @@ const errorMap: TutorialErrorCodes = {
     20: 'Step mounted',
     21: 'Step unmounted',
     22: 'Step changed',
+    24: 'Fetch elements',
     25: 'Target elements change',
     26: 'DOM elements targeted',
     27: 'No elements found',

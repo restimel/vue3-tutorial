@@ -211,7 +211,9 @@ export default class VTutorial extends Vue<Props> {
 
     @Watch('step', { immediate: true })
     protected onStepChange() {
-        this.gotoInitialStep();
+        if (this.isRunning) {
+            this.gotoInitialStep();
+        }
     }
 
     /* }}} */
