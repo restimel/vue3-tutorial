@@ -28,6 +28,7 @@ const errorMap: TutorialErrorCodes = {
     25: 'Target elements change',
     26: 'DOM elements targeted',
     27: 'No elements found',
+    28: 'Move to step',
 
     /* 1xx : info */
     /* 2xx : warning */

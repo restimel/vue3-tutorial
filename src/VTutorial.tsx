@@ -279,6 +279,18 @@ export default class VTutorial extends Vue<Props> {
     private async getIndex(target: StepMovement, oldIndex: number): Promise<number> {
         let targetStep: TargetStep;
 
+        const returnValue = (finalValue: number, targetValue = finalValue, info = ''): number => {
+            debug(28, this.tutorialOptions, {
+                oldIndex,
+                newIndex: finalValue,
+                targetIndex: targetValue,
+                target: targetStep,
+                info,
+            });
+
+            return finalValue;
+        };
+
         if (typeof target === 'function') {
             targetStep = await Promise.resolve(target({
                 currentIndex: this.currentIndex,
@@ -294,11 +306,13 @@ export default class VTutorial extends Vue<Props> {
 
             if (targetIndex >= this.steps.length) {
                 this.stop(this.nbTotalSteps > 0);
-                return -1;
+                return returnValue(-1, targetIndex, 'out of steps range');
             }
 
             /* assert that given step is not skipped */
-            return this.findStep(targetIndex - 1, true);
+            const finalIndex = await this.findStep(targetIndex - 1, true);
+
+            return returnValue(finalIndex, targetIndex);
         }
 
         if (typeof targetStep !== 'string') {
@@ -307,7 +321,7 @@ export default class VTutorial extends Vue<Props> {
                 value: targetStep,
                 expected: 'TargetStep (string | number)',
             });
-            return -1;
+            return returnValue(-1, -1, 'wrong target step type');
         }
 
         const firstChar = targetStep[0];
@@ -317,7 +331,7 @@ export default class VTutorial extends Vue<Props> {
             const value = getPositiveInteger(rawValue, 1);
             const targetIndex = await this.findStep(oldIndex, upDirection, value);
 
-            return targetIndex;
+            return returnValue(targetIndex, oldIndex + +target);
         }
 
         /* Search for a step which has the given name */
@@ -330,11 +344,13 @@ export default class VTutorial extends Vue<Props> {
                 nbTotalSteps: this.nbTotalSteps,
                 index: targetStep,
             });
-            return -1;
+            return returnValue(-1, stepIndex, 'name not found');
         }
 
         /* assert that given step is not skipped */
-        return this.findStep(stepIndex - 1, true);
+        const finalIndex = await this.findStep(stepIndex - 1, true);
+
+        return returnValue(finalIndex, stepIndex);
     }
 
     private async gotoInitialStep(): Promise<number> {
