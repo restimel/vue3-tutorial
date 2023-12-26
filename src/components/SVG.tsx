@@ -50,15 +50,18 @@ export default class SVG extends Vue<Props> {
     /* }}} */
 
     public render() {
-        return h('svg', {
-            style: this.style,
-            height: this.height,
-            width: this.width,
-            viewbox: this.viewBox,
-        }, [
-            h('path', {
-                d: this.path,
-            }),
-        ]);
+        return (
+            <svg
+                style={this.style}
+                width={this.width}
+                height={this.height}
+                viewBox={this.viewBox}
+                xmlns="http://www.w3.org/2000/svg"
+            >
+                <path
+                    d={this.path}
+                />
+            </svg>
+        );
     }
 }

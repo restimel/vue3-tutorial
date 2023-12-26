@@ -108,19 +108,21 @@ export default class SVG extends Vue<Props> {
     /* }}} */
 
     public render() {
-        return h('svg', {
-            style: this.style,
-            height: this.height,
-            width: this.width,
-            viewbox: this.viewBox,
-            'xmlns:xlink': 'http://www.w3.org/1999/xlink',
-            class: 'vue3-tutorial__svg-mask',
-        }, [
-            h('path', {
-                d: this.path,
-                style: this.maskStyle,
-                class: 'vue3-tutorial__mask',
-            }),
-        ]);
+        return (
+            <svg
+                style={this.style}
+                width={this.width}
+                height={this.height}
+                viewBox={this.viewBox}
+                xmlns="http://www.w3.org/2000/svg"
+                class="vue3-tutorial__svg-mask"
+            >
+                <path
+                    d={this.path}
+                    style={this.maskStyle}
+                    class="vue3-tutorial__mask"
+                />
+            </svg>
+        );
     }
 }
