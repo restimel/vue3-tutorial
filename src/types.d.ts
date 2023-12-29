@@ -15,7 +15,8 @@ export type Dictionary = {
     stepState: string;
 }
 
-export type Placement = 'auto' | 'top' | 'bottom' | 'left' | 'right' | 'center' | 'hidden';
+export type AbsolutePlacement = 'top' | 'bottom' | 'left' | 'right' | 'center';
+export type Placement = AbsolutePlacement | 'auto' | 'hidden';
 
 export type BindingAction = 'next' | 'previous' | 'skip';
 export type Binding = {
@@ -31,6 +32,8 @@ export type Rect = [number, number, number, number];
 /** [x1, y1, x2, y2, hiddenPosition] */
 export type BoxNotEmpty = [number, number, number, number, HiddenPosition];
 export type Box = BoxNotEmpty | [];
+/** [width, height] */
+export type Dimension = [number, number];
 
 /** [style X, style Y, orientation] */
 export type Position = [string, string, Placement];

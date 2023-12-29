@@ -10,3 +10,4 @@
 
 Code documentation :wrench:
 * [Box update](./technical-box-update.md)
+* [Window position](./technical-window-position.md)

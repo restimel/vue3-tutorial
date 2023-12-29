@@ -5,7 +5,9 @@
 import error from './errors';
 
 import {
+    AbsolutePlacement,
     BoxNotEmpty,
+    Dimension,
     ErrorDetails,
     ErrorSelectorPurpose,
     Placement,
@@ -15,6 +17,8 @@ import {
     SelectorElements,
 } from '../types.d';
 import { getRectCenter } from './geometry';
+
+const BOX_MARGIN = 25;
 
 /** merge deeply an object in another one. */
 export function merge<A extends object, B extends object>(target: A, source: B, list = new Map()): A & B {
@@ -117,6 +121,10 @@ export type GetElementsAsyncOptions = GetElementsSyncOptions & AsyncOptions
 export type GetElementOptions = GetElementSyncOptions | GetElementAsyncOptions
     | GetElementsSyncOptions | GetElementsAsyncOptions;
 
+/** GetElement is to retrieve 1 element from the DOM and may await this
+ * element to be in the DOM (depending on options).
+ * Results are stored in cache to avoid waiting again for the next similar
+ * request. Cache should be reset if DOM is changed.*/
 export function getElement(query: string, options: GetElementSyncOptions): SelectorElement;
 export function getElement(query: string, options: GetElementAsyncOptions): Promise<SelectorElement>;
 export function getElement(query: string, options: GetElementsSyncOptions): SelectorElements;
@@ -211,6 +219,9 @@ function isHidden(rect: DOMRect): 'visible' | 'hidden' {
     return 'visible';
 }
 
+/** Compute the visible box of the element.
+ * If the element is not visible, the box is the parent box (and the 5th index
+ * indicate where is the element from the parent box) */
 export function getBox(el: HTMLElement, memo: WeakMap<HTMLElement, BoxNotEmpty>, {
     isParent = false,
     getParentBox = false,
@@ -329,6 +340,7 @@ export function getBox(el: HTMLElement, memo: WeakMap<HTMLElement, BoxNotEmpty>,
     return box;
 }
 
+/** Re-position the window inside the screen */
 export function getPosition(box: BoxNotEmpty, realPosition: Placement): Position {
     const screenHeight = innerHeight;
     const screenWidth = innerWidth;
@@ -365,7 +377,56 @@ export function getPosition(box: BoxNotEmpty, realPosition: Placement): Position
     return [x, y, realPosition];
 }
 
-export function getPlacement(targetBox: Rect, refBox?: Rect): Placement {
+export function getAutoPlacement(targetBox: BoxNotEmpty, elementSize: Dimension): AbsolutePlacement {
+    /* check where there are enough spaces */
+    const [elWidth, elHeight] = elementSize;
+    const screenHeight = innerHeight;
+    const screenWidth = innerWidth;
+    const worstPosition = {
+        bottom: 0,
+        top: 1,
+        right: 2,
+        left: 3,
+    };
+
+    if (targetBox[3] + BOX_MARGIN + elHeight > screenHeight) {
+        worstPosition.bottom += 100;
+    }
+
+    if (targetBox[1] - BOX_MARGIN - elHeight < 0) {
+        worstPosition.top += 100;
+    }
+
+    if (targetBox[2] + BOX_MARGIN + elWidth > screenWidth) {
+        worstPosition.right += 100;
+    }
+
+    if (targetBox[0] - BOX_MARGIN - elWidth < 0) {
+        worstPosition.left += 100;
+    }
+
+    /* TODO check superposition with other target */
+
+    let choice: AbsolutePlacement = 'bottom';
+    let currentValue = worstPosition.bottom;
+
+    if (worstPosition.top < currentValue) {
+        currentValue = worstPosition.top;
+        choice = 'top';
+    }
+    if (worstPosition.right < currentValue) {
+        currentValue = worstPosition.right;
+        choice = 'right';
+    }
+    if (worstPosition.left < currentValue) {
+        currentValue = worstPosition.left;
+        choice = 'left';
+    }
+
+    return choice;
+}
+
+export function getDirection(targetBox: Rect, refBox?: Rect): Placement {
     /* The placement is the direction from the refBox to the targetBox
      */
 

@@ -7,9 +7,11 @@ import SVG from './SVG';
 import Mask from './SVGmask';
 import {
     emptyArray,
+    getAutoPlacement,
     getPosition,
 } from '../tools/tools';
 import {
+    AbsolutePlacement,
     ArrowPosition,
     Box,
     BoxNotEmpty,
@@ -27,8 +29,6 @@ export interface Props {
     maskMargin?: number;
     teleport?: HTMLElement | boolean
 }
-
-const BOX_MARGIN = 25;
 
 @Component
 export default class Window extends Vue<Props> {
@@ -54,6 +54,7 @@ export default class Window extends Vue<Props> {
     /* }}} */
     /* {{{ data */
 
+    /** The dimension of the window element */
     private elementSize: [number, number] = [0, 0];
     private timerSizeRefresh = 0;
 
@@ -64,7 +65,8 @@ export default class Window extends Vue<Props> {
         return this.elementsBox[0];
     }
 
-    get realPosition(): Placement {
+    /** Transform 'auto' into a Placement value */
+    get realPosition(): AbsolutePlacement {
         const position = this.position;
 
         if (position !== 'auto' && position !== 'hidden') {
@@ -76,52 +78,7 @@ export default class Window extends Vue<Props> {
             return 'center';
         }
 
-        /* check where there are enough spaces */
-        const [elWidth, elHeight] = this.elementSize;
-        const screenHeight = innerHeight;
-        const screenWidth = innerWidth;
-        const worstPosition = {
-            bottom: 0,
-            top: 1,
-            right: 2,
-            left: 3,
-        };
-
-        if (box[3] + BOX_MARGIN + elHeight > screenHeight) {
-            worstPosition.bottom += 100;
-        }
-
-        if (box[1] - BOX_MARGIN - elHeight < 0) {
-            worstPosition.top += 100;
-        }
-
-        if (box[2] + BOX_MARGIN + elWidth > screenWidth) {
-            worstPosition.right += 100;
-        }
-
-        if (box[0] - BOX_MARGIN - elWidth < 0) {
-            worstPosition.left += 100;
-        }
-
-        /* TODO check superposition with other target */
-
-        let choice: Placement = 'bottom';
-        let currentValue = worstPosition.bottom;
-
-        if (worstPosition.top < currentValue) {
-            currentValue = worstPosition.top;
-            choice = 'top';
-        }
-        if (worstPosition.right < currentValue) {
-            currentValue = worstPosition.right;
-            choice = 'right';
-        }
-        if (worstPosition.left < currentValue) {
-            currentValue = worstPosition.left;
-            choice = 'left';
-        }
-
-        return choice;
+        return getAutoPlacement(box, this.elementSize);
     }
 
     get hasNoPointer(): boolean {
@@ -132,7 +89,7 @@ export default class Window extends Vue<Props> {
 
         if (arrow === true) {
             const boxes = this.elementsBox;
-            return !boxes?.length || !boxes[0].length || !!this.getScrollPosition || this.realPosition === 'center';
+            return !boxes?.length || !boxes[0].length || !!this.scrollPosition || this.realPosition === 'center';
         }
 
         return false;
@@ -146,14 +103,14 @@ export default class Window extends Vue<Props> {
         return getPosition(box, preferredPosition);
     }
 
-    get realWindowPosition(): Placement {
+    get windowPlacement(): Placement {
         if (this.position === 'hidden') {
             return 'hidden';
         }
         return this.computePosition[2];
     }
 
-    get stylePosition(): string {
+    get styleWindowCoords(): string {
         let [x, y, placement] = this.computePosition;
         const [elWidth, elHeight] = this.elementSize;
 
@@ -198,7 +155,7 @@ export default class Window extends Vue<Props> {
 
     /* {{{ scroll */
 
-    get getScrollPosition(): Position | undefined {
+    get scrollPosition(): Position | undefined {
         const box = this.mainBoxElement;
         const hiddenPosition = box?.[4];
 
@@ -210,9 +167,9 @@ export default class Window extends Vue<Props> {
     }
 
     get styleScrollPosition(): string {
-        const [x, y, ] = this.getScrollPosition || [];
+        const [x, y, ] = this.scrollPosition || [];
 
-        return `left: ${x}; top: ${y};`;
+        return `--vue3-tutorial-x: ${x}; --vue3-tutorial-y: ${y};`;
     }
 
     get arrowsPosition(): ArrowPosition[] {
@@ -303,45 +260,45 @@ export default class Window extends Vue<Props> {
         return (
             <div class="vue3-tutorial__window-container">
                 {this.mask && (
-                <Mask
-                    targets={this.masksBox as BoxNotEmpty[]}
-                    maskMargin={this.maskMargin}
-                />
+                    <Mask
+                        targets={this.masksBox as BoxNotEmpty[]}
+                        maskMargin={this.maskMargin}
+                    />
                 )}
                 {this.arrowsPosition.map((arrow) => (
-                <SVG
-                    width="15"
-                    height="15"
-                    viewBox="0 0 30 30"
-                    path="M0,0L0,15L5,5L25,30L25,25L30,25L5,5L15,0L0,0Z"
-                    style={`left: ${arrow.x}; top: ${arrow.y};`}
-                    class={[
-                        'vue3-tutorial__window-arrow',
-                        'position-' + arrow.position,
-                        arrowAnimation ? 'animation' : '',
-                    ]}
-                />
+                    <SVG
+                        width="15"
+                        height="15"
+                        viewBox="0 0 30 30"
+                        path="M0,0L0,15L5,5L25,30L25,25L30,25L5,5L15,0L0,0Z"
+                        style={`--vue3-tutorial-x: ${arrow.x}; --vue3-tutorial-y: ${arrow.y};`}
+                        class={[
+                            'vue3-tutorial__window-arrow',
+                            'position-' + arrow.position,
+                            arrowAnimation ? 'animation' : '',
+                        ]}
+                    />
                 ))}
-                {!!this.getScrollPosition && (
-                <SVG
-                    width="30"
-                    height="30"
-                    viewBox="0 0 30 30"
-                    path="M0,0L0,15L7,7L10,30L30,10L7,7L15,0L0,0Z"
-                    style={this.styleScrollPosition}
-                    class={[
-                        'vue3-tutorial__window-scroll-arrow',
-                        'position-' + this.getScrollPosition[2],
-                        this.arrowAnimation ? 'animation' : '',
-                    ]}
-                />
+                {!!this.scrollPosition && (
+                    <SVG
+                        width="30"
+                        height="30"
+                        viewBox="0 0 30 30"
+                        path="M0,0L0,15L7,7L10,30L30,10L7,7L15,0L0,0Z"
+                        style={this.styleScrollPosition}
+                        class={[
+                            'vue3-tutorial__window-scroll-arrow',
+                            'position-' + this.scrollPosition[2],
+                            this.arrowAnimation ? 'animation' : '',
+                        ]}
+                    />
                 )}
 
                 <div
-                    style={this.stylePosition}
+                    style={this.styleWindowCoords}
                     class={[
                         'vue3-tutorial__window',
-                        'position-' + this.realWindowPosition,
+                        'position-' + this.windowPlacement,
                     ]}
                     ref="modalWindow"
                 >

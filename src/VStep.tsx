@@ -45,7 +45,7 @@ import {
     getElement,
     getBox,
     getPosition,
-    getPlacement,
+    getDirection,
     shallowSetCopy,
 } from './tools/tools';
 
@@ -658,7 +658,7 @@ export default class VStep extends Vue<Props> {
 
             for (const element of listElements) {
                 const box = getBox(element, memo);
-                const placement = getPlacement(box as unknown as Rect);
+                const placement = getDirection(box as unknown as Rect);
                 const [x, y, position] = getPosition(box, placement);
                 positionList.push({ x, y, position });
             }

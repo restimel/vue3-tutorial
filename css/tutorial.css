@@ -117,6 +117,9 @@
     z-index: calc(var(--vue3-tutorial-zindex) + 10);
     fill: var(--vue3-tutorial-brand-primary);
     stroke: var(--vue3-tutorial-brand-secondary);
+
+    left: var(--vue3-tutorial-x);
+    top: var(--vue3-tutorial-y);
 }
 .vue3-tutorial__window-arrow.animation,
 .vue3-tutorial__window-scroll-arrow.animation {
