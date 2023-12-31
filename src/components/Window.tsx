@@ -6,6 +6,7 @@ import {Vue, Component, Prop, h, Watch} from 'vtyx';
 import SVG from './SVG';
 import Mask from './SVGmask';
 import {
+    BOX_MARGIN,
     emptyArray,
     getAutoPlacement,
     getPosition,
@@ -113,23 +114,70 @@ export default class Window extends Vue<Props> {
     get styleWindowCoords(): string {
         let [x, y, placement] = this.computePosition;
         const [elWidth, elHeight] = this.elementSize;
+        const screenHeight = innerHeight;
+        const screenWidth = innerWidth;
+
+        const valX = parseFloat(x);
+        const valY = parseFloat(y);
 
         switch (placement) {
             case 'center':
             case 'hidden':
                 break;
             case 'bottom':
+                /* check if window is outside screen (placement direction) */
+                if (valY + elHeight + BOX_MARGIN > screenHeight) {
+                    y = screenHeight - (elHeight + BOX_MARGIN) + 'px';
+                }
+
+                /* check if window is outside screen (perpendicular side) */
+                if (valX + elWidth / 2 + BOX_MARGIN > screenWidth) {
+                    x = screenWidth - (elWidth / 2 + BOX_MARGIN) + 'px';
+                } else
+                if (valX - elWidth / 2 < BOX_MARGIN) {
+                    x = (BOX_MARGIN + elWidth / 2) + 'px';
+                }
+                break;
             case 'top':
-                const valX = parseInt(x, 10);
-                if (valX < elWidth / 2) {
-                    x = elWidth / 2 + 'px';
+                /* check if window is outside screen (placement direction) */
+                if (valY - elHeight < BOX_MARGIN) {
+                    y = (BOX_MARGIN + elHeight) + 'px';
+                }
+
+                /* check if window is outside screen (perpendicular side) */
+                if (valX + elWidth / 2 + BOX_MARGIN > screenWidth) {
+                    x = screenWidth - (elWidth / 2 + BOX_MARGIN) + 'px';
+                } else
+                if (valX - elWidth / 2 < BOX_MARGIN) {
+                    x = (BOX_MARGIN + elWidth / 2) + 'px';
+                }
+                break;
+            case 'right':
+                /* check if window is outside screen (placement direction) */
+                if (valX + elWidth + BOX_MARGIN > screenWidth) {
+                    x = screenWidth - (elWidth + BOX_MARGIN) + 'px';
+                }
+
+                /* check if window is outside screen (perpendicular side) */
+                if (valY + elHeight / 2 + BOX_MARGIN > screenHeight) {
+                    y = screenHeight - (elHeight / 2 + BOX_MARGIN) + 'px';
+                } else
+                if (valY - elHeight / 2 < BOX_MARGIN) {
+                    y = (BOX_MARGIN + elHeight / 2) + 'px';
                 }
                 break;
             case 'left':
-            case 'right':
-                const valY = parseInt(y, 10);
-                if (valY < elHeight / 2) {
-                    y = elHeight / 2 + 'px';
+                /* check if window is outside screen (placement direction) */
+                if (valX - elWidth < BOX_MARGIN) {
+                    x = (BOX_MARGIN + elWidth) + 'px';
+                }
+
+                /* check if window is outside screen (perpendicular side) */
+                if (valY + elHeight / 2 + BOX_MARGIN > screenHeight) {
+                    y = screenHeight - (elHeight / 2 + BOX_MARGIN) + 'px';
+                } else
+                if (valY - elHeight / 2 < BOX_MARGIN) {
+                    y = (BOX_MARGIN + elHeight / 2) + 'px';
                 }
                 break;
         }

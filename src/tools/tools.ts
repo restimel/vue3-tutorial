@@ -18,7 +18,7 @@ import {
 } from '../types.d';
 import { getRectCenter } from './geometry';
 
-const BOX_MARGIN = 25;
+export const BOX_MARGIN = 25;
 
 /** merge deeply an object in another one. */
 export function merge<A extends object, B extends object>(target: A, source: B, list = new Map()): A & B {
@@ -347,23 +347,24 @@ export function getPosition(box: BoxNotEmpty, realPosition: Placement): Position
 
     let x: string;
     let y: string;
+    const [boxX1, boxY1, boxX2, boxY2] = box ?? emptyArray;
 
     switch (realPosition) {
         case 'bottom':
-            x = minMaxValue((box[0] + box[2]) / 2, 0, screenWidth) + 'px';
-            y = minMaxValue(box[3], 0, screenHeight) + 'px';
+            x = minMaxValue((boxX1 + boxX2 ) / 2, 0, screenWidth) + 'px';
+            y = minMaxValue(boxY2, 0, screenHeight) + 'px';
             break;
         case 'top':
-            x = minMaxValue((box[0] + box[2]) / 2, 0, screenWidth) + 'px';
-            y = minMaxValue(box[1], 0, screenHeight) + 'px';
+            x = minMaxValue((boxX1 + boxX2) / 2, 0, screenWidth) + 'px';
+            y = minMaxValue(boxY1, 0, screenHeight) + 'px';
             break;
         case 'left':
-            x = minMaxValue(box[0], 0, screenWidth) + 'px';
-            y = minMaxValue((box[1] + box[3]) / 2, 0, screenHeight) + 'px';
+            x = minMaxValue(boxX1, 0, screenWidth) + 'px';
+            y = minMaxValue((boxY1 + boxY2) / 2, 0, screenHeight) + 'px';
             break;
         case 'right':
-            x = minMaxValue(box[2], 0, screenWidth) + 'px';
-            y = minMaxValue((box[1] + box[3]) / 2, 0, screenHeight) + 'px';
+            x = minMaxValue(boxX2, 0, screenWidth) + 'px';
+            y = minMaxValue((boxY1 + boxY2) / 2, 0, screenHeight) + 'px';
             break;
         case 'auto':
         case 'center':
@@ -382,48 +383,72 @@ export function getAutoPlacement(targetBox: BoxNotEmpty, elementSize: Dimension)
     const [elWidth, elHeight] = elementSize;
     const screenHeight = innerHeight;
     const screenWidth = innerWidth;
-    const worstPosition = {
-        bottom: 0,
-        top: 1,
-        right: 2,
-        left: 3,
-    };
+    const [targetX1, targetY1, targetX2, targetY2] = targetBox;
 
-    if (targetBox[3] + BOX_MARGIN + elHeight > screenHeight) {
-        worstPosition.bottom += 100;
+    const enoughSpaceBottom = targetY2 + BOX_MARGIN + elHeight < screenHeight;
+    const enoughSpaceTop = targetY1 - BOX_MARGIN - elHeight > 0;
+    const enoughSpaceRight = targetX2 + BOX_MARGIN + elWidth < screenWidth;
+    const enoughSpaceLeft = targetX1 - BOX_MARGIN - elWidth > 0;
+
+    /* Case 1: window is smaller than the target */
+    if (elWidth < targetX2 - targetX1) {
+        if (enoughSpaceBottom) {
+            return 'bottom';
+        }
+        if (enoughSpaceTop) {
+            return 'top';
+        }
+    }
+    if (elHeight < targetY2 - targetY1) {
+        if (enoughSpaceRight) {
+            return 'right';
+        }
+        if (enoughSpaceLeft) {
+            return 'left';
+        }
     }
 
-    if (targetBox[1] - BOX_MARGIN - elHeight < 0) {
-        worstPosition.top += 100;
+    /* Case 2: window is smaller than the target */
+    const elX1 = targetX1 + (targetX2 - targetX1 - elWidth) / 2;
+    const elX2 = elX1 + elWidth;
+
+    if (elX1 > 0 && elX2 < screenWidth) {
+        if (enoughSpaceBottom) {
+            return 'bottom';
+        }
+        if (enoughSpaceTop) {
+            return 'top';
+        }
     }
 
-    if (targetBox[2] + BOX_MARGIN + elWidth > screenWidth) {
-        worstPosition.right += 100;
+    const elY1 = targetY1 + (targetY2 - targetY1 - elHeight) / 2;
+    const elY2 = elY1 + elWidth;
+
+    if (elY1 > 0 && elY2 < screenHeight) {
+        if (enoughSpaceRight) {
+            return 'right';
+        }
+        if (enoughSpaceLeft) {
+            return 'left';
+        }
     }
 
-    if (targetBox[0] - BOX_MARGIN - elWidth < 0) {
-        worstPosition.left += 100;
+    /* Case 3 & 4: window cannot be placed exactly centered with target */
+    if (enoughSpaceBottom) {
+        return 'bottom';
+    }
+    if (enoughSpaceTop) {
+        return 'top';
+    }
+    if (enoughSpaceRight) {
+        return 'right';
+    }
+    if (enoughSpaceLeft) {
+        return 'left';
     }
 
-    /* TODO check superposition with other target */
-
-    let choice: AbsolutePlacement = 'bottom';
-    let currentValue = worstPosition.bottom;
-
-    if (worstPosition.top < currentValue) {
-        currentValue = worstPosition.top;
-        choice = 'top';
-    }
-    if (worstPosition.right < currentValue) {
-        currentValue = worstPosition.right;
-        choice = 'right';
-    }
-    if (worstPosition.left < currentValue) {
-        currentValue = worstPosition.left;
-        choice = 'left';
-    }
-
-    return choice;
+    /* Case 5: There is not enough space */
+    return 'center';
 }
 
 export function getDirection(targetBox: Rect, refBox?: Rect): Placement {
