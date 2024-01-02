@@ -9,13 +9,15 @@ import {
     BOX_MARGIN,
     emptyArray,
     getAutoPlacement,
-    getPosition,
+    getAnchorPoint,
+    keepInsideScreen,
 } from '../tools/tools';
 import {
     AbsolutePlacement,
     ArrowPosition,
     Box,
     BoxNotEmpty,
+    Dimension,
     Placement,
     Position,
 } from '../types.d';
@@ -56,7 +58,7 @@ export default class Window extends Vue<Props> {
     /* {{{ data */
 
     /** The dimension of the window element */
-    private elementSize: [number, number] = [0, 0];
+    private elementSize: Dimension = [0, 0];
     private timerSizeRefresh = 0;
 
     /* }}} */
@@ -101,86 +103,19 @@ export default class Window extends Vue<Props> {
         const realPosition = this.realPosition;
         const preferredPosition = !box || box[4] !== 'visible' ? 'center' : realPosition;
 
-        return getPosition(box, preferredPosition);
+        return getAnchorPoint(box, preferredPosition);
     }
 
     get windowPlacement(): Placement {
         if (this.position === 'hidden') {
             return 'hidden';
         }
+
         return this.computePosition[2];
     }
 
     get styleWindowCoords(): string {
-        let [x, y, placement] = this.computePosition;
-        const [elWidth, elHeight] = this.elementSize;
-        const screenHeight = innerHeight;
-        const screenWidth = innerWidth;
-
-        const valX = parseFloat(x);
-        const valY = parseFloat(y);
-
-        switch (placement) {
-            case 'center':
-            case 'hidden':
-                break;
-            case 'bottom':
-                /* check if window is outside screen (placement direction) */
-                if (valY + elHeight + BOX_MARGIN > screenHeight) {
-                    y = screenHeight - (elHeight + BOX_MARGIN) + 'px';
-                }
-
-                /* check if window is outside screen (perpendicular side) */
-                if (valX + elWidth / 2 + BOX_MARGIN > screenWidth) {
-                    x = screenWidth - (elWidth / 2 + BOX_MARGIN) + 'px';
-                } else
-                if (valX - elWidth / 2 < BOX_MARGIN) {
-                    x = (BOX_MARGIN + elWidth / 2) + 'px';
-                }
-                break;
-            case 'top':
-                /* check if window is outside screen (placement direction) */
-                if (valY - elHeight < BOX_MARGIN) {
-                    y = (BOX_MARGIN + elHeight) + 'px';
-                }
-
-                /* check if window is outside screen (perpendicular side) */
-                if (valX + elWidth / 2 + BOX_MARGIN > screenWidth) {
-                    x = screenWidth - (elWidth / 2 + BOX_MARGIN) + 'px';
-                } else
-                if (valX - elWidth / 2 < BOX_MARGIN) {
-                    x = (BOX_MARGIN + elWidth / 2) + 'px';
-                }
-                break;
-            case 'right':
-                /* check if window is outside screen (placement direction) */
-                if (valX + elWidth + BOX_MARGIN > screenWidth) {
-                    x = screenWidth - (elWidth + BOX_MARGIN) + 'px';
-                }
-
-                /* check if window is outside screen (perpendicular side) */
-                if (valY + elHeight / 2 + BOX_MARGIN > screenHeight) {
-                    y = screenHeight - (elHeight / 2 + BOX_MARGIN) + 'px';
-                } else
-                if (valY - elHeight / 2 < BOX_MARGIN) {
-                    y = (BOX_MARGIN + elHeight / 2) + 'px';
-                }
-                break;
-            case 'left':
-                /* check if window is outside screen (placement direction) */
-                if (valX - elWidth < BOX_MARGIN) {
-                    x = (BOX_MARGIN + elWidth) + 'px';
-                }
-
-                /* check if window is outside screen (perpendicular side) */
-                if (valY + elHeight / 2 + BOX_MARGIN > screenHeight) {
-                    y = screenHeight - (elHeight / 2 + BOX_MARGIN) + 'px';
-                } else
-                if (valY - elHeight / 2 < BOX_MARGIN) {
-                    y = (BOX_MARGIN + elHeight / 2) + 'px';
-                }
-                break;
-        }
+        const [x, y] = keepInsideScreen(this.computePosition, this.elementSize);
 
         return `--vue3-tutorial-x: ${x}; --vue3-tutorial-y: ${y};`;
     }
@@ -211,7 +146,7 @@ export default class Window extends Vue<Props> {
             return;
         }
 
-        return getPosition(box as BoxNotEmpty, hiddenPosition);
+        return getAnchorPoint(box as BoxNotEmpty, hiddenPosition);
     }
 
     get styleScrollPosition(): string {

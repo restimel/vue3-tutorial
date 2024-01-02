@@ -340,8 +340,8 @@ export function getBox(el: HTMLElement, memo: WeakMap<HTMLElement, BoxNotEmpty>,
     return box;
 }
 
-/** Re-position the window inside the screen */
-export function getPosition(box: BoxNotEmpty, realPosition: Placement): Position {
+/** Coordinates of the anchor related to the target */
+export function getAnchorPoint(box: BoxNotEmpty, realPosition: Placement): Position {
     const screenHeight = innerHeight;
     const screenWidth = innerWidth;
 
@@ -378,6 +378,7 @@ export function getPosition(box: BoxNotEmpty, realPosition: Placement): Position
     return [x, y, realPosition];
 }
 
+/** Replace the 'auto' value with a better placement */
 export function getAutoPlacement(targetBox: BoxNotEmpty, elementSize: Dimension): AbsolutePlacement {
     /* check where there are enough spaces */
     const [elWidth, elHeight] = elementSize;
@@ -449,6 +450,81 @@ export function getAutoPlacement(targetBox: BoxNotEmpty, elementSize: Dimension)
 
     /* Case 5: There is not enough space */
     return 'center';
+}
+
+/** Move position to keep element inside the screen */
+export function keepInsideScreen(position: Position, elementSize: Dimension): Position {
+    let [x, y, placement] = position;
+    const [elWidth, elHeight] = elementSize;
+    const screenHeight = innerHeight;
+    const screenWidth = innerWidth;
+
+    const valX = parseFloat(x);
+    const valY = parseFloat(y);
+
+    switch (placement) {
+        case 'center':
+        case 'hidden':
+            break;
+        case 'bottom':
+            /* check if window is outside screen (placement direction) */
+            if (valY + elHeight + BOX_MARGIN > screenHeight) {
+                y = screenHeight - (elHeight + BOX_MARGIN) + 'px';
+            }
+
+            /* check if window is outside screen (perpendicular side) */
+            if (valX + elWidth / 2 + BOX_MARGIN > screenWidth) {
+                x = screenWidth - (elWidth / 2 + BOX_MARGIN) + 'px';
+            } else
+            if (valX - elWidth / 2 < BOX_MARGIN) {
+                x = (BOX_MARGIN + elWidth / 2) + 'px';
+            }
+            break;
+        case 'top':
+            /* check if window is outside screen (placement direction) */
+            if (valY - elHeight < BOX_MARGIN) {
+                y = (BOX_MARGIN + elHeight) + 'px';
+            }
+
+            /* check if window is outside screen (perpendicular side) */
+            if (valX + elWidth / 2 + BOX_MARGIN > screenWidth) {
+                x = screenWidth - (elWidth / 2 + BOX_MARGIN) + 'px';
+            } else
+            if (valX - elWidth / 2 < BOX_MARGIN) {
+                x = (BOX_MARGIN + elWidth / 2) + 'px';
+            }
+            break;
+        case 'right':
+            /* check if window is outside screen (placement direction) */
+            if (valX + elWidth + BOX_MARGIN > screenWidth) {
+                x = screenWidth - (elWidth + BOX_MARGIN) + 'px';
+            }
+
+            /* check if window is outside screen (perpendicular side) */
+            if (valY + elHeight / 2 + BOX_MARGIN > screenHeight) {
+                y = screenHeight - (elHeight / 2 + BOX_MARGIN) + 'px';
+            } else
+            if (valY - elHeight / 2 < BOX_MARGIN) {
+                y = (BOX_MARGIN + elHeight / 2) + 'px';
+            }
+            break;
+        case 'left':
+            /* check if window is outside screen (placement direction) */
+            if (valX - elWidth < BOX_MARGIN) {
+                x = (BOX_MARGIN + elWidth) + 'px';
+            }
+
+            /* check if window is outside screen (perpendicular side) */
+            if (valY + elHeight / 2 + BOX_MARGIN > screenHeight) {
+                y = screenHeight - (elHeight / 2 + BOX_MARGIN) + 'px';
+            } else
+            if (valY - elHeight / 2 < BOX_MARGIN) {
+                y = (BOX_MARGIN + elHeight / 2) + 'px';
+            }
+            break;
+    }
+
+    return [x, y, placement];
 }
 
 export function getDirection(targetBox: Rect, refBox?: Rect): Placement {

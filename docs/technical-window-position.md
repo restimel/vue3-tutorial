@@ -13,6 +13,7 @@ should be changed only when step is changed).
 
 First, `computePosition` is evaluated to find the best anchor coordinates
 related to the target element.
+_The "anchor" is the point to which elements like the arrow or window are pointing to._
 
 From this value, arrow coordinates and window coordinates are evaluated.
 
@@ -36,8 +37,8 @@ space to display the window at the left/right/top/bottom.
 
 **case 5**: There is not enough space around the target.
 
-First we check the _case 1_ is any position fit. Then we check next _case_
+First we check the _case 1_ if any position fits. Then we check next _case_
 until _case 5_.
 
-For each case, the position order is check with `bottom`, `top`, `right` and
-finally `left`.
+For each case, the position is checked with this order `bottom`, `top`,
+`right` and finally `left`.
