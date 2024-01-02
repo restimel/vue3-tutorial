@@ -2,7 +2,7 @@
 
 [Back to main page](./main.md)
 
-:wrench: Code Documentation: This page is a technical reference for developers working on the project. It is not a configuration guide.
+:wrench: **Code Documentation: This page is a technical reference for developers working on the project. It is not a configuration guide.**
 
 ![workflow](./images/workflow-box-update.drawio.png)
 

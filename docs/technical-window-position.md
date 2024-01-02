@@ -2,7 +2,7 @@
 
 [Back to main page](./main.md)
 
-:wrench: Code Documentation: This page is a technical reference for developers working on the project. It is not a configuration guide.
+:wrench: **Code Documentation: This page is a technical reference for developers working on the project. It is not a configuration guide.**
 
 ![workflow](./images/workflow-window-position.drawio.png)
 
@@ -33,7 +33,7 @@ The position will depend on the available space around the target.
 around
 
 **case 3 & 4**: the window is greater than the target but there is not enough
-space to display the window at the left/right/top/bottom.
+space to display the window at a side direction (left/right/top/bottom).
 
 **case 5**: There is not enough space around the target.
 
@@ -42,3 +42,16 @@ until _case 5_.
 
 For each case, the position is checked with this order `bottom`, `top`,
 `right` and finally `left`.
+
+### multiple targets
+
+:warning: _**This is not handle yet.**_
+
+What is expected:
+![workflow](./images/position-multi-targets.drawio.png)
+
+If the window can be placed (regarding previous rules) without overlapping then choose this placement.
+
+If no placements match choose a placement considering only main target.
+
+If there is still no matching placement, choose the `center` placement.
