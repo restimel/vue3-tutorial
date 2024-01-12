@@ -1,4 +1,5 @@
-import { BoxNotEmpty, ErrorDetails, ErrorSelectorPurpose, Placement, Position, Rect, SelectorElement, SelectorElements } from '../types.d';
+import { AbsolutePlacement, BoxNotEmpty, Dimension, ErrorDetails, ErrorSelectorPurpose, Placement, Position, Rect, SelectorElement, SelectorElements } from '../types.d';
+export declare const BOX_MARGIN = 25;
 /** merge deeply an object in another one. */
 export declare function merge<A extends object, B extends object>(target: A, source: B, list?: Map<any, any>): A & B;
 /** Copy Set values into another Set */
@@ -25,16 +26,28 @@ declare type GetElementAsyncOptions = GetElementSyncOptions & AsyncOptions;
 declare type GetElementsSyncOptions = SyncOptions & GetAllElements;
 export declare type GetElementsAsyncOptions = GetElementsSyncOptions & AsyncOptions;
 export declare type GetElementOptions = GetElementSyncOptions | GetElementAsyncOptions | GetElementsSyncOptions | GetElementsAsyncOptions;
+/** GetElement is to retrieve 1 element from the DOM and may await this
+ * element to be in the DOM (depending on options).
+ * Results are stored in cache to avoid waiting again for the next similar
+ * request. Cache should be reset if DOM is changed.*/
 export declare function getElement(query: string, options: GetElementSyncOptions): SelectorElement;
 export declare function getElement(query: string, options: GetElementAsyncOptions): Promise<SelectorElement>;
 export declare function getElement(query: string, options: GetElementsSyncOptions): SelectorElements;
 export declare function getElement(query: string, options: GetElementsAsyncOptions): Promise<SelectorElements>;
+/** Compute the visible box of the element.
+ * If the element is not visible, the box is the parent box (and the 5th index
+ * indicate where is the element from the parent box) */
 export declare function getBox(el: HTMLElement, memo: WeakMap<HTMLElement, BoxNotEmpty>, { isParent, getParentBox, }?: {
     isParent?: boolean | undefined;
     getParentBox?: boolean | undefined;
 }): BoxNotEmpty;
-export declare function getPosition(box: BoxNotEmpty, realPosition: Placement): Position;
-export declare function getPlacement(targetBox: Rect, refBox?: Rect): Placement;
+/** Coordinates of the anchor related to the target */
+export declare function getAnchorPoint(box: BoxNotEmpty, realPosition: Placement): Position;
+/** Replace the 'auto' value with a better placement */
+export declare function getAutoPlacement(targetBox: BoxNotEmpty, elementSize: Dimension): AbsolutePlacement;
+/** Move position to keep element inside the screen */
+export declare function keepInsideScreen(position: Position, elementSize: Dimension): Position;
+export declare function getDirection(targetBox: Rect, refBox?: Rect): Placement;
 /** Add all Parent nodes of an element into a Set.
  *
  * The element itself is also added.

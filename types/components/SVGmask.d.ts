@@ -1,4 +1,4 @@
-import { Vue } from 'vtyx';
+import { Vue, h } from 'vtyx';
 import { BoxNotEmpty, Rect } from '../types.d';
 export interface Props {
     targets: BoxNotEmpty[];
@@ -20,7 +20,5 @@ export default class SVG extends Vue<Props> {
     get path(): string;
     mounted(): void;
     unmounted(): void;
-    render(): import("vue").VNode<import("vue").RendererNode, import("vue").RendererElement, {
-        [key: string]: any;
-    }>;
+    render(): h.JSX.Element;
 }

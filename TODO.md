@@ -6,7 +6,7 @@
     * scrollIntoView
         * scroll only if element is not visible
     * Window
-        * Position when target is too big and there is not enough space outside
+        * movable window
 * documentation
     * README
         * gif
@@ -15,10 +15,6 @@
         * step
             * checkNext
         * split file to avoid having a big file
-    * Live example
-        * create simple tutorial
-        * change highlight color in order to see it on background main color
-            → this may be a common pbl
 * Compare with vue-tour
     * missing feature
     * How to migrate → documentation
@@ -64,7 +60,7 @@
     * Allow user to move the window
     * improve auto placement
         * to avoid to be over secondary targets
-        * to prefer left/right when target is at sides
+        * to allow to change order preference
     * allow to change HTML
     * update position of all targets (when scroll or DOM change)
 * Skip
@@ -79,6 +75,3 @@
         * step
             * checkNext
     * Configuration example (for some usage)
-
-* Bugs
-    - window position with big element which takes all the screen

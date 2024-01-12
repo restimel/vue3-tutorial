@@ -1,5 +1,5 @@
 import { Vue, h } from 'vtyx';
-import { ArrowPosition, Box, Placement, Position } from '../types.d';
+import { AbsolutePlacement, ArrowPosition, Box, Placement, Position } from '../types.d';
 export interface Props {
     elementsBox?: Box[];
     masksBox?: Box[];
@@ -19,17 +19,19 @@ export default class Window extends Vue<Props> {
     private mask;
     private maskMargin;
     private teleport;
+    /** The dimension of the window element */
     private elementSize;
     private timerSizeRefresh;
     get mainBoxElement(): Box;
-    get realPosition(): Placement;
+    /** Transform 'auto' into a Placement value */
+    get realPosition(): AbsolutePlacement;
     get hasNoPointer(): boolean;
     get computePosition(): Position;
-    get realWindowPosition(): Placement;
-    get stylePosition(): string;
+    get windowPlacement(): Placement;
+    get styleWindowCoords(): string;
     get refUpdateSize(): () => void;
     get teleportContainer(): HTMLElement | null;
-    get getScrollPosition(): Position | undefined;
+    get scrollPosition(): Position | undefined;
     get styleScrollPosition(): string;
     get arrowsPosition(): ArrowPosition[];
     protected onElementBoxChange(): void;

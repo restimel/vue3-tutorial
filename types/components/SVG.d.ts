@@ -1,4 +1,4 @@
-import { Vue } from 'vtyx';
+import { Vue, h } from 'vtyx';
 export interface Props {
     path: string;
     width?: number | string;
@@ -12,7 +12,5 @@ export default class SVG extends Vue<Props> {
     private height;
     private viewBox;
     private style?;
-    render(): import("vue").VNode<import("vue").RendererNode, import("vue").RendererElement, {
-        [key: string]: any;
-    }>;
+    render(): h.JSX.Element;
 }
