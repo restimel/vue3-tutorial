@@ -26,7 +26,7 @@
     --vue3-tutorial-step-header-text-color: var(--vue3-tutorial-step-text-color);
 
     /** The shadow style of the popup-window */
-    --vue3-tutorial-window-shadow: 2px 5px 15px black;
+    --vue3-tutorial-window-shadow: 0 3px 20px gray;;
 
     /** The shadow style of the highlighted element */
     --vue3-tutorial-highlight-shadow: 0 0 10px var(--vue3-tutorial-brand-primary), inset 0 0 10px var(--vue3-tutorial-brand-primary);
@@ -189,7 +189,7 @@
 
 .vue3-tutorial__step {
     background-color: var(--vue3-tutorial-step-bg-color);
-    background-image: radial-gradient( 70% 50% at 50% 42px, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 100% );
+    background-image: radial-gradient( 70% 50% at 50% 42px, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0) 100% );
     color: var(--vue3-tutorial-step-text-color);
     padding: 1rem;
     border-radius: 3px;
@@ -198,7 +198,7 @@
 .vue3-tutorial__step__header {
     background-color: var(--vue3-tutorial-step-header-bg-color);
     color: var(--vue3-tutorial-step-header-text-color);
-    background-image: radial-gradient( 70% 50% at 50% 100%, rgba(255, 255, 255, 0.2) 0%, rgba(200, 200, 200, 0) 100% );
+    background-image: radial-gradient( 70% 50% at 50% 100%, rgba(255, 255, 255, 0.15) 0%, rgba(200, 200, 200, 0) 100% );
     text-align: center;
     padding: 0.5rem;
     margin-top: -1rem;
@@ -250,11 +250,11 @@
     height: 32px;
     border-radius: 32px;
     padding: 0 3px 0 3px;
-    transform: translate(calc(50% - 5px), calc(-50% + 9px)) scale(0.4);
+    transform: translate(calc(50% - 5px), calc(-50% + 9px)) scale(0.5);
     transition: transform 600ms;
 }
 .vue3-tutorial__step__btn-skip:hover {
-    transform: translate(calc(50% - 5px), calc(-50% + 9px)) scale(0.7);
+    transform: translate(calc(50% - 11px), calc(-50% + 14px)) scale(0.9);
 }
 
 /* }}} */
