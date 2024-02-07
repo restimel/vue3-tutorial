@@ -25,6 +25,7 @@ export default class VTutorial extends Vue<Props> {
     protected onOpenChange(): void;
     protected onStepsChange(): void;
     protected onStepChange(): void;
+    protected onOptionsChange(): void;
     /** Find which is the next active step depending on direction */
     private findStep;
     /** Get the final step index depending on a TargetStep.
