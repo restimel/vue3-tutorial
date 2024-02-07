@@ -29,7 +29,7 @@ import {
     DEFAULT_STEP_OPTIONS,
     mergeStepOptions,
 } from './tools/defaultValues';
-import label from './tools/labels';
+import label, { changeTexts } from './tools/labels';
 import {
     startListening,
     stopListening,
@@ -213,6 +213,16 @@ export default class VTutorial extends Vue<Props> {
     protected onStepChange() {
         if (this.isRunning) {
             this.gotoInitialStep();
+        }
+    }
+
+    @Watch('options', { immediate: true, deep: true})
+    protected onOptionsChange() {
+        const options = this.options;
+
+        /* Update labels */
+        if (options?.texts) {
+            changeTexts(options.texts);
         }
     }
 
