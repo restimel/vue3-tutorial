@@ -195,8 +195,12 @@ export default class VTutorial extends Vue<Props> {
 
     @Watch('open', { immediate: true })
     protected onOpenChange() {
-        if (this.open) {
+        const open = this.open;
+
+        if (open) {
             this.start();
+        } else {
+            this.stop();
         }
     }
 
@@ -206,7 +210,11 @@ export default class VTutorial extends Vue<Props> {
             this.stop();
             return;
         }
-        this.start();
+
+        if (this.isRunning) {
+            /* Because the tutorial is already running, restart it from beginning */
+            this.start(true);
+        }
     }
 
     @Watch('step', { immediate: true })
@@ -394,13 +402,13 @@ export default class VTutorial extends Vue<Props> {
         return stepIndex;
     }
 
-    private async start() {
+    private async start(restart = false) {
         if (!this.tutorial) {
             error(303);
             this.stop(false);
             return;
         }
-        if (this.isRunning) {
+        if (!restart && this.isRunning) {
             /* The tutorial is already started */
             return;
         }
