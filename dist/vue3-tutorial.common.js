@@ -2733,8 +2733,12 @@ let VTutorial = class VTutorial extends vtyx.Vue {
     /* }}} */
     /* {{{ watch */
     onOpenChange() {
-        if (this.open) {
+        const open = this.open;
+        if (open) {
             this.start();
+        }
+        else {
+            this.stop();
         }
     }
     onStepsChange() {
@@ -2742,7 +2746,10 @@ let VTutorial = class VTutorial extends vtyx.Vue {
             this.stop();
             return;
         }
-        this.start();
+        if (this.isRunning) {
+            /* Because the tutorial is already running, restart it from beginning */
+            this.start(true);
+        }
     }
     onStepChange() {
         if (this.isRunning) {
@@ -2906,13 +2913,13 @@ let VTutorial = class VTutorial extends vtyx.Vue {
         }
         return stepIndex;
     }
-    async start() {
+    async start(restart = false) {
         if (!this.tutorial) {
             error(303);
             this.stop(false);
             return;
         }
-        if (this.isRunning) {
+        if (!restart && this.isRunning) {
             /* The tutorial is already started */
             return;
         }
