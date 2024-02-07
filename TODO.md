@@ -22,6 +22,8 @@
 * Compare with EnjoyHint
     * great feature
     * presentation
+* Bugs
+    * save window box rect related to position (to avoid bugs-bunny effect)
 
 == improvement (for after v1.0) ==
 
@@ -56,8 +58,12 @@
         * progress status with progress bar (and/or %)
     * button section
         * When interactive, add a text to tell what is expected
+    * Actions
+        * Allow to do some action on the page
+            * click
+            * trigger keyboard event
+            * fill fields (and trigger input/change event)
 * Window
-    * Allow user to move the window
     * improve auto placement
         * to avoid to be over secondary targets
         * to allow to change order preference
@@ -66,7 +72,7 @@
 * Skip
     * replace confirm dialog by modal dialog
 * Options
-    * title (mainly for tutorial, to set title for all steps in one tutorial, maybe remove the title property from step)
+    * title (mainly for tutorial, to set title for all steps in one tutorial)
 * Global
     * allow to have several instance of vue3-tutorial on the same page
         * do not return a singleton (labels, keyBinding)
