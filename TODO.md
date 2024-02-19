@@ -22,8 +22,7 @@
 * Compare with EnjoyHint
     * great feature
     * presentation
-* Bugs
-    * save window box rect related to position (to avoid bugs-bunny effect)
+
 
 == improvement (for after v1.0) ==
 
@@ -69,6 +68,9 @@
         * to allow to change order preference
     * allow to change HTML
     * update position of all targets (when scroll or DOM change)
+* Interruption
+    * add some condition to check and interrupt the tutorial if it appears
+        * Propose some actions in such case (steps, move to tutorial step, stop tutorial)
 * Skip
     * replace confirm dialog by modal dialog
 * Options

@@ -4,6 +4,8 @@
 
 :wrench: **Code Documentation: This page is a technical reference for developers working on the project. It is not a configuration guide.**
 
+In `Window.tsx`,
+
 ![workflow](./images/workflow-window-position.drawio.png)
 
 When props `elementsBox` is changed (meaning there are changes in the DOM),

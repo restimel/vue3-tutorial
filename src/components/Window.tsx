@@ -19,6 +19,7 @@ import {
     BoxNotEmpty,
     Dimension,
     Placement,
+    PlacementDimension,
     Position,
 } from '../types.d';
 
@@ -59,6 +60,7 @@ export default class Window extends Vue<Props> {
 
     /** The dimension of the window element */
     private elementSize: Dimension = [0, 0];
+    private placementElementSize: PlacementDimension = new Map();
     private timerSizeRefresh = 0;
 
     /* }}} */
@@ -81,7 +83,7 @@ export default class Window extends Vue<Props> {
             return 'center';
         }
 
-        return getAutoPlacement(box, this.elementSize);
+        return getAutoPlacement(box, this.elementSize, this.placementElementSize);
     }
 
     get hasNoPointer(): boolean {
@@ -122,7 +124,10 @@ export default class Window extends Vue<Props> {
 
     /* XXX: This is only to create a reference to the same function */
     get refUpdateSize() {
-        return this.updateSize.bind(this);
+        return () => {
+            this.placementElementSize.clear();
+            this.updateSize();
+        };
     }
 
     get teleportContainer(): HTMLElement | null {
@@ -192,12 +197,20 @@ export default class Window extends Vue<Props> {
             // it could be because the component has been removed (async call)
             return;
         }
-        const rect = el.getBoundingClientRect();
+        const {width, height} = el.getBoundingClientRect();
 
-        // XXX: Avoid this.elementSize = [rect.width, rect.height];
+        // XXX: Avoid this.elementSize = [width, height];
         // because it creates a new reference (and so it renders continually)
-        this.elementSize[0] = rect.width;
-        this.elementSize[1] = rect.height;
+        this.elementSize[0] = width;
+        this.elementSize[1] = height;
+
+        /* Update placementElementSize */
+        const realPlacement = this.realPosition;
+        const placementDim = this.placementElementSize.get(realPlacement);
+
+        if (!placementDim || placementDim[0] !== width || placementDim[1] !== height) {
+            this.placementElementSize.set(realPlacement, [width, height]);
+        }
     }
 
     private useTeleport() {

@@ -35,6 +35,9 @@ export type Box = BoxNotEmpty | [];
 /** [width, height] */
 export type Dimension = [number, number];
 
+/** Store dimension depending on Placement */
+export type PlacementDimension = Map<AbsolutePlacement, Dimension>;
+
 /** [style X, style Y, orientation] */
 export type Position = [string, string, Placement];
 

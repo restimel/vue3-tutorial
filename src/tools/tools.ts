@@ -11,6 +11,7 @@ import {
     ErrorDetails,
     ErrorSelectorPurpose,
     Placement,
+    PlacementDimension,
     Position,
     Rect,
     SelectorElement,
@@ -378,33 +379,73 @@ export function getAnchorPoint(box: BoxNotEmpty, realPosition: Placement): Posit
     return [x, y, realPosition];
 }
 
+type CheckInfo = {
+    spaceLeft: number;
+    spaceRight: number;
+    spaceTop: number;
+    spaceBottom: number;
+    elementSize: Dimension;
+    placementSize: PlacementDimension;
+};
+
+function checkPlacement(placement: AbsolutePlacement, info: CheckInfo): boolean {
+    const dimension = info.placementSize.get(placement) ?? info.elementSize;
+
+    switch (placement) {
+        case 'bottom':
+            return dimension[1] < info.spaceBottom;
+        case 'top':
+            return dimension[1] < info.spaceTop;
+        case 'left':
+            return dimension[1] < info.spaceLeft;
+        case 'right':
+            return dimension[1] < info.spaceRight;
+        case 'center':
+            return true;
+    }
+}
+
 /** Replace the 'auto' value with a better placement */
-export function getAutoPlacement(targetBox: BoxNotEmpty, elementSize: Dimension): AbsolutePlacement {
+export function getAutoPlacement(targetBox: BoxNotEmpty, elementSize: Dimension, placementSize: PlacementDimension): AbsolutePlacement {
     /* check where there are enough spaces */
     const [elWidth, elHeight] = elementSize;
     const screenHeight = innerHeight;
     const screenWidth = innerWidth;
     const [targetX1, targetY1, targetX2, targetY2] = targetBox;
 
-    const enoughSpaceBottom = targetY2 + BOX_MARGIN + elHeight < screenHeight;
-    const enoughSpaceTop = targetY1 - BOX_MARGIN - elHeight > 0;
-    const enoughSpaceRight = targetX2 + BOX_MARGIN + elWidth < screenWidth;
-    const enoughSpaceLeft = targetX1 - BOX_MARGIN - elWidth > 0;
+    const spaceBottom = screenHeight - (targetY2 + BOX_MARGIN);
+    const spaceTop = targetY1 - BOX_MARGIN;
+    const spaceRight = screenWidth - (targetX2 + BOX_MARGIN);
+    const spaceLeft = targetX1 - BOX_MARGIN;
+
+    const enoughSpaceBottom = elHeight < spaceBottom;
+    const enoughSpaceTop = elHeight < spaceTop;
+    const enoughSpaceRight = elWidth < spaceRight;
+    const enoughSpaceLeft = elWidth < spaceLeft;
+
+    const info: CheckInfo = {
+        spaceBottom,
+        spaceTop,
+        spaceRight,
+        spaceLeft,
+        elementSize,
+        placementSize,
+    };
 
     /* Case 1: window is smaller than the target */
     if (elWidth < targetX2 - targetX1) {
-        if (enoughSpaceBottom) {
+        if (enoughSpaceBottom && checkPlacement('bottom', info)) {
             return 'bottom';
         }
-        if (enoughSpaceTop) {
+        if (enoughSpaceTop && checkPlacement('top', info)) {
             return 'top';
         }
     }
     if (elHeight < targetY2 - targetY1) {
-        if (enoughSpaceRight) {
+        if (enoughSpaceRight && checkPlacement('right', info)) {
             return 'right';
         }
-        if (enoughSpaceLeft) {
+        if (enoughSpaceLeft && checkPlacement('left', info)) {
             return 'left';
         }
     }
@@ -414,10 +455,10 @@ export function getAutoPlacement(targetBox: BoxNotEmpty, elementSize: Dimension)
     const elX2 = elX1 + elWidth;
 
     if (elX1 > 0 && elX2 < screenWidth) {
-        if (enoughSpaceBottom) {
+        if (enoughSpaceBottom && checkPlacement('bottom', info)) {
             return 'bottom';
         }
-        if (enoughSpaceTop) {
+        if (enoughSpaceTop && checkPlacement('top', info)) {
             return 'top';
         }
     }
@@ -426,25 +467,25 @@ export function getAutoPlacement(targetBox: BoxNotEmpty, elementSize: Dimension)
     const elY2 = elY1 + elWidth;
 
     if (elY1 > 0 && elY2 < screenHeight) {
-        if (enoughSpaceRight) {
+        if (enoughSpaceRight && checkPlacement('right', info)) {
             return 'right';
         }
-        if (enoughSpaceLeft) {
+        if (enoughSpaceLeft && checkPlacement('left', info)) {
             return 'left';
         }
     }
 
     /* Case 3 & 4: window cannot be placed exactly centered with target */
-    if (enoughSpaceBottom) {
+    if (enoughSpaceBottom && checkPlacement('bottom', info)) {
         return 'bottom';
     }
-    if (enoughSpaceTop) {
+    if (enoughSpaceTop && checkPlacement('top', info)) {
         return 'top';
     }
-    if (enoughSpaceRight) {
+    if (enoughSpaceRight && checkPlacement('right', info)) {
         return 'right';
     }
-    if (enoughSpaceLeft) {
+    if (enoughSpaceLeft && checkPlacement('left', info)) {
         return 'left';
     }
 
