@@ -48,7 +48,7 @@ import {
 
 import {
     BindingAction,
-    Options,
+    ComponentOptions,
     Step,
     StepMovement,
     TargetStep,
@@ -70,6 +70,7 @@ export {
     Binding,
     BindingAction,
     CheckExpression,
+    ComponentOptions,
     Dictionary,
     ErrorSelectorPurpose,
     EventAction,
@@ -92,7 +93,7 @@ export {
 
 export interface Props {
     tutorial?: Tutorial | null;
-    options?: Options;
+    options?: ComponentOptions;
     open?: boolean;
     step?: number | string;
 }
@@ -105,7 +106,7 @@ export default class VTutorial extends Vue<Props> {
     private tutorial?: Tutorial | null;
 
     @Prop()
-    private options?: Options;
+    private options?: ComponentOptions;
 
     @Prop({ default: false })
     private open: boolean;
@@ -162,7 +163,7 @@ export default class VTutorial extends Vue<Props> {
         return step;
     }
 
-    get tutorialOptions(): Options {
+    get tutorialOptions(): ComponentOptions {
         return mergeStepOptions(
             DEFAULT_STEP_OPTIONS,
             this.options || {},
@@ -511,7 +512,7 @@ export default class VTutorial extends Vue<Props> {
                 stepIndex: this.currentIndex,
             }, err);
             this.$emit('error', errEmitted);
-        });
+        }, this.options?.messageLog);
 
         debug(0, this.tutorialOptions, {
             open: this.open,

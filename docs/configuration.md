@@ -466,6 +466,13 @@ _Default value: `true`_
 at some key features in the library. If the value is a number array, it only
 logs when given error codes are prompted. _Default value: `false`_
 
+In addition, for the _component_ option only:
+*  **messageLog** {`string | null`}: Define which message should be prompted
+in console when an error or a log is emitted. If the value is `null` nothing
+is prompted in the console but the code is still emitted.
+**This value is read only when the component is mounted.**
+_Default value: `'vue3-tutorial [%d]: %s'`_
+
 ### Placement
 
 A string which can have only one of these values:

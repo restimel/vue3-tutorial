@@ -125,6 +125,8 @@ export type TutorialEmittedError = TutorialError & {
 };
 
 export type ErrorDetails = { [key in string ]: any };
+/** If null, no log are prompted. */
+export type MessageLog = string | null;
 
 export type TutorialErrorStatus = 'log' | 'info' | 'warning' | 'error';
 
@@ -300,5 +302,12 @@ export interface Tutorial {
     steps: StepDescription[];
     options?: Options;
 }
+
+/* }}} */
+/* {{{ Component */
+
+export type ComponentOptions = Options & {
+    messageLog?: MessageLog;
+};
 
 /* }}} */

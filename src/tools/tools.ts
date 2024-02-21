@@ -43,7 +43,7 @@ export function merge<A extends object, B extends object>(target: A, source: B, 
         }
         const tgtValue = (target as any)[key];
 
-        if (typeof val === 'object') {
+        if (val && typeof val === 'object') {
             if (Array.isArray(val)) {
                 const valTarget = Array.isArray(tgtValue) ? tgtValue : [];
                 list.set(val, valTarget);
