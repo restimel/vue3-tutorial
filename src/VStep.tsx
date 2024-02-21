@@ -380,6 +380,7 @@ export default class VStep extends Vue<Props> {
 
         private getTargetElements() {
             const targetElements = this.targetElements;
+
             this.getElements({
                 selectors: this.step.desc.target,
                 elements: targetElements,
@@ -401,6 +402,7 @@ export default class VStep extends Vue<Props> {
                         debug(27, this.fullOptions, {
                             selector,
                         });
+                        this.mainElement = null;
                     }
                 },
             });
@@ -881,6 +883,7 @@ export default class VStep extends Vue<Props> {
         }
 
         private debounceGetAllElement(info?: AllElementsInfo, timer = 10) {
+            clearTimeout(this.timerGetAllElements);
             this.timerGetAllElements = setTimeout(() => {
                 this.getAllElements(info);
             }, timer);
@@ -979,6 +982,7 @@ export default class VStep extends Vue<Props> {
 
             if (!selectors || !querySelectors.length) {
                 this.working.set(purpose, false);
+                thenCb(null, querySelectors[0], 0);
                 return;
             }
 
