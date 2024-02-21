@@ -451,7 +451,7 @@ _Default value: `false`_.
 * **scroll** {`boolean | `[`ScrollBehavior`](#ScrollBehavior)}: Define how to
 behave when main target element is not visible in the page (due to scroll).
 `true` is equivalent to `'scroll-to'`. `false` is equivalent to `'no-scroll'`.
-_Default value: `'scroll-to'` on main target element_.
+_Default value: `'auto-scroll'` on main target element_.
 * **texts** {[`Dictionary`](#Dictionary)}: Allow to change texts which are displayed in vue3-tutorial. This can be used for translations or to
 display your own texts.
 * **timeout** {`number`}: Duration in milliseconds before the
@@ -561,11 +561,13 @@ Define how to behave when target element is not visible due to scroll.
 * **`'no-scroll'`**: Do not change the page position.
 Arrow is added to show where to scroll in order to see the target element.
 * **`'scroll-to'`**: When changing step automatically scroll to the target.
+* **`'auto-scroll'`**: When changing step automatically scroll to the target
+if the target is not visible.
  _This is the default value_
 * **`{ ... }`**:
   * **target** `string`: Scroll to this element instead of the main target.
-  * **scrollKind** _optional_: {`'no-scroll' | 'scroll-to'`} Describe if we should automatically scroll to the target or not.
-  _Default value is `'scroll-to'`._
+  * **scrollKind** _optional_: {`'no-scroll' | 'scroll-to' | 'auto-scroll'`} Describe if we should automatically scroll to the target or not.
+  _Default value is `'auto-scroll'`._
   * **timeout** _optional_: {`number`} Duration in milliseconds to find the
 `target` before the timeout warning is triggered.
 _Default value is the `timeout` defined in [step options](#step-options)._

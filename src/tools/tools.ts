@@ -341,6 +341,21 @@ export function getBox(el: HTMLElement, memo: WeakMap<HTMLElement, BoxNotEmpty>,
     return box;
 }
 
+/** Check if the element is visible. */
+export function isElementVisible(box: BoxNotEmpty): boolean {
+    const [x1, y1,x2, y2, visibility] = box;
+
+    if (visibility !== 'visible') {
+        return false;
+    }
+
+    if (x1 < 0 || y1 < 0 || x2 > innerWidth || y2 > innerHeight) {
+        return false;
+    }
+
+    return true;
+}
+
 /** Coordinates of the anchor related to the target */
 export function getAnchorPoint(box: BoxNotEmpty, realPosition: Placement): Position {
     const screenHeight = innerHeight;

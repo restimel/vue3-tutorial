@@ -3,8 +3,6 @@
 == Target: v1.0 ==
 
 * steps
-    * scrollIntoView
-        * scroll only if element is not visible
     * Window
         * movable window
 * documentation

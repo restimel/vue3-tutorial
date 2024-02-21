@@ -37,7 +37,7 @@ export const DEFAULT_STEP_OPTIONS: StepOptions = {
     focus: 'no-focus',
     muteElements: false,
     texts: DEFAULT_DICTIONARY,
-    scroll: 'scroll-to',
+    scroll: 'auto-scroll',
     timeout: 3000,
     teleport: true,
     debug: false,

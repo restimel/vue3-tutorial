@@ -147,7 +147,7 @@ export type FocusBehavior = FocusKind | TargetExpression;
 /* }}} */
 /* {{{ scroll */
 
-type ScrollKind = 'no-scroll' | 'scroll-to' | 'true' | 'false';
+type ScrollKind = 'no-scroll' | 'scroll-to' | 'auto-scroll' | 'true' | 'false';
 export type ScrollBehavior = ScrollKind | {
     scrollKind?: ScrollKind;
 } & TargetExpression;

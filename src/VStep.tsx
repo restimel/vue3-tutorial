@@ -47,6 +47,7 @@ import {
     getAnchorPoint,
     getDirection,
     shallowSetCopy,
+    isElementVisible,
 } from './tools/tools';
 
 const noop = function() {};
@@ -848,7 +849,7 @@ export default class VStep extends Vue<Props> {
                 behavior = scroll;
                 target = this.mainElement;
             } else {
-                behavior = scroll.scrollKind ?? 'scroll-to';
+                behavior = scroll.scrollKind ?? 'auto-scroll';
                 target = await getElement(scroll.target, {
                     purpose: 'scroll',
                     timeout: scroll.timeout ?? options.timeout,
@@ -856,8 +857,12 @@ export default class VStep extends Vue<Props> {
                 });
             }
 
-            if (target && behavior === 'scroll-to') {
-                target.scrollIntoView({ behavior: 'smooth' });
+            if (target && (behavior === 'scroll-to' || behavior === 'auto-scroll')) {
+                const box = getBox(target, this.boxCache);
+
+                if (behavior === 'scroll-to' || !isElementVisible(box)) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
             }
         }
 
