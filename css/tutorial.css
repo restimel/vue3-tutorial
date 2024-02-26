@@ -207,6 +207,10 @@
     border-radius: 3px;
 }
 
+.vue3-tutorial__step__header__movable {
+    cursor: move;
+}
+
 .vue3-tutorial__step__header__title {
     font-weight: 300;
 }
@@ -364,6 +368,12 @@
 
 .vue3-tutorial-muted {
     pointer-events: none;
+}
+
+/* Applied on body when moving step window */
+.vue3-tutorial-noSelect {
+    user-select: none;
+    cursor: move;
 }
 
 /* }}} */

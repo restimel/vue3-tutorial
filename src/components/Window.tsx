@@ -6,7 +6,6 @@ import {Vue, Component, Prop, h, Watch} from 'vtyx';
 import SVG from './SVG';
 import Mask from './SVGmask';
 import {
-    BOX_MARGIN,
     emptyArray,
     getAutoPlacement,
     getAnchorPoint,
@@ -20,6 +19,7 @@ import {
     Dimension,
     Placement,
     PlacementDimension,
+    Point,
     Position,
 } from '../types.d';
 
@@ -31,7 +31,8 @@ export interface Props {
     arrowAnimation?: boolean;
     mask?: boolean;
     maskMargin?: number;
-    teleport?: HTMLElement | boolean
+    teleport?: HTMLElement | boolean;
+    offset: Point;
 }
 
 @Component
@@ -54,6 +55,8 @@ export default class Window extends Vue<Props> {
     private maskMargin: number;
     @Prop({ default: true })
     private teleport: HTMLElement | boolean;
+    @Prop()
+    private offset: Point;
 
     /* }}} */
     /* {{{ data */
@@ -117,7 +120,38 @@ export default class Window extends Vue<Props> {
     }
 
     get styleWindowCoords(): string {
-        const [x, y] = keepInsideScreen(this.computePosition, this.elementSize);
+        const [positionX, positionY, placement] = this.computePosition;
+        const [offsetX, offsetY] = this.offset;
+        let newX = positionX;
+        let newY = positionY;
+
+        if (offsetX !== 0) {
+            let value = parseFloat(positionX);
+
+            if (positionX.endsWith('%')) {
+                value = innerWidth / 2;
+            }
+
+            newX = (value + offsetX) + 'px';
+        }
+
+        if (offsetY !== 0) {
+            let value = parseFloat(positionY);
+
+            if (positionY.endsWith('%')) {
+                value = innerHeight / 2;
+            }
+
+            newY = (value + offsetY) + 'px';
+        }
+
+        const position: Position = [
+            newX,
+            newY,
+            placement,
+        ];
+
+        const [x, y] = keepInsideScreen(position, this.elementSize);
 
         return `--vue3-tutorial-x: ${x}; --vue3-tutorial-y: ${y};`;
     }

@@ -32,6 +32,7 @@ import {
     ElementSelector,
     ErrorSelectorPurpose,
     EventAction,
+    Point,
     Rect,
     ScrollKind,
     Step,
@@ -83,6 +84,9 @@ export default class VStep extends Vue<Props> {
 
     /* XXX: some data are configured in elements Workflow */
 
+    private windowOffset: Point = [0, 0];
+    private refPoint: Point = [0, 0];
+
     /* }}} */
     /* {{{ computed */
 
@@ -99,6 +103,16 @@ export default class VStep extends Vue<Props> {
         }
 
         return options;
+    }
+
+    /** To keep a common reference */
+    private get mouseMoveListener() {
+        return this.mouseMove.bind(this);
+    }
+
+    /** To keep a common reference */
+    private get mouseUpListener() {
+        return this.mouseUpHeader.bind(this);
     }
 
     /* {{{ buttons */
@@ -158,7 +172,14 @@ export default class VStep extends Vue<Props> {
         resetBindings(this.fullOptions.bindings);
     }
 
+    @Watch('step')
+    protected onStepChange() {
+        this.removeMoveListener();
+        this.windowOffset = [0, 0];
+    }
+
     /* }}} */
+    /* {{{ methods */
     /* {{{ Next action */
 
     private removeActionListener: () => void = noop;
@@ -316,6 +337,40 @@ export default class VStep extends Vue<Props> {
         }
 
         /* }}} */
+        /* {{{ Move */
+
+        private mouseDownHeader(evt: MouseEvent) {
+            if (this.fullOptions.sticky) {
+                return;
+            }
+
+            this.refPoint = [evt.clientX, evt.clientY];
+            document.body.addEventListener('mousemove', this.mouseMoveListener);
+            document.body.addEventListener('mouseup', this.mouseUpListener);
+            document.body.classList.add('vue3-tutorial-noSelect');
+        }
+
+        private mouseUpHeader() {
+            this.removeMoveListener();
+        }
+
+        private removeMoveListener() {
+            document.body.removeEventListener('mousemove', this.mouseMoveListener);
+            document.body.removeEventListener('mouseup', this.mouseUpListener);
+            document.body.classList.remove('vue3-tutorial-noSelect');
+        }
+
+        private mouseMove(evt: MouseEvent) {
+            const [x1, y1] = this.refPoint;
+            const x2 = evt.clientX;
+            const y2 = evt.clientY;
+
+            this.windowOffset[0] += x2 - x1;
+            this.windowOffset[1] += y2 - y1;
+
+            this.refPoint = [x2, y2];
+        }
+
         /* }}} */
     /* {{{ Elements workflow */
 
@@ -1050,8 +1105,8 @@ export default class VStep extends Vue<Props> {
 
         /* }}} */
     /* }}} */
-    /* {{{ Life cycle */
     /* }}} */
+    /* {{{ Life cycle */
 
     public mounted() {
         this.addResizeListener();
@@ -1071,6 +1126,7 @@ export default class VStep extends Vue<Props> {
         this.removeActionListener();
         this.clearScrollListener();
         this.removeResizeListener();
+        this.removeMoveListener();
         this.mutationObserver.disconnect();
 
         this.cacheElements.clear();
@@ -1082,6 +1138,8 @@ export default class VStep extends Vue<Props> {
             tutorialInformation: this.tutorialInformation,
         });
     }
+
+    /* }}} */
 
     @Emits(['finish', 'next', 'previous', 'skip'])
     public render() {
@@ -1099,12 +1157,20 @@ export default class VStep extends Vue<Props> {
                 mask={!!options.mask}
                 maskMargin={options.maskMargin}
                 teleport={options.teleport}
+                offset={this.windowOffset}
             >
                 <aside slot="content"
                     class="vue3-tutorial__step"
                 >
                     <header
-                        class="vue3-tutorial__step__header"
+                        class={{
+                            'vue3-tutorial__step__header': true,
+                            'vue3-tutorial__step__header__movable': !options.sticky,
+                        }}
+                        on={{
+                            mousedown: this.mouseDownHeader,
+                            mouseup: this.mouseUpHeader,
+                        }}
                     >
                         <div
                             class="vue3-tutorial__step__header__title"

@@ -210,6 +210,12 @@ export interface StepOptions {
     /** Manage how to scroll when target is not in view */
     scroll: boolean | ScrollBehavior;
 
+    /** Define if it is possible to move the window.
+     * If true, user cannot move the window
+     * If false, user can move the window (default)
+     */
+    sticky: boolean;
+
     /** Change texts that are used in the tutorial */
     texts: Partial<Dictionary>;
 

@@ -452,6 +452,8 @@ _Default value: `false`_.
 behave when main target element is not visible in the page (due to scroll).
 `true` is equivalent to `'scroll-to'`. `false` is equivalent to `'no-scroll'`.
 _Default value: `'auto-scroll'` on main target element_.
+* **sticky** {`boolean`}: Allow or not to move the step window. If the option is set to `true`, user is not allowed to move the window. If `false`, user can move the step window to a different position.
+_Default value: `false`_.
 * **texts** {[`Dictionary`](#Dictionary)}: Allow to change texts which are displayed in vue3-tutorial. This can be used for translations or to
 display your own texts.
 * **timeout** {`number`}: Duration in milliseconds before the

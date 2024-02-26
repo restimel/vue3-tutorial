@@ -26,20 +26,21 @@ export const DEFAULT_BINDING: Binding = {
 };
 
 export const DEFAULT_STEP_OPTIONS: StepOptions = {
-    position: 'auto',
-    highlight: true,
-    classForTargets: '',
-    arrowAnimation: true,
-    mask: true,
     arrow: true,
-    maskMargin: 0,
+    arrowAnimation: true,
     bindings: DEFAULT_BINDING,
+    classForTargets: '',
     focus: 'no-focus',
+    highlight: true,
+    mask: true,
+    maskMargin: 0,
     muteElements: false,
-    texts: DEFAULT_DICTIONARY,
+    position: 'auto',
     scroll: 'auto-scroll',
-    timeout: 3000,
+    sticky: false,
     teleport: true,
+    texts: DEFAULT_DICTIONARY,
+    timeout: 3000,
     debug: false,
 };
 
