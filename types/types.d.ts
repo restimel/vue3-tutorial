@@ -35,6 +35,9 @@ export type Box = BoxNotEmpty | [];
 /** [width, height] */
 export type Dimension = [number, number];
 
+/** Store dimension depending on Placement */
+export type PlacementDimension = Map<AbsolutePlacement, Dimension>;
+
 /** [style X, style Y, orientation] */
 export type Position = [string, string, Placement];
 
@@ -122,6 +125,8 @@ export type TutorialEmittedError = TutorialError & {
 };
 
 export type ErrorDetails = { [key in string ]: any };
+/** If null, no log are prompted. */
+export type MessageLog = string | null;
 
 export type TutorialErrorStatus = 'log' | 'info' | 'warning' | 'error';
 
@@ -142,7 +147,7 @@ export type FocusBehavior = FocusKind | TargetExpression;
 /* }}} */
 /* {{{ scroll */
 
-type ScrollKind = 'no-scroll' | 'scroll-to' | 'true' | 'false';
+type ScrollKind = 'no-scroll' | 'scroll-to' | 'auto-scroll' | 'true' | 'false';
 export type ScrollBehavior = ScrollKind | {
     scrollKind?: ScrollKind;
 } & TargetExpression;
@@ -204,6 +209,12 @@ export interface StepOptions {
 
     /** Manage how to scroll when target is not in view */
     scroll: boolean | ScrollBehavior;
+
+    /** Define if it is possible to move the window.
+     * If true, user cannot move the window
+     * If false, user can move the window (default)
+     */
+    sticky: boolean;
 
     /** Change texts that are used in the tutorial */
     texts: Partial<Dictionary>;
@@ -297,5 +308,12 @@ export interface Tutorial {
     steps: StepDescription[];
     options?: Options;
 }
+
+/* }}} */
+/* {{{ Component */
+
+export type ComponentOptions = Options & {
+    messageLog?: MessageLog;
+};
 
 /* }}} */

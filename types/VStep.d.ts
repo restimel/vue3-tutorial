@@ -8,13 +8,20 @@ export interface Props {
 export default class VStep extends Vue<Props> {
     private step;
     private tutorialInformation;
+    private windowOffset;
+    private refPoint;
     private get fullOptions();
+    /** To keep a common reference */
+    private get mouseMoveListener();
+    /** To keep a common reference */
+    private get mouseUpListener();
     private get displayPreviousButton();
     private get displayNextButton();
     private get displayFinishButton();
     private get displaySkipButton();
     protected onTextsChange(): void;
     protected onBindingsChange(): void;
+    protected onStepChange(): void;
     private removeActionListener;
     private get nextActionType();
     private get nextActionTarget();
@@ -29,6 +36,10 @@ export default class VStep extends Vue<Props> {
     private clearScrollListener;
     protected onPositionElementsChange(): void;
     private get mutationObserver();
+    private mouseDownHeader;
+    private mouseUpHeader;
+    private removeMoveListener;
+    private mouseMove;
     private cacheElements;
     private boxCache;
     private startTime;

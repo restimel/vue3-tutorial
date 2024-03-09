@@ -1,5 +1,5 @@
 import { Vue, h } from 'vtyx';
-import { AbsolutePlacement, ArrowPosition, Box, Placement, Position } from '../types.d';
+import { AbsolutePlacement, ArrowPosition, Box, Placement, Point, Position } from '../types.d';
 export interface Props {
     elementsBox?: Box[];
     masksBox?: Box[];
@@ -9,6 +9,7 @@ export interface Props {
     mask?: boolean;
     maskMargin?: number;
     teleport?: HTMLElement | boolean;
+    offset: Point;
 }
 export default class Window extends Vue<Props> {
     private elementsBox;
@@ -19,8 +20,10 @@ export default class Window extends Vue<Props> {
     private mask;
     private maskMargin;
     private teleport;
+    private offset;
     /** The dimension of the window element */
     private elementSize;
+    private placementElementSize;
     private timerSizeRefresh;
     get mainBoxElement(): Box;
     /** Transform 'auto' into a Placement value */

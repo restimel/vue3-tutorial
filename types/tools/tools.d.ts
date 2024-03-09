@@ -1,4 +1,4 @@
-import { AbsolutePlacement, BoxNotEmpty, Dimension, ErrorDetails, ErrorSelectorPurpose, Placement, Position, Rect, SelectorElement, SelectorElements } from '../types.d';
+import { AbsolutePlacement, BoxNotEmpty, Dimension, ErrorDetails, ErrorSelectorPurpose, Placement, PlacementDimension, Position, Rect, SelectorElement, SelectorElements } from '../types.d';
 export declare const BOX_MARGIN = 25;
 /** merge deeply an object in another one. */
 export declare function merge<A extends object, B extends object>(target: A, source: B, list?: Map<any, any>): A & B;
@@ -41,10 +41,12 @@ export declare function getBox(el: HTMLElement, memo: WeakMap<HTMLElement, BoxNo
     isParent?: boolean | undefined;
     getParentBox?: boolean | undefined;
 }): BoxNotEmpty;
+/** Check if the element is visible. */
+export declare function isElementVisible(box: BoxNotEmpty): boolean;
 /** Coordinates of the anchor related to the target */
 export declare function getAnchorPoint(box: BoxNotEmpty, realPosition: Placement): Position;
 /** Replace the 'auto' value with a better placement */
-export declare function getAutoPlacement(targetBox: BoxNotEmpty, elementSize: Dimension): AbsolutePlacement;
+export declare function getAutoPlacement(targetBox: BoxNotEmpty, elementSize: Dimension, placementSize: PlacementDimension): AbsolutePlacement;
 /** Move position to keep element inside the screen */
 export declare function keepInsideScreen(position: Position, elementSize: Dimension): Position;
 export declare function getDirection(targetBox: Rect, refBox?: Rect): Placement;
