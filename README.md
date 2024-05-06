@@ -19,6 +19,8 @@ with the current state and to provide a smooth experience.
 Follow this link to have a
 [Live demonstration](https://restimel.github.io/vue3-tutorial-demonstration/dist/index.html)!
 
+![demonstration](./docs/images/demo.gif)
+
 ## Example
 
 ```html

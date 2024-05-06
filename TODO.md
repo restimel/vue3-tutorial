@@ -1,28 +1,6 @@
 = Road-map =
 
-== Target: v1.0 ==
-
-* steps
-    * Window
-        * movable window
-* documentation
-    * README
-        * gif
-        * important features
-    * how to configure
-        * step
-            * checkNext
-        * split file to avoid having a big file
-* Compare with vue-tour
-    * missing feature
-    * How to migrate → documentation
-    * What is better in vue3-tutorial
-* Compare with EnjoyHint
-    * great feature
-    * presentation
-
-
-== improvement (for after v1.0) ==
+== improvements ==
 
 * Errors
     * Add info
@@ -40,6 +18,7 @@
         * timer
         * "next" when clicking anywhere
         * keyboard event about key (note that keybinding may already be used for that)
+        * Do the interaction action
     * options
         * hidden progress
         * No interaction at all (user cannot click on any elements (should it be the default for "next"?))
@@ -80,4 +59,12 @@
     * how to configure
         * step
             * checkNext
+        * split file to avoid having a big file
     * Configuration example (for some usage)
+    * Compare with vue-tour
+        * missing feature
+        * How to migrate → documentation
+        * What is better in vue3-tutorial
+    * Compare with EnjoyHint
+        * great feature
+        * presentation
