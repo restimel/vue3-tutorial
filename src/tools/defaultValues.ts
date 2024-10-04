@@ -42,6 +42,11 @@ export const DEFAULT_STEP_OPTIONS: StepOptions = {
     texts: DEFAULT_DICTIONARY,
     timeout: 3000,
     debug: false,
+    logs: {
+        logLevel: 'warning',
+        allowCodes: [],
+        messageLog: true,
+    },
 };
 
 export function mergeStepOptions(...options: Options[]): StepOptions {

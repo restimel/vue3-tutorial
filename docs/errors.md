@@ -13,6 +13,18 @@ This is an object with the following attributes:
  * **stepIndex**: the index value of the current step when the error happens.
  * **tutorialName**: the tutorial name of the current tutorial when the error happens.
 
+## Triggered
+
+Errors are triggered depending on [options](./configuration.md).
+
+`logs` define which error are handled or ignored.
+
+If the error code is in a lower level than `logLevel` then the error is not
+triggered except if the code is inside [`allowCodes`](./configuration.md#Logs).
+
+By default, errors are displayed in console and can be handled by the
+[`error` event](./emits.md). It is possible to not display them in the console by enabling the [`muteConsole` option](./configuration.md#Logs).
+
 ## Error code
 
 The error code is to identify the error. Values from 0 to 99 are related to

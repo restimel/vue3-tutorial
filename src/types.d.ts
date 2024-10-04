@@ -125,8 +125,8 @@ export type TutorialEmittedError = TutorialError & {
 };
 
 export type ErrorDetails = { [key in string ]: any };
-/** If null, no log are prompted. */
-export type MessageLog = string | null;
+/** If false or null, no log are prompted. */
+export type MessageLog = string | boolean | null;
 
 export type TutorialErrorStatus = 'log' | 'info' | 'warning' | 'error';
 
@@ -137,6 +137,34 @@ export type TutorialErrorCodes = {
 
 export type ErrorSelectorPurpose = 'targets' | 'nextAction' | 'focus' | 'skipStep'
     | 'scroll' | 'mask' | 'highlight' | 'arrow' | 'mute';
+
+export type Logs = {
+    /** Indicate which minimum log level to emit.
+     *
+     * 'log' < 'info' < 'warning' < 'error' < 'none'
+     *
+     * If `logLevel = 'warning'` all 'warning' and 'error' are emitted.
+     *
+     * Note: codes in `allowCodes` are always emitted.
+     */
+    logLevel?: TutorialErrorStatus | 'none';
+
+    /** Given codes are always emitted.
+     * Even if they are in a lower level than logLevel.
+     */
+    allowCodes?: number[];
+
+    /**
+     * Define how messages should be prompted in console when an error or a
+     * log is emitted.
+     * If the value is `false` or `null`, nothing is prompted in the console
+     * but the code is still emitted.
+     * If the value is `true`, the default message is prompted.
+     * If the value is a string, this message will be prompted (code and
+     * details are still provided).
+     */
+    messageLog?: MessageLog;
+};
 
 /* }}} */
 /* {{{ Focus */
@@ -228,8 +256,13 @@ export interface StepOptions {
      */
     teleport: boolean | HTMLElement;
 
-    /** Active debug logs. */
+    /** Active debug logs.
+     * @deprecated use `logs.logLevel = 'log'` or `logs.allowCodes = [42]`
+     */
     debug: boolean | number[];
+
+    /** Manage error logs emitted and displayed. */
+    logs: Logs;
 }
 
 export interface StepDescription {
@@ -313,6 +346,7 @@ export interface Tutorial {
 /* {{{ Component */
 
 export type ComponentOptions = Options & {
+    /** @deprecated use `logs.messageLog` */
     messageLog?: MessageLog;
 };
 

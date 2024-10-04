@@ -10,6 +10,7 @@ import {
     Dimension,
     ErrorDetails,
     ErrorSelectorPurpose,
+    Options,
     Placement,
     PlacementDimension,
     Position,
@@ -103,11 +104,13 @@ type AsyncOptions = SyncOptions & {
 type GetElementSyncOptions = SyncOptions & {
     all?: false;
     cache?: Map<string, HTMLElement>;
+    options: Options;
 };
 
 type GetAllElements = {
     all: true;
     cache?: Map<string, HTMLElement[]>;
+    options: Options;
 };
 
 /* This reference is only to return a common reference for an empty array.
@@ -139,6 +142,7 @@ export function getElement(query: string, options: GetElementOptions): SelectorE
         cache,
         all = false,
         refTime = performance.now(),
+        options: stepOptions,
     } = options as GetElementAsyncOptions;
 
     try {
@@ -177,9 +181,9 @@ export function getElement(query: string, options: GetElementOptions): SelectorE
                 if (typeof timeoutError === 'function') {
                     timeoutError(details);
                 } else if (errorIsWarning) {
-                    error(224, details);
+                    error(224, stepOptions, details);
                 } else {
-                    error(324, details);
+                    error(324, stepOptions, details);
                 }
 
                 return Promise.resolve(null);
@@ -196,13 +200,14 @@ export function getElement(query: string, options: GetElementOptions): SelectorE
                         cache,
                         all,
                         refTime,
+                        options: stepOptions,
                     }));
                 }, 50);
             });
         }
         return element;
     } catch(err) {
-        error(300, { selector: query, purpose, error: err as Error });
+        error(300, stepOptions, { selector: query, purpose, error: err as Error });
     }
 
     if (typeof timeout === 'number') {

@@ -5,19 +5,20 @@
 
 import { reactive } from 'vue';
 import { DEFAULT_DICTIONARY } from '../tools/defaultValues';
-import { Dictionary } from '../types.d';
+import { Dictionary, Options } from '../types.d';
 import error from './errors';
 
 const dictionary: Dictionary = reactive(Object.assign({}, DEFAULT_DICTIONARY));
 
 export default function label(
+    options: Options,
     key: keyof Dictionary,
     replacement?: Record<string, string | number>
 ) {
     let text: string;
 
     if (typeof dictionary[key] === 'undefined') {
-        error(201, { label: key });
+        error(201, options, { label: key });
         text = key;
     } else {
         text = dictionary[key];

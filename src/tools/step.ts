@@ -49,7 +49,7 @@ export function isStepSpecialAction(arg: StepDescription | ActionType): boolean 
     return actionType !== 'next';
 }
 
-export function checkExpression(expr: CheckExpression, targetEl: HTMLElement, purpose: ErrorSelectorPurpose): boolean {
+export function checkExpression(expr: CheckExpression, targetEl: HTMLElement, purpose: ErrorSelectorPurpose, options: Options): boolean {
     /* XXX: This type assignation is only to avoid telling all possible HTML cases */
     const targetElement = targetEl as HTMLInputElement;
     const checkOperation = expr.check || 'is';
@@ -85,11 +85,11 @@ export function checkExpression(expr: CheckExpression, targetEl: HTMLElement, pu
             return !document.body.contains(targetElement);
     }
 
-    error(301, { operation: checkOperation, purpose });
+    error(301, options, { operation: checkOperation, purpose });
     return false;
 }
 
-async function skipCurrentStep(step: Step, info: TutorialInformation): Promise<boolean> {
+async function skipCurrentStep(step: Step, info: TutorialInformation, options: Options): Promise<boolean> {
     const stepDesc = step.desc;
     const skipStep = stepDesc?.skipStep;
 
@@ -115,8 +115,9 @@ async function skipCurrentStep(step: Step, info: TutorialInformation): Promise<b
             if (isOperatorRender) {
                 return;
             }
-            error(224, details);
+            error(224, options, details);
         },
+        options: options,
     });
 
     if (!targetElement) {
@@ -128,7 +129,7 @@ async function skipCurrentStep(step: Step, info: TutorialInformation): Promise<b
         return true;
     }
 
-    return checkExpression(skipStep, targetElement, 'skipStep');
+    return checkExpression(skipStep, targetElement, 'skipStep', options);
 }
 
 export function getStep(stepDesc: StepDescription, tutorialOptions: Options, info: TutorialInformation): Step {
@@ -145,7 +146,7 @@ export function getStep(stepDesc: StepDescription, tutorialOptions: Options, inf
 
         async checkSkipped() {
             /* recompute the skip status */
-            const skipped = await skipCurrentStep(step, info);
+            const skipped = await skipCurrentStep(step, info, tutorialOptions);
             step.status.skipped = skipped;
             return skipped;
         },

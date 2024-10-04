@@ -52,6 +52,8 @@ The start of the tutorial is controlled by the `open` attribute.
 
 [Read the documentation](./docs/main.md) to know how to configure Vue3-tutorial and all its possibilities.
 
+[List of upgrade changes](./docs/upgradeChanges.md).
+
 ## Installation
 
 You can install vue3-tutorial from npm.

@@ -3,8 +3,7 @@
 == improvements ==
 
 * Errors
-    * Add info
-    * Add options to filter what is emitted
+    * Add info level logs
 * Pause
     * restart at previous index [this should now be possible to do this with "step" props]
 * Step

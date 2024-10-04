@@ -464,12 +464,18 @@ already in DOM when the step is displayed. _Default value: `3000`_
 * **teleport** {`boolean | HTMLElement`}: The container where the window should be displayed.
 If the value is `true`, the window is displayed inside `document.body`. If `false`, the window is not moved.
 _Default value: `true`_
-* **debug** {`boolean | number[]`}: If true, it logs in console and emits error
+* ~~**debug** {`boolean | number[]`}~~: **[Deprecated]** _use `logs.logLevel`
+or `logs.allowCodes`._<br>
+If true, it logs in console and emits error
 at some key features in the library. If the value is a number array, it only
 logs when given error codes are prompted. _Default value: `false`_
+* **logs** {[`Logs`](#Logs)}: Allow to manage logs. Which ones to emit and if
+should print in the console or not.
+Read [Errors section](./errors.md) for more information.
 
 In addition, for the _component_ option only:
-*  **messageLog** {`string | null`}: Define which message should be prompted
+*  ~~**messageLog** {`string | null`}~~:  **[Deprecated]** _use `logs.messageLog`._<br>
+Define which message should be prompted
 in console when an error or a log is emitted. If the value is `null` nothing
 is prompted in the console but the code is still emitted.
 **This value is read only when the component is mounted.**
@@ -621,3 +627,25 @@ the window).
 * **skipConfirm**: The text displayed on the confirm dialog before skipping
 the tutorial.
 * **stepState**: The state of the step (Default: `'step %(currentStep)s / %(totalStep)s'`)
+
+### Logs
+
+An object with the following properties:
+
+* **logLevel** _TutorialErrorStatus_: Indicate which logs to emit. Logs with
+the given level and more important are emitted.
+<br>`'log'` < `'info'` < `'warning'` < `'error'` < `'none'`<br>
+_Default value: `'warning'`_
+* **allowCodes** _number[]_: Emit logs with these codes even if they are lower
+than `logLevel`.<br>
+_Default value: `[]`_
+* **messageLog** _string | boolean_: Define how messages should be prompted
+in console when an error or a log is emitted.<br>
+If the value is `false`, nothing is prompted in the console but the code is
+still emitted.<br>
+If the value is `true`, the default message is prompted.<br>
+If the value is a string, this message will be prompted (code and details are
+still provided).<br>
+_Default value: `'vue3-tutorial [%d]: %s'`_
+
+To know more about Logs and Errors read the [Error section](./errors.md).

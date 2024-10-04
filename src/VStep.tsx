@@ -32,6 +32,7 @@ import {
     ElementSelector,
     ErrorSelectorPurpose,
     EventAction,
+    Options,
     Point,
     Rect,
     ScrollKind,
@@ -209,7 +210,7 @@ export default class VStep extends Vue<Props> {
         /* XXX: only for reactivity, to force to get the correct element */
         this.targetElements;
 
-        return getElement(target, { purpose: 'nextAction' });
+        return getElement(target, { purpose: 'nextAction', options: this.fullOptions });
     }
 
     private get needsNextButton(): boolean {
@@ -224,7 +225,7 @@ export default class VStep extends Vue<Props> {
             const action = this.step.desc.actionNext as EventAction;
             const targetElement = this.nextActionTarget!;
 
-            if (!checkExpression(action, targetElement, 'nextAction')) {
+            if (!checkExpression(action, targetElement, 'nextAction', this.fullOptions)) {
                 return;
             }
         }
@@ -443,6 +444,7 @@ export default class VStep extends Vue<Props> {
                 timeout: this.fullOptions.timeout,
                 purpose: 'targets',
                 errorIsWarning: false,
+                options: this.fullOptions,
                 thenCb: (elements, selector, index) => {
                     if (elements?.length) {
                         debug(26, this.fullOptions, {
@@ -522,6 +524,7 @@ export default class VStep extends Vue<Props> {
                 timeout: this.fullOptions.timeout,
                 purpose: 'highlight',
                 errorIsWarning: true,
+                options: this.fullOptions,
                 thenCb: (elements) => {
                     if (elements) {
                         elements.forEach((el) => highlightElements.add(el));
@@ -687,6 +690,7 @@ export default class VStep extends Vue<Props> {
                 timeout: this.fullOptions.timeout,
                 purpose: 'mask',
                 errorIsWarning: true,
+                options: this.fullOptions,
                 thenCb: (elements) => {
                     if (elements?.length) {
                         elements.forEach((el) => maskElements.add(el));
@@ -739,6 +743,7 @@ export default class VStep extends Vue<Props> {
                 timeout: this.fullOptions.timeout,
                 purpose: 'arrow',
                 errorIsWarning: true,
+                options: this.fullOptions,
                 thenCb: (elements) => {
                     if (elements?.length) {
                         elements.forEach((el) => arrowElements.add(el));
@@ -768,6 +773,7 @@ export default class VStep extends Vue<Props> {
                 timeout: this.fullOptions.timeout,
                 purpose: 'mute',
                 errorIsWarning: true,
+                options: this.fullOptions,
                 thenCb: (elements) => {
                     if (elements) {
                         elements.forEach((el) => {
@@ -824,7 +830,7 @@ export default class VStep extends Vue<Props> {
                     /* Timer is to stop the watch after timeout. */
                     this.timerSetFocus = setTimeout(() => {
                         stopWatch();
-                        error(324, { timeout, selector: '{main-target}', purpose: 'focus' });
+                        error(324, this.fullOptions, { timeout, selector: '{main-target}', purpose: 'focus' });
                     }, timeout || 10);
                     const refTimer = this.timerSetFocus;
 
@@ -864,6 +870,7 @@ export default class VStep extends Vue<Props> {
                     getElement(target, {
                         purpose: 'focus',
                         timeout: timeout,
+                        options: fullOptions,
                     }).then((el) => {
                         if (el && refTimer === this.timerSetFocus) {
                             el.focus();
@@ -909,6 +916,7 @@ export default class VStep extends Vue<Props> {
                     purpose: 'scroll',
                     timeout: scroll.timeout ?? options.timeout,
                     errorIsWarning: true,
+                    options: options,
                 });
             }
 
@@ -963,6 +971,7 @@ export default class VStep extends Vue<Props> {
                 error: sendError,
             } = info ?? {};
             const currentTime = performance.now();
+            const options = this.fullOptions;
 
             /* Check if timeout is reached */
             if (ref) {
@@ -981,9 +990,9 @@ export default class VStep extends Vue<Props> {
                     };
 
                     if (sendError) {
-                        error(325, details);
+                        error(325, options, details);
                     } else {
-                        error(225, details);
+                        error(225, options, details);
                     }
                     return;
                 }
@@ -1009,7 +1018,7 @@ export default class VStep extends Vue<Props> {
             this.setFocus();
 
 
-            debug(24, this.fullOptions, {
+            debug(24, options, {
                 ref: this.requestRef,
                 startTime: this.startTime,
                 currentTime,
@@ -1025,6 +1034,8 @@ export default class VStep extends Vue<Props> {
             purpose: ErrorSelectorPurpose;
             errorIsWarning: boolean;
 
+            options: Options;
+
             thenCb: (elements: HTMLElement[] | null, selector: string, index: number) => void;
         }) {
             const {
@@ -1034,6 +1045,7 @@ export default class VStep extends Vue<Props> {
                 purpose,
                 errorIsWarning,
                 thenCb,
+                options,
             } = arg;
             const ref = this.requestRef;
 
@@ -1058,6 +1070,7 @@ export default class VStep extends Vue<Props> {
                     purpose,
                     cache,
                     errorIsWarning,
+                    options,
                 });
                 const index = promises.push(promise);
                 const elements = await promise;
@@ -1180,7 +1193,7 @@ export default class VStep extends Vue<Props> {
                         <div
                             class="vue3-tutorial__step__header__status"
                         >
-                            {label('stepState', {
+                            {label(options, 'stepState', {
                                 currentStep: information.currentIndex + 1,
                                 totalStep: information.nbTotalSteps,
                             })}
@@ -1203,7 +1216,7 @@ export default class VStep extends Vue<Props> {
                                 click: () => this.$emit('previous'),
                             }}
                         >
-                            {label('previousButton')}
+                            {label(options, 'previousButton')}
                         </button>
                         )}
                         {this.displaySkipButton && (
@@ -1212,7 +1225,7 @@ export default class VStep extends Vue<Props> {
                             on={{
                                 click: () => this.$emit('skip'),
                             }}
-                            title={label('skipButtonTitle') as unknown as string}
+                            title={label(options, 'skipButtonTitle') as unknown as string}
                         >
                             ×
                         </button>
@@ -1224,7 +1237,7 @@ export default class VStep extends Vue<Props> {
                                 click: () => this.$emit('next'),
                             }}
                         >
-                            {label('nextButton')}
+                            {label(options, 'nextButton')}
                         </button>
                         )}
                         {this.displayFinishButton && (
@@ -1234,7 +1247,7 @@ export default class VStep extends Vue<Props> {
                                 click: () => this.$emit('finish'),
                             }}
                         >
-                            {label('finishButton')}
+                            {label(options, 'finishButton')}
                         </button>
                         )}
                     </nav>

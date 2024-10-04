@@ -105,7 +105,7 @@ try {
     /* The issue is probably due to look behind assertion.
      * So fallback to simpler rules (format will not be correct)
      */
-    error(230, { error: err });
+    error(230, {}, { error: err });
     mdRegExp = new RegExp(`(${mdSimpleRules.join('|')})`);
 }
 

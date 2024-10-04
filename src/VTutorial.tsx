@@ -152,7 +152,7 @@ export default class VTutorial extends Vue<Props> {
 
         if (!step) {
             if (this.isRunning) {
-                error(302, {
+                error(302, this.tutorialOptions, {
                     nbTotalSteps: this.nbTotalSteps,
                     index: this.currentIndex,
                 });
@@ -259,7 +259,7 @@ export default class VTutorial extends Vue<Props> {
                         newIndex++;
                     } else {
                         if (newIndex <= 0) {
-                            error(204);
+                            error(204, this.tutorialOptions);
                             return -1;
                         }
                         newIndex--;
@@ -279,7 +279,7 @@ export default class VTutorial extends Vue<Props> {
                 } while (isSkipped);
             };
         } catch (err) {
-            error(202, {
+            error(202, this.tutorialOptions, {
                 index: this.currentIndex,
                 fromIndex: oldIndex,
                 error: err,
@@ -337,7 +337,7 @@ export default class VTutorial extends Vue<Props> {
         }
 
         if (typeof targetStep !== 'string') {
-            error(305, {
+            error(305, this.tutorialOptions, {
                 index: this.currentIndex,
                 value: targetStep,
                 expected: 'TargetStep (string | number)',
@@ -361,7 +361,7 @@ export default class VTutorial extends Vue<Props> {
         });
 
         if (stepIndex === -1) {
-            error(302, {
+            error(302, this.tutorialOptions, {
                 nbTotalSteps: this.nbTotalSteps,
                 index: targetStep,
             });
@@ -396,7 +396,7 @@ export default class VTutorial extends Vue<Props> {
                 }
             }
         } else {
-            error(203);
+            error(203, this.tutorialOptions);
             return -1;
         }
 
@@ -404,8 +404,10 @@ export default class VTutorial extends Vue<Props> {
     }
 
     private async start(restart = false) {
+        const options = this.tutorialOptions;
+
         if (!this.tutorial) {
-            error(303);
+            error(303, options);
             this.stop(false);
             return;
         }
@@ -419,7 +421,7 @@ export default class VTutorial extends Vue<Props> {
 
         this.$emit('start', currentIndex);
         startListening(this.onKeyEvent.bind(this));
-        debug(2, this.tutorialOptions, {currentIndex});
+        debug(2, options, {currentIndex});
     }
 
     private async nextStep(forceNext = false) {
@@ -479,7 +481,7 @@ export default class VTutorial extends Vue<Props> {
     }
 
     private skip() {
-        if (!confirm(label('skipConfirm'))) {
+        if (!confirm(label(this.tutorialOptions, 'skipConfirm'))) {
             return;
         }
 
