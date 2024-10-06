@@ -118,6 +118,7 @@ export function errorStatus(code: number): TutorialErrorStatus {
 function minCodeLevel(status?: TutorialErrorStatus | 'none') {
     switch (status) {
         case 'log': return 0;
+        case 'debug': return 0;
         case 'info': return 100;
         case 'warning': return 200;
         case 'error': return 300;

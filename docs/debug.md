@@ -5,7 +5,9 @@
 The debug options are useful for debugging to understand why it doesn't work
 as expected.
 
-When the debug option is enabled (with `true` or by enabling only some trace),
+When the logLevel option is set to `'log'` (or `'debug'`) or by enabling only
+some trace with `allowCodes`
+([see `logs` configuration options](./configuration.md#Logs)),
 it prompts in console a log related to the debug trace.
 An error is also emitted like any other [errors](./errors.md), the code value
 is between 0 and 99.

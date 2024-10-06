@@ -95,3 +95,7 @@ errorStatus(302); // returns 'error'
 
 The return type is `TutorialErrorStatus`, the possible values are:
 `'log'`, `'info'`, `'warning'`, or `'error'`.
+
+> [!INFO]
+> `'debug'` can also be used for `options.logs.logLevel`.
+> `'log'` and `'debug'` are the same level.

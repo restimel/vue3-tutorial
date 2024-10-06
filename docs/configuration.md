@@ -634,7 +634,7 @@ An object with the following properties:
 
 * **logLevel** _TutorialErrorStatus_: Indicate which logs to emit. Logs with
 the given level and more important are emitted.
-<br>`'log'` < `'info'` < `'warning'` < `'error'` < `'none'`<br>
+<br>`'log'`/`debug` < `'info'` < `'warning'` < `'error'` < `'none'`<br>
 _Default value: `'warning'`_
 * **allowCodes** _number[]_: Emit logs with these codes even if they are lower
 than `logLevel`.<br>

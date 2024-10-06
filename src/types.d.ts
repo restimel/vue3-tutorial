@@ -128,7 +128,7 @@ export type ErrorDetails = { [key in string ]: any };
 /** If false or null, no log are prompted. */
 export type MessageLog = string | boolean | null;
 
-export type TutorialErrorStatus = 'log' | 'info' | 'warning' | 'error';
+export type TutorialErrorStatus = 'log' | 'debug' | 'info' | 'warning' | 'error';
 
 /** Structure describing each error code */
 export type TutorialErrorCodes = {
@@ -141,7 +141,7 @@ export type ErrorSelectorPurpose = 'targets' | 'nextAction' | 'focus' | 'skipSte
 export type Logs = {
     /** Indicate which minimum log level to emit.
      *
-     * 'log' < 'info' < 'warning' < 'error' < 'none'
+     * 'log'/'debug' < 'info' < 'warning' < 'error' < 'none'
      *
      * If `logLevel = 'warning'` all 'warning' and 'error' are emitted.
      *
