@@ -1,6 +1,6 @@
 import { Vue, h } from 'vtyx';
-declare type TextType = 'bold' | 'color' | 'header' | 'hr' | 'icon' | 'image' | 'inlineCode' | 'indentation' | 'italic' | 'lineFeed' | 'link' | 'multilineCode' | 'newLine' | 'olist' | 'quote' | 'strike' | 'sub' | 'sup' | 'table' | 'text' | 'ulist';
-declare type Chunk = {
+type TextType = 'bold' | 'color' | 'header' | 'hr' | 'icon' | 'image' | 'inlineCode' | 'indentation' | 'italic' | 'lineFeed' | 'link' | 'multilineCode' | 'newLine' | 'olist' | 'quote' | 'strike' | 'sub' | 'sup' | 'table' | 'text' | 'ulist';
+type Chunk = {
     type: TextType;
     value: string;
     extra?: string;

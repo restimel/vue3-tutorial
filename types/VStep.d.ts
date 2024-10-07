@@ -1,6 +1,6 @@
 import { h, Vue } from 'vtyx';
 import { Step, TutorialInformation } from './types';
-declare type MainElementList = [HTMLElement | null, ...HTMLElement[]];
+type MainElementList = [HTMLElement | null, ...HTMLElement[]];
 export interface Props {
     step: Step;
     tutorialInformation: TutorialInformation;

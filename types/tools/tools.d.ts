@@ -1,31 +1,33 @@
-import { AbsolutePlacement, BoxNotEmpty, Dimension, ErrorDetails, ErrorSelectorPurpose, Placement, PlacementDimension, Position, Rect, SelectorElement, SelectorElements } from '../types.d';
+import { AbsolutePlacement, BoxNotEmpty, Dimension, ErrorDetails, ErrorSelectorPurpose, Options, Placement, PlacementDimension, Position, Rect, SelectorElement, SelectorElements } from '../types.d';
 export declare const BOX_MARGIN = 25;
 /** merge deeply an object in another one. */
 export declare function merge<A extends object, B extends object>(target: A, source: B, list?: Map<any, any>): A & B;
 /** Copy Set values into another Set */
 export declare function shallowSetCopy<T = any>(origin: Set<T>, copy?: Set<T>): Set<T>;
-declare type SyncOptions = {
+type SyncOptions = {
     purpose: ErrorSelectorPurpose;
     timeoutError?: (details: ErrorDetails) => void;
     errorIsWarning?: boolean;
 };
-declare type AsyncOptions = SyncOptions & {
+type AsyncOptions = SyncOptions & {
     timeout: number;
     refTime?: number;
 };
-declare type GetElementSyncOptions = SyncOptions & {
+type GetElementSyncOptions = SyncOptions & {
     all?: false;
     cache?: Map<string, HTMLElement>;
+    options: Options;
 };
-declare type GetAllElements = {
+type GetAllElements = {
     all: true;
     cache?: Map<string, HTMLElement[]>;
+    options: Options;
 };
 export declare const emptyArray: any[];
-declare type GetElementAsyncOptions = GetElementSyncOptions & AsyncOptions;
-declare type GetElementsSyncOptions = SyncOptions & GetAllElements;
-export declare type GetElementsAsyncOptions = GetElementsSyncOptions & AsyncOptions;
-export declare type GetElementOptions = GetElementSyncOptions | GetElementAsyncOptions | GetElementsSyncOptions | GetElementsAsyncOptions;
+type GetElementAsyncOptions = GetElementSyncOptions & AsyncOptions;
+type GetElementsSyncOptions = SyncOptions & GetAllElements;
+export type GetElementsAsyncOptions = GetElementsSyncOptions & AsyncOptions;
+export type GetElementOptions = GetElementSyncOptions | GetElementAsyncOptions | GetElementsSyncOptions | GetElementsAsyncOptions;
 /** GetElement is to retrieve 1 element from the DOM and may await this
  * element to be in the DOM (depending on options).
  * Results are stored in cache to avoid waiting again for the next similar

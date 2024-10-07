@@ -38,25 +38,38 @@ const errorMap = {
     324: 'Timeout: some targets have not been found in the allowing time',
     325: 'Timeout: some target elements are still hidden in the allowing time',
 };
+/* type is MessageLog without boolean */
 let MESSAGE_LOG = 'vue3-tutorial [%d]: %s';
-function error(code, details) {
+function error(code, options, details) {
+    var _a;
+    if (!canTrigger(code, options)) {
+        return;
+    }
     const message = errorMap[code];
     if (!message) {
-        error(200, { code: code, details: details });
+        error(200, options, { code: code, details: details });
     }
-    if (typeof MESSAGE_LOG === 'string') {
+    const messageLog = (_a = options.logs) === null || _a === void 0 ? void 0 : _a.messageLog;
+    let logMessage;
+    if (messageLog === false || messageLog === null || MESSAGE_LOG === null) {
+        logMessage = '';
+    }
+    else {
+        logMessage = typeof messageLog === 'string' ? messageLog : MESSAGE_LOG;
+    }
+    if (logMessage) {
         switch (errorStatus(code)) {
             case 'log':
-                console.log(MESSAGE_LOG, code, message, details);
+                console.log(logMessage, code, message, details);
                 break;
             case 'info':
-                console.log(MESSAGE_LOG, code, message, details);
+                console.log(logMessage, code, message, details);
                 break;
             case 'warning':
-                console.warn(MESSAGE_LOG, code, message, details);
+                console.warn(logMessage, code, message, details);
                 break;
             case 'error':
-                console.error(MESSAGE_LOG, code, message, details);
+                console.error(logMessage, code, message, details);
                 break;
         }
     }
@@ -80,20 +93,74 @@ function errorStatus(code) {
     }
     return 'error';
 }
-function debug(code, options, details = {}) {
-    const debug = options.debug;
-    if (!debug) {
-        return;
+function minCodeLevel(status) {
+    switch (status) {
+        case 'log': return 0;
+        case 'debug': return 0;
+        case 'info': return 100;
+        case 'warning': return 200;
+        case 'error': return 300;
+        case 'none': return 1000;
     }
-    if (debug === true || debug.includes(code)) {
-        const dbgDetails = Object.assign({ options: options }, details);
-        error(code, dbgDetails);
+    return 200;
+}
+function canTrigger(code, options) {
+    var _a;
+    const { logLevel, allowCodes = [] } = (_a = options.logs) !== null && _a !== void 0 ? _a : {};
+    if (code >= minCodeLevel(logLevel)) {
+        return true;
+    }
+    if (allowCodes.includes(code)) {
+        return true;
+    }
+    /* Deprecated option: debug */
+    const debugLog = options.debug;
+    if (!debugLog) {
+        return false;
+    }
+    deprecated('debug', 'Please use `logs.logLevel` or `logs.allowCodes` instead.');
+    if (debugLog === true || debugLog.includes(code)) {
+        return true;
+    }
+    return false;
+}
+const deprecatedLogs = new Map();
+function deprecated(oldOptions, alternative) {
+    const logId = `${oldOptions}|${alternative}`;
+    const oldTimer = deprecatedLogs.get(logId);
+    if (oldTimer) {
+        clearTimeout(oldTimer);
+    }
+    const newTimer = setTimeout(() => {
+        deprecatedLogs.delete(logId);
+        console.warn(`vue3-tutorial: Deprecated uses of \`${oldOptions}\` option.
+${alternative}
+This code may not work in a future version.`);
+    }, 200);
+    deprecatedLogs.set(logId, newTimer);
+}
+function debug(code, options, details = {}) {
+    if (canTrigger(code, options)) {
+        const dbgDetails = {
+            options: options,
+            ...details,
+        };
+        error(code, options, dbgDetails);
     }
 }
 function registerError(callback, messageLog) {
     errorCallback = callback;
     if (messageLog !== undefined) {
-        MESSAGE_LOG = messageLog;
+        deprecated('messageLog', 'Please use `logs.messageLog` instead.');
+        if (messageLog === false) {
+            MESSAGE_LOG = null;
+        }
+        else if (messageLog === true) {
+            MESSAGE_LOG = 'vue3-tutorial [%d]: %s';
+        }
+        else {
+            MESSAGE_LOG = messageLog;
+        }
     }
 }
 function unRegisterError() {
@@ -191,7 +258,7 @@ catch (err) {
     /* The issue is probably due to look behind assertion.
      * So fallback to simpler rules (format will not be correct)
      */
-    error(230, { error: err });
+    error(230, {}, { error: err });
     mdRegExp = new RegExp(`(${mdSimpleRules.join('|')})`);
 }
 /* }}} */
@@ -877,7 +944,7 @@ function minMaxValue(value, min, max) {
  * This should avoid triggering changes when only providing a new empty array */
 const emptyArray = [];
 function getElement(query, options) {
-    const { purpose, timeout, timeoutError, errorIsWarning, cache, all = false, refTime = performance.now(), } = options;
+    const { purpose, timeout, timeoutError, errorIsWarning, cache, all = false, refTime = performance.now(), options: stepOptions, } = options;
     try {
         let element;
         let isEmpty = false;
@@ -912,10 +979,10 @@ function getElement(query, options) {
                     timeoutError(details);
                 }
                 else if (errorIsWarning) {
-                    error(224, details);
+                    error(224, stepOptions, details);
                 }
                 else {
-                    error(324, details);
+                    error(324, stepOptions, details);
                 }
                 return Promise.resolve(null);
             }
@@ -930,6 +997,7 @@ function getElement(query, options) {
                         cache,
                         all,
                         refTime,
+                        options: stepOptions,
                     }));
                 }, 50);
             });
@@ -937,7 +1005,7 @@ function getElement(query, options) {
         return element;
     }
     catch (err) {
-        error(300, { selector: query, purpose, error: err });
+        error(300, stepOptions, { selector: query, purpose, error: err });
     }
     if (typeof timeout === 'number') {
         return Promise.resolve(null);
@@ -1604,6 +1672,11 @@ const DEFAULT_STEP_OPTIONS = {
     texts: DEFAULT_DICTIONARY,
     timeout: 3000,
     debug: false,
+    logs: {
+        logLevel: 'warning',
+        allowCodes: [],
+        messageLog: true,
+    },
 };
 function mergeStepOptions(...options) {
     return options.reduce((merged, option) => merge(merged, option), {});
@@ -1626,7 +1699,7 @@ function isStepSpecialAction(arg) {
     const actionType = typeof arg === 'string' ? arg : getActionType(arg);
     return actionType !== 'next';
 }
-function checkExpression(expr, targetEl, purpose) {
+function checkExpression(expr, targetEl, purpose, options) {
     var _a, _b, _c;
     /* XXX: This type assignation is only to avoid telling all possible HTML cases */
     const targetElement = targetEl;
@@ -1661,10 +1734,10 @@ function checkExpression(expr, targetEl, purpose) {
         case 'is not rendered':
             return !document.body.contains(targetElement);
     }
-    error(301, { operation: checkOperation, purpose });
+    error(301, options, { operation: checkOperation, purpose });
     return false;
 }
-async function skipCurrentStep(step, info) {
+async function skipCurrentStep(step, info, options) {
     var _a;
     const stepDesc = step.desc;
     const skipStep = stepDesc === null || stepDesc === void 0 ? void 0 : stepDesc.skipStep;
@@ -1688,8 +1761,9 @@ async function skipCurrentStep(step, info) {
             if (isOperatorRender) {
                 return;
             }
-            error(224, details);
+            error(224, options, details);
         },
+        options: options,
     });
     if (!targetElement) {
         /* If the element has not been found return false only if it is
@@ -1699,7 +1773,7 @@ async function skipCurrentStep(step, info) {
         }
         return true;
     }
-    return checkExpression(skipStep, targetElement, 'skipStep');
+    return checkExpression(skipStep, targetElement, 'skipStep', options);
 }
 function getStep(stepDesc, tutorialOptions, info) {
     const step = reactive({
@@ -1713,7 +1787,7 @@ function getStep(stepDesc, tutorialOptions, info) {
         options: {},
         async checkSkipped() {
             /* recompute the skip status */
-            const skipped = await skipCurrentStep(step, info);
+            const skipped = await skipCurrentStep(step, info, tutorialOptions);
             step.status.skipped = skipped;
             return skipped;
         },
@@ -1736,10 +1810,10 @@ function getStep(stepDesc, tutorialOptions, info) {
  * Return strings depending on dictionary
  */
 const dictionary = reactive(Object.assign({}, DEFAULT_DICTIONARY));
-function label(key, replacement) {
+function label(options, key, replacement) {
     let text;
     if (typeof dictionary[key] === 'undefined') {
-        error(201, { label: key });
+        error(201, options, { label: key });
         text = key;
     }
     else {
@@ -1883,7 +1957,7 @@ let VStep = class VStep extends Vue {
                 /* If there are no other possibility to go to "next" action
                  * then redisplay the step.
                  */
-                return Object.assign(Object.assign({}, options), { position: 'center' });
+                return { ...options, position: 'center' };
             }
         }
         return options;
@@ -1961,7 +2035,7 @@ let VStep = class VStep extends Vue {
         }
         /* XXX: only for reactivity, to force to get the correct element */
         this.targetElements;
-        return getElement(target, { purpose: 'nextAction' });
+        return getElement(target, { purpose: 'nextAction', options: this.fullOptions });
     }
     get needsNextButton() {
         return this.step.status.isActionNext;
@@ -1972,7 +2046,7 @@ let VStep = class VStep extends Vue {
         if (valueEventName.includes(type)) {
             const action = this.step.desc.actionNext;
             const targetElement = this.nextActionTarget;
-            if (!checkExpression(action, targetElement, 'nextAction')) {
+            if (!checkExpression(action, targetElement, 'nextAction', this.fullOptions)) {
                 return;
             }
         }
@@ -2127,6 +2201,7 @@ let VStep = class VStep extends Vue {
             timeout: this.fullOptions.timeout,
             purpose: 'targets',
             errorIsWarning: false,
+            options: this.fullOptions,
             thenCb: (elements, selector, index) => {
                 if (elements === null || elements === void 0 ? void 0 : elements.length) {
                     debug(26, this.fullOptions, {
@@ -2192,6 +2267,7 @@ let VStep = class VStep extends Vue {
             timeout: this.fullOptions.timeout,
             purpose: 'highlight',
             errorIsWarning: true,
+            options: this.fullOptions,
             thenCb: (elements) => {
                 if (elements) {
                     elements.forEach((el) => highlightElements.add(el));
@@ -2319,6 +2395,7 @@ let VStep = class VStep extends Vue {
             timeout: this.fullOptions.timeout,
             purpose: 'mask',
             errorIsWarning: true,
+            options: this.fullOptions,
             thenCb: (elements) => {
                 if (elements === null || elements === void 0 ? void 0 : elements.length) {
                     elements.forEach((el) => maskElements.add(el));
@@ -2357,6 +2434,7 @@ let VStep = class VStep extends Vue {
             timeout: this.fullOptions.timeout,
             purpose: 'arrow',
             errorIsWarning: true,
+            options: this.fullOptions,
             thenCb: (elements) => {
                 if (elements === null || elements === void 0 ? void 0 : elements.length) {
                     elements.forEach((el) => arrowElements.add(el));
@@ -2377,6 +2455,7 @@ let VStep = class VStep extends Vue {
             timeout: this.fullOptions.timeout,
             purpose: 'mute',
             errorIsWarning: true,
+            options: this.fullOptions,
             thenCb: (elements) => {
                 if (elements) {
                     elements.forEach((el) => {
@@ -2424,7 +2503,7 @@ let VStep = class VStep extends Vue {
                 /* Timer is to stop the watch after timeout. */
                 this.timerSetFocus = setTimeout(() => {
                     stopWatch();
-                    error(324, { timeout, selector: '{main-target}', purpose: 'focus' });
+                    error(324, this.fullOptions, { timeout, selector: '{main-target}', purpose: 'focus' });
                 }, timeout || 10);
                 const refTimer = this.timerSetFocus;
                 const stopWatch = watch(() => this.mainElement, () => {
@@ -2460,6 +2539,7 @@ let VStep = class VStep extends Vue {
                 getElement(target, {
                     purpose: 'focus',
                     timeout: timeout,
+                    options: fullOptions,
                 }).then((el) => {
                     if (el && refTimer === this.timerSetFocus) {
                         el.focus();
@@ -2505,6 +2585,7 @@ let VStep = class VStep extends Vue {
                 purpose: 'scroll',
                 timeout: (_b = scroll.timeout) !== null && _b !== void 0 ? _b : options.timeout,
                 errorIsWarning: true,
+                options: options,
             });
         }
         if (target && (behavior === 'scroll-to' || behavior === 'auto-scroll')) {
@@ -2546,6 +2627,7 @@ let VStep = class VStep extends Vue {
     getAllElements(info) {
         const { ref = 0, timeout = this.fullOptions.timeout, purpose, elements, error: sendError, } = info !== null && info !== void 0 ? info : {};
         const currentTime = performance.now();
+        const options = this.fullOptions;
         /* Check if timeout is reached */
         if (ref) {
             if (ref !== this.requestRef) {
@@ -2560,10 +2642,10 @@ let VStep = class VStep extends Vue {
                     purpose,
                 };
                 if (sendError) {
-                    error(325, details);
+                    error(325, options, details);
                 }
                 else {
-                    error(225, details);
+                    error(225, options, details);
                 }
                 return;
             }
@@ -2584,7 +2666,7 @@ let VStep = class VStep extends Vue {
         /* Apply effects */
         this.scrollTo();
         this.setFocus();
-        debug(24, this.fullOptions, {
+        debug(24, options, {
             ref: this.requestRef,
             startTime: this.startTime,
             currentTime,
@@ -2592,7 +2674,7 @@ let VStep = class VStep extends Vue {
         /* TODO: check that it is ok (no hidden element) */
     }
     getElements(arg) {
-        const { selectors, elements, timeout, purpose, errorIsWarning, thenCb, } = arg;
+        const { selectors, elements, timeout, purpose, errorIsWarning, thenCb, options, } = arg;
         const ref = this.requestRef;
         elements.clear();
         const querySelectors = Array.isArray(selectors) ? selectors : [selectors];
@@ -2611,6 +2693,7 @@ let VStep = class VStep extends Vue {
                 purpose,
                 cache,
                 errorIsWarning,
+                options,
             });
             const index = promises.push(promise);
             const elements = await promise;
@@ -2691,7 +2774,7 @@ let VStep = class VStep extends Vue {
                         mouseup: this.mouseUpHeader,
                     } },
                     h("div", { class: "vue3-tutorial__step__header__title" }, stepDesc.title),
-                    h("div", { class: "vue3-tutorial__step__header__status" }, label('stepState', {
+                    h("div", { class: "vue3-tutorial__step__header__status" }, label(options, 'stepState', {
                         currentStep: information.currentIndex + 1,
                         totalStep: information.nbTotalSteps,
                     }))),
@@ -2700,16 +2783,16 @@ let VStep = class VStep extends Vue {
                 h("nav", { class: "vue3-tutorial__step__commands" },
                     this.displayPreviousButton && (h("button", { class: "vue3-tutorial__step__btn vue3-tutorial__step__btn-previous", on: {
                             click: () => this.$emit('previous'),
-                        } }, label('previousButton'))),
+                        } }, label(options, 'previousButton'))),
                     this.displaySkipButton && (h("button", { class: "vue3-tutorial__step__btn vue3-tutorial__step__btn-skip", on: {
                             click: () => this.$emit('skip'),
-                        }, title: label('skipButtonTitle') }, "\u00D7")),
+                        }, title: label(options, 'skipButtonTitle') }, "\u00D7")),
                     this.displayNextButton && (h("button", { class: "vue3-tutorial__step__btn vue3-tutorial__step__btn-next", on: {
                             click: () => this.$emit('next'),
-                        } }, label('nextButton'))),
+                        } }, label(options, 'nextButton'))),
                     this.displayFinishButton && (h("button", { class: "vue3-tutorial__step__btn vue3-tutorial__step__btn-finish", on: {
                             click: () => this.$emit('finish'),
-                        } }, label('finishButton')))))));
+                        } }, label(options, 'finishButton')))))));
     }
 };
 __decorate$1([
@@ -2836,7 +2919,7 @@ let VTutorial = class VTutorial extends Vue {
         const step = this.steps[this.currentIndex];
         if (!step) {
             if (this.isRunning) {
-                error(302, {
+                error(302, this.tutorialOptions, {
                     nbTotalSteps: this.nbTotalSteps,
                     index: this.currentIndex,
                 });
@@ -2922,7 +3005,7 @@ let VTutorial = class VTutorial extends Vue {
                     }
                     else {
                         if (newIndex <= 0) {
-                            error(204);
+                            error(204, this.tutorialOptions);
                             return -1;
                         }
                         newIndex--;
@@ -2944,7 +3027,7 @@ let VTutorial = class VTutorial extends Vue {
             ;
         }
         catch (err) {
-            error(202, {
+            error(202, this.tutorialOptions, {
                 index: this.currentIndex,
                 fromIndex: oldIndex,
                 error: err,
@@ -2994,7 +3077,7 @@ let VTutorial = class VTutorial extends Vue {
             return returnValue(finalIndex, targetIndex);
         }
         if (typeof targetStep !== 'string') {
-            error(305, {
+            error(305, this.tutorialOptions, {
                 index: this.currentIndex,
                 value: targetStep,
                 expected: 'TargetStep (string | number)',
@@ -3014,7 +3097,7 @@ let VTutorial = class VTutorial extends Vue {
             return step.desc.name === targetStep;
         });
         if (stepIndex === -1) {
-            error(302, {
+            error(302, this.tutorialOptions, {
                 nbTotalSteps: this.nbTotalSteps,
                 index: targetStep,
             });
@@ -3043,14 +3126,15 @@ let VTutorial = class VTutorial extends Vue {
             }
         }
         else {
-            error(203);
+            error(203, this.tutorialOptions);
             return -1;
         }
         return stepIndex;
     }
     async start(restart = false) {
+        const options = this.tutorialOptions;
         if (!this.tutorial) {
-            error(303);
+            error(303, options);
             this.stop(false);
             return;
         }
@@ -3062,7 +3146,7 @@ let VTutorial = class VTutorial extends Vue {
         this.isRunning = true;
         this.$emit('start', currentIndex);
         startListening(this.onKeyEvent.bind(this));
-        debug(2, this.tutorialOptions, { currentIndex });
+        debug(2, options, { currentIndex });
     }
     async nextStep(forceNext = false) {
         var _a, _b;
@@ -3112,7 +3196,7 @@ let VTutorial = class VTutorial extends Vue {
         debug(3, this.tutorialOptions, { currentIndex: this.currentIndex });
     }
     skip() {
-        if (!confirm(label('skipConfirm'))) {
+        if (!confirm(label(this.tutorialOptions, 'skipConfirm'))) {
             return;
         }
         this.stop();
