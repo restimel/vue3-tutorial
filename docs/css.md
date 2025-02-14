@@ -40,6 +40,7 @@ feel of vue3-tutorial.
  * `--vue3-tutorial-mask-color`: The fill color of the mask.
  _Default value: `#c8c8c8bb`_
 
+![workflow](./images/cssVariables.drawio.png)
 
 ### Usage
 
